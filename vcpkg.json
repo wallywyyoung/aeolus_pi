@@ -1,10 +1,9 @@
 {
-  "dependencies" : [ {
-    "name" : "juce",
-    "version>=" : "8.0.4#1"
-  }, {
-    "name" : "alsa",
-    "version>=" : "1.2.13#1"
-  } ],
-  "builtin-baseline" : "57c08a3223a1ec03c3a31986ee38d32e90b6039c"
+  "builtin-baseline": "57c08a3223a1ec03c3a31986ee38d32e90b6039c",
+  "dependencies": [
+    {
+      "name": "juce",
+      "version>=": "8.0.7#0"
+    }
+  ]
 }

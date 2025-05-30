@@ -2,13 +2,14 @@
 <project version="4">
   <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="Raspipeorgan (b6f531ab-9482-4a38-9529-98483dad5cac)">
+      <paths name="Raspipeorgan (6884ba9b-2972-4324-ad9c-9a955a7c59dc)">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/tmp.LsKfxPgeh3/aeolus_pi" local="$PROJECT_DIR$" />
+            <mapping deploy="/tmp/tmp.MIgsiSk5X7/aeolus_pi" local="$PROJECT_DIR$" />
           </mappings>
           <excludedPaths>
             <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-raspipeorgan" />
           </excludedPaths>
         </serverdata>
       </paths>

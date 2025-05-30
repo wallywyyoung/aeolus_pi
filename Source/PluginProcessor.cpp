@@ -21,7 +21,6 @@
 
 #include "aeolus/globals.h"
 #include "PluginProcessor.h"
-#include "PluginEditor.h"
 
 using namespace juce;
 
@@ -49,7 +48,7 @@ AeolusAudioProcessor::~AeolusAudioProcessor()
 //==============================================================================
 const juce::String AeolusAudioProcessor::getName() const
 {
-    return JucePlugin_Name;
+    return "JucePlugin_Name";
 }
 
 bool AeolusAudioProcessor::acceptsMidi() const
@@ -176,8 +175,8 @@ bool AeolusAudioProcessor::canApplyBusCountChange(bool isInput, bool isAdding, B
 
 bool AeolusAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
-    static_assert(!JucePlugin_IsMidiEffect, "This plugin is not a MIDI effect");
-    static_assert(JucePlugin_IsSynth, "This plugin is a synthesizer");
+//    static_assert(!JucePlugin_IsMidiEffect, "This plugin is not a MIDI effect");
+//    static_assert(JucePlugin_IsSynth, "This plugin is a synthesizer");
 
     // No inputs are expected.
     if (layouts.inputBuses.size() > 0)
@@ -306,21 +305,22 @@ bool AeolusAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* AeolusAudioProcessor::createEditor()
 {
-    auto* editor{ new AeolusAudioProcessorEditor (*this) };
-
-    // Use native title bar for a stand-alone window
-    if (wrapperType == wrapperType_Standalone) {
-        if (TopLevelWindow::getNumTopLevelWindows() == 1) {
-            if (TopLevelWindow* topWindow = TopLevelWindow::getTopLevelWindow(0)) {
-                if (auto* w { dynamic_cast<DocumentWindow*>(topWindow) }) {
-                    w->setTitleBarButtonsRequired(DocumentWindow::allButtons, false);
-                }
-
-            }
-        }
-    }
-
-    return editor;
+//    auto* editor{ new AeolusAudioProcessorEditor (*this) };
+//
+//    // Use native title bar for a stand-alone window
+//    if (wrapperType == wrapperType_Standalone) {
+//        if (TopLevelWindow::getNumTopLevelWindows() == 1) {
+//            if (TopLevelWindow* topWindow = TopLevelWindow::getTopLevelWindow(0)) {
+//                if (auto* w { dynamic_cast<DocumentWindow*>(topWindow) }) {
+//                    w->setTitleBarButtonsRequired(DocumentWindow::allButtons, false);
+//                }
+//
+//            }
+//        }
+//    }
+//
+//    return editor;
+return nullptr;
 }
 
 //==============================================================================
