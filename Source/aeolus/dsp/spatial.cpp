@@ -21,8 +21,6 @@
 
 AEOLUS_NAMESPACE_BEGIN
 
-using namespace juce;
-
 namespace dsp {
 
 SpatialSource::SpatialSource()

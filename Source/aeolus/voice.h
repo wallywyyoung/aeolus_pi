@@ -41,23 +41,23 @@ class Voice : public ListItem<Voice>
 {
 public:
     Voice() = delete;
-    Voice(Engine& engine);
+    explicit Voice(Engine& engine);
 
     void trigger(const Pipewave::State& state);
     void release();
     void reset();
     void process(float* outL, float* outR);
-    bool isOver() const noexcept;
-    bool isActive() const noexcept;
-    bool isForNote(int note) const noexcept;
-    int getNote() const;
+    [[nodiscard]] bool isOver() const noexcept;
+    [[nodiscard]] bool isActive() const noexcept;
+    [[nodiscard]] bool isForNote(int note) const noexcept;
+    [[nodiscard]] int getNote() const;
 
     void setStopIndex(int idx) noexcept { _stopIndex = idx; }
-    int stopIndex() const noexcept { return _stopIndex; }
+    [[nodiscard]] int stopIndex() const noexcept { return _stopIndex; }
 
     void resetAndReturnToPool();
 
-    float getPanPosition() const noexcept { return _panPosition; }
+    [[nodiscard]] float getPanPosition() const noexcept { return _panPosition; }
 
 private:
     Engine& _engine;
@@ -96,13 +96,16 @@ class VoicePool final
 public:
     constexpr static int DefaultMaxVoices = 512;
 
-    VoicePool(Engine& engine, int maxVoices = DefaultMaxVoices);
+    explicit VoicePool(Engine& engine, int maxVoices = DefaultMaxVoices);
 
     Voice* trigger(const Pipewave::State& state);
     void resetAndReturnToPool(Voice* voice);
 
     int getNumberOfActiveVoices() const noexcept { return _voiceCount; }
 
+    // Non-copyable
+    VoicePool (const VoicePool&) = delete;
+    VoicePool& operator= (const VoicePool&) = delete;
 private:
 
     Engine& _engine;
@@ -111,7 +114,7 @@ private:
     List<Voice> _idleVoices;        ///< Voices available to be triggered.
     std::atomic<int> _voiceCount;   ///< Number of taken voices.
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(VoicePool)
+    // TODO: LeakDetector ? JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(VoicePool)
 };
 
 AEOLUS_NAMESPACE_END

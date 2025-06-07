@@ -21,7 +21,7 @@
 #include "aeolus/dsp/convolve.h"
 #include "aeolus/dsp/convolver.h"
 
-using namespace juce;
+
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -70,8 +70,8 @@ struct Convolver::Impl
     std::vector<ConvBlock> blocksR;
 
     // For zero-delay convolution
-    AudioBuffer<float> input;
-    AudioBuffer<float> ir;
+    std::vector<float> input;
+    IR ir;
     size_t irSamplesRead;
 
     size_t inputSize;
@@ -87,7 +87,7 @@ struct Convolver::Impl
         , convL{}
         , convR{}
         , input(2, ConvHead::Lenght)
-        , ir(2, ConvHead::Lenght)
+        , ir()//(2, ConvHead::Lenght)
         , irSamplesRead{0}
         , inputSize{0}
         , framesProcessed{0}
@@ -117,8 +117,8 @@ struct Convolver::Impl
         convL.resize(numBlocks);
         convR.resize(numBlocks);
 
-        headL.init(ir.getWritePointer (0), input.getWritePointer (0), Convolver::BlockSize);
-        headR.init(ir.getWritePointer (1), input.getWritePointer (1), Convolver::BlockSize);
+        headL.init(ir.waveform[0].data(), ir.waveform[0].data(), Convolver::BlockSize);
+        headR.init(ir.waveform[1].data(), ir.waveform[1].data(), Convolver::BlockSize);
 
         updateRealtime (false);
 
@@ -164,17 +164,17 @@ struct Convolver::Impl
             || params[WET].value() > 0.0f;
     }
 
-    void setIR(const AudioBuffer<float>& buffer)
+    void setIR(const IR& ir)
     {
-        ir = buffer;
+        this->ir = ir;
 
         // Reset the convolver to the initial state
         irSamplesRead = 0;
         framesProcessed = 0;
         input.clear();
 
-        headL.init(ir.getWritePointer (0), input.getWritePointer (0), Convolver::BlockSize);
-        headR.init(ir.getWritePointer (1), input.getWritePointer (1), Convolver::BlockSize);
+        headL.init(this->ir.waveform[0].data(), this->ir.waveform[0].data(), Convolver::BlockSize);
+        headR.init(this->ir.waveform[1].data(), this->ir.waveform[1].data(), Convolver::BlockSize);
 
         headL.reset();
         headR.reset();
@@ -183,10 +183,10 @@ struct Convolver::Impl
         convR.reset();
 
         int i = zeroDelay ? Convolver::BlockSize : 0;
-        const float* irL = ir.getReadPointer(0);
-        const float* irR = ir.getReadPointer(1);
+        const float* irL = ir.waveform[0].data();
+        const float* irR = ir.waveform[1].data();
 
-        while (i < jmin ((int)inputSize, ir.getNumSamples())) {
+        while (i < std::min((int)inputSize, ir.channelSamples)) {
             convL.feedIr(irL[i]);
             convR.feedIr(irR[i]);
             ++i;
@@ -215,8 +215,8 @@ struct Convolver::Impl
         if (state == FeedHeadIR)
         {
             // ir buffer is ready at this point
-            if (ir.getNumSamples() <= Convolver::BlockSize) {
-                irSamplesRead = ir.getNumSamples();
+            if (ir.channelSamples <= Convolver::BlockSize) {
+                irSamplesRead = ir.channelSamples;
                 state = Process;
             } else {
                 irSamplesRead = Convolver::BlockSize;
@@ -229,7 +229,7 @@ struct Convolver::Impl
 
             framesProcessed += numFrames;
 
-            if (framesProcessed >= inputSize || irSamplesRead >= ir.getNumSamples()) {
+            if (framesProcessed >= inputSize || irSamplesRead >= ir.channelSamples) {
                 // The entire IR has been read, switch to procesing without IR streaming
                 state = Process;
             }
@@ -281,7 +281,7 @@ Convolver::Convolver()
 
 Convolver::~Convolver() = default;
 
-void Convolver::setIR(const AudioBuffer<float>& ir)
+void Convolver::setIR(const IR& ir)
 {
     d->setIR(ir);
 }

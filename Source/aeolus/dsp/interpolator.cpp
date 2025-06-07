@@ -18,6 +18,7 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/interpolator.h"
+#include <cstring>
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -29,12 +30,12 @@ Interpolator::Interpolator(float ratio, size_t nChannels)
     , _accFrac{0.0f}
     , _ratio{ratio}
 {
-    jassert(nChannels > 0);
+    assert(nChannels > 0);
 }
 
 void Interpolator::setNumberOfChannels(size_t n)
 {
-    jassert(n > 0);
+    assert(n > 0);
     _acc.resize(n);
     reset();
 }
@@ -56,7 +57,7 @@ bool Interpolator::canRead() const noexcept
 
 bool Interpolator::readAllChannels(float* const x) noexcept
 {
-    jassert(x != nullptr);
+    assert(x != nullptr);
 
     if (_accFrac >= 1.0f)
         return false;
@@ -72,14 +73,14 @@ bool Interpolator::readAllChannels(float* const x) noexcept
 
 float Interpolator::readUnchecked(size_t channel) const noexcept
 {
-    jassert(_accFrac < 1.0f);
+    assert(_accFrac < 1.0f);
 
     return math::lagr(&_acc[channel].data()[_accIndex], _accFrac);
 }
 
 float Interpolator::readLinearUnchecked(size_t channel) const noexcept
 {
-    jassert(_accFrac < 1.0f);
+    assert(_accFrac < 1.0f);
 
     return math::lerp(_acc[channel].data()[_accIndex], _acc[channel].data()[_accIndex + 1], _accFrac);
 }
@@ -91,7 +92,7 @@ void Interpolator::readIncrement()
 
 bool Interpolator::read(float& l, float& r) noexcept
 {
-    jassert(_acc.size() > 1);
+    assert(_acc.size() > 1);
 
     if (_accFrac >= 1.0f)
         return false;
@@ -111,7 +112,7 @@ bool Interpolator::canWrite() const noexcept
 
 bool Interpolator::writeAllChannels(const float* const x) noexcept
 {
-    jassert(x != nullptr);
+    assert(x != nullptr);
 
     if (_accFrac < 1.0f)
         return false;
@@ -128,7 +129,7 @@ bool Interpolator::writeAllChannels(const float* const x) noexcept
 
 void Interpolator::writeUnchecked(float x, size_t channel)
 {
-    jassert(_acc.size() > 1);
+    assert(_acc.size() > 1);
 
     _acc[channel][_accIndex] = _acc[channel][_accIndex + 4] = x;
 }
@@ -141,7 +142,7 @@ void Interpolator::writeIncrement()
 
 bool Interpolator::write(float l, float r) noexcept
 {
-    jassert(_acc.size() > 1);
+    assert(_acc.size() > 1);
 
     if (_accFrac < 1.0f)
         return false;

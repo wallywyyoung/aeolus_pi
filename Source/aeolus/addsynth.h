@@ -22,8 +22,12 @@
 
 #include "aeolus/globals.h"
 
-#include <stdint.h>
+#include <cstdint>
 #include <array>
+#include <variant>
+#include <map>
+#include <any>
+#include <memory>
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -46,11 +50,11 @@ public:
     /// Returns interpolated value for a note number (starting from 0).
     float operator[](int note) const;   // vi(n)
 
-    juce::var toVar() const;
-    void fromVar(const juce::var& v);
+//    std::map<std::string, std::any> toVar() const;
+//    void fromVar(const std::map<std::string, std::any>& v);
 
-    void write(juce::OutputStream& stream) const;
-    void read(juce::InputStream& stream);
+//    void write(std::ofstream& stream) const;
+//    void read(std::ifstream& stream);
 
 private:
     int _b;
@@ -76,14 +80,14 @@ public:
     float getValue(int harm, int idx) const;    // vs(h, i);
     bool isSet(int harm, int idx) const;        // st(h, i)
 
-    N_func& operator[](int harm) { jassert(juce::isPositiveAndBelow(harm, _h.size())); return _h[harm]; }
-    const N_func& operator[](int harm) const { jassert(juce::isPositiveAndBelow(harm, _h.size())); return _h[harm]; }
+    N_func& operator[](int harm) { assert(isPositiveAndBelow(harm, _h.size())); return _h[harm]; }
+    const N_func& operator[](int harm) const { assert(isPositiveAndBelow(harm, _h.size())); return _h[harm]; }
 
-    juce::var toVar(int n = N_HARM) const;
-    void fromVar(const juce::var& v);
+//    std::map<std::string, std::any> toVar(int n = N_HARM) const;
+//    void fromVar(const std::map<std::string, std::any>& v);
 
-    void write(juce::OutputStream& stream, int n = N_HARM) const;
-    void read(juce::InputStream& stream, int n = N_HARM);
+//    void write(std::ofstream& stream, int n = N_HARM) const;
+//    void read(std::ifstream& stream, int n = N_HARM);
 
 private:
     std::array<N_func, N_HARM> _h;
@@ -98,23 +102,23 @@ public:
 
     void reset();
 
-    juce::String getStopName() const { return _stopName; }
-    void setStopName(const juce::String& n) { _stopName = n; }
-    juce::String getCopyright() const { return _copyright; }
-    juce::String getMnemonic() const { return _mnemonic; }
-    juce::String getComments() const { return _comments; }
+    std::string getStopName() const { return _stopName; }
+    void setStopName(const std::string& n) { _stopName = n; }
+    std::string getCopyright() const { return _copyright; }
+    std::string getMnemonic() const { return _mnemonic; }
+    std::string getComments() const { return _comments; }
 
     int getNoteMin() const noexcept { return _noteMin; }
     int getNoteMax() const noexcept { return _noteMax; }
 
-    juce::var toVar() const;
-    void fromVar(const juce::var& v);
+//    std::map<std::string, std::any> toVar() const;
+//    void fromVar(const std::map<std::string, std::any>& v);
 
-    void write(juce::OutputStream& stream) const;
-    juce::Result read(juce::InputStream& stream);
+//    void write(std::ofstream& stream) const;
+//    std::expected read(std::ifstream& stream);
 
-    juce::Result readFromResource(const juce::String& name);
-    juce::Result readFromFile(const juce::File& file);
+//    std::expected readFromResource(const std::string& name);
+//    std::expected readFromFile(const juce::File& file);
 
     float getNoteVolume(int n) const noexcept { return _n_vol[n]; }
     float getNoteAttack(int n) const noexcept { return _n_att[n]; }
@@ -147,10 +151,10 @@ private:
     constexpr static size_t comments_length  = 56;
     constexpr static size_t reserved_length  = 8;
 
-    juce::String _stopName;
-    juce::String _copyright;
-    juce::String _mnemonic;
-    juce::String _comments;
+    std::string _stopName;
+    std::string _copyright;
+    std::string _mnemonic;
+    std::string _comments;
 
     int _noteMin;   // _n0;
     int _noteMax;   // _n1;
@@ -180,28 +184,23 @@ private:
  * This class holds a collection of all available stops.
  * These stops models are shared among all the plugin instances.
  */
-class Model : public juce::DeletedAtShutdown
+class Model
 {
 public:
-    juce::StringArray getStopNames() const;
-    Addsynth* getStopByName(const juce::String& name);
+    Model(std::vector<Addsynth> synths);
+
+    std::vector<std::string> getStopNames() const;
+    Addsynth* getStopByName(const std::string& name);
 
     int getStopsCount() const { return _synths.size(); }
-    Addsynth* operator[](int idx) { return _synths[idx]; }
-    const Addsynth* operator[](int idx) const { return _synths[idx]; }
-
-    JUCE_DECLARE_SINGLETON (Model, false)
+    Addsynth* operator[](int idx) { return &_synths[idx]; }
+    const Addsynth* operator[](int idx) const { return &_synths[idx]; }
 
 private:
-    Model();
-    ~Model() override  { clearSingletonInstance(); }
-
-    void loadExternalPipes();
-    void loadEmbeddedPipes();
     void addSynth(std::unique_ptr<Addsynth>&& synth);
 
-    juce::OwnedArray<Addsynth> _synths;
-    std::map<juce::String, Addsynth*> _nameToSynthMap;
+    std::vector<Addsynth> _synths;
+    std::map<std::string, Addsynth*> _nameToSynthMap;
 };
 
 AEOLUS_NAMESPACE_END

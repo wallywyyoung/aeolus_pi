@@ -17,6 +17,7 @@
 //
 // ----------------------------------------------------------------------------
 
+#include <cstring>
 #include "aeolus/dsp/filter.h"
 
 AEOLUS_NAMESPACE_BEGIN
@@ -27,12 +28,13 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
 {
     float A = 0.0f;
 
-    if (spec.type == Type::PeakingEq || spec.type == Type::LowShelf || spec.type == Type::HighShelf)
+    if (spec.type == Type::PeakingEq || spec.type == Type::LowShelf || spec.type == Type::HighShelf) {
         A = sqrt(powf(10.0f, spec.dbGain / 40.0f));
-    else
+    } else {
         A = sqrtf(powf(10.0f, spec.dbGain / 20.0f));
+    }
 
-    float w0 = 2.0f * juce::MathConstants<float>::pi * spec.freq / spec.sampleRate;
+    float w0 = 2.0f * static_cast<float>(M_PI) * spec.freq / spec.sampleRate;
 
     float cos_w0 = cos(w0);
     float sin_w0 = sin(w0);
@@ -54,77 +56,77 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
         alpha = sin_w0 / 2.0f * sqrt((A + 1.0f / A) * (1.0f / spec.q - 1.0f) + 2.0f);
         break;
     default:
-        jassertfalse; // Unsupported filter type
+        throw std::runtime_error("filter.cpp - Unsupported filter type.");
     }
 
     switch (spec.type) {
-    case Type::LowPass:
-        spec.b[0] = (1.0f - cos_w0) / 2.0f;
-        spec.b[1] = 1.0f - cos_w0;
-        spec.b[2] = (1.0f - cos_w0) / 2.0f;
-        spec.a[0] = 1.0f + alpha;
-        spec.a[1] = -2.0f * cos_w0;
-        spec.a[2] = 1.0f - alpha;
-        break;
-    case Type::HighPass:
-        spec.b[0] = (1.0f + cos_w0) / 2.0f;
-        spec.b[1] = -(1.0f + cos_w0);
-        spec.b[2] = (1.0f + cos_w0) / 2.0f;
-        spec.a[0] = 1.0f + alpha;
-        spec.a[1] = -2.0f * cos_w0;
-        spec.a[2] = 1.0f - alpha;
-        break;
-    case Type::BandPass:
-        // Constant 0 dB peak gain
-        spec.b[0] = alpha;
-        spec.b[1] = 0.0f;
-        spec.b[2] = -alpha;
-        spec.a[0] = 1.0f + alpha;
-        spec.a[1] = -2.0f * cos_w0;
-        spec.a[2] = 1.0f - alpha;
-        break;
-    case Type::Notch:
-        spec.b[0] = 1.0f;
-        spec.b[1] = -2.0f * cos_w0;
-        spec.b[2] = 1.0f;
-        spec.a[0] = 1.0f + alpha;
-        spec.a[1] = -2.0f * cos_w0;
-        spec.a[2] = 1.0f - alpha;
-        break;
-    case Type::AllPass:
-        spec.b[0] = 1.0f - alpha;
-        spec.b[1] = -2.0f * cos_w0;
-        spec.b[2] = 1.0f + alpha;
-        spec.a[0] = 1.0f + alpha;
-        spec.a[1] = -2.0f * cos_w0;
-        spec.a[2] = 1.0f - alpha;
-        break;
-    case Type::PeakingEq:
-        spec.b[0] = 1.0f + alpha * A;
-        spec.b[1] = -2.0f * cos_w0;
-        spec.b[2] = 1.0f - alpha * A;
-        spec.a[0] = 1.0f + alpha / A;
-        spec.a[1] = -2.0f * cos_w0;
-        spec.a[2] = 1.0f - alpha / A;
-        break;
-    case Type::LowShelf:
-        spec.b[0] = A * ((A + 1.0f) - (A - 1.0f) * cos_w0 + 2.0f * sqrt (A) * alpha);
-        spec.b[1] = 2.0f * A * ((A - 1.0f) - (A + 1.0f) * cos_w0);
-        spec.b[2] = A * ((A + 1.0f) - (A - 1.0f) * cos_w0 - 2.0f * sqrt (A) * alpha);
-        spec.a[0] = (A + 1.0f) + (A - 1.0f) * cos_w0 + 2.0f * sqrt (A) * alpha;
-        spec.a[1] = -2.0f * ((A - 1.0f) + (A + 1.0f) * cos_w0);
-        spec.a[2] = (A + 1.0f) + (A - 1.0f) * cos_w0 - 2.0f * sqrt (A) * alpha;
-        break;
-    case Type::HighShelf:
-        spec.b[0] = A * ((A + 1.0f) + (A - 1.0f) * cos_w0 + 2.0f * sqrt (A) * alpha);
-        spec.b[1] = -2.0f * A * ((A - 1.0f) + (A + 1.0f) * cos_w0);
-        spec.b[2] = A * ((A + 1.0f) + (A - 1.0f) * cos_w0 - 2.0f * sqrt (A) * alpha);
-        spec.a[0] = (A + 1.0f) - (A - 1.0f) * cos_w0 + 2.0f * sqrt (A) * alpha;
-        spec.a[1] = 2.0f * ((A - 1.0f) - (A + 1.0f) * cos_w0);
-        spec.a[2] = (A + 1.0f) - (A - 1.0f) * cos_w0 - 2.0f * sqrt(A) * alpha;
-        break;
-    default:
-        jassertfalse; // Should never get here
+        case Type::LowPass:
+            spec.b[0] = (1.0f - cos_w0) / 2.0f;
+            spec.b[1] = 1.0f - cos_w0;
+            spec.b[2] = (1.0f - cos_w0) / 2.0f;
+            spec.a[0] = 1.0f + alpha;
+            spec.a[1] = -2.0f * cos_w0;
+            spec.a[2] = 1.0f - alpha;
+            break;
+        case Type::HighPass:
+            spec.b[0] = (1.0f + cos_w0) / 2.0f;
+            spec.b[1] = -(1.0f + cos_w0);
+            spec.b[2] = (1.0f + cos_w0) / 2.0f;
+            spec.a[0] = 1.0f + alpha;
+            spec.a[1] = -2.0f * cos_w0;
+            spec.a[2] = 1.0f - alpha;
+            break;
+        case Type::BandPass:
+            // Constant 0 dB peak gain
+            spec.b[0] = alpha;
+            spec.b[1] = 0.0f;
+            spec.b[2] = -alpha;
+            spec.a[0] = 1.0f + alpha;
+            spec.a[1] = -2.0f * cos_w0;
+            spec.a[2] = 1.0f - alpha;
+            break;
+        case Type::Notch:
+            spec.b[0] = 1.0f;
+            spec.b[1] = -2.0f * cos_w0;
+            spec.b[2] = 1.0f;
+            spec.a[0] = 1.0f + alpha;
+            spec.a[1] = -2.0f * cos_w0;
+            spec.a[2] = 1.0f - alpha;
+            break;
+        case Type::AllPass:
+            spec.b[0] = 1.0f - alpha;
+            spec.b[1] = -2.0f * cos_w0;
+            spec.b[2] = 1.0f + alpha;
+            spec.a[0] = 1.0f + alpha;
+            spec.a[1] = -2.0f * cos_w0;
+            spec.a[2] = 1.0f - alpha;
+            break;
+        case Type::PeakingEq:
+            spec.b[0] = 1.0f + alpha * A;
+            spec.b[1] = -2.0f * cos_w0;
+            spec.b[2] = 1.0f - alpha * A;
+            spec.a[0] = 1.0f + alpha / A;
+            spec.a[1] = -2.0f * cos_w0;
+            spec.a[2] = 1.0f - alpha / A;
+            break;
+        case Type::LowShelf:
+            spec.b[0] = A * ((A + 1.0f) - (A - 1.0f) * cos_w0 + 2.0f * sqrt(A) * alpha);
+            spec.b[1] = 2.0f * A * ((A - 1.0f) - (A + 1.0f) * cos_w0);
+            spec.b[2] = A * ((A + 1.0f) - (A - 1.0f) * cos_w0 - 2.0f * sqrt(A) * alpha);
+            spec.a[0] = (A + 1.0f) + (A - 1.0f) * cos_w0 + 2.0f * sqrt(A) * alpha;
+            spec.a[1] = -2.0f * ((A - 1.0f) + (A + 1.0f) * cos_w0);
+            spec.a[2] = (A + 1.0f) + (A - 1.0f) * cos_w0 - 2.0f * sqrt(A) * alpha;
+            break;
+        case Type::HighShelf:
+            spec.b[0] = A * ((A + 1.0f) + (A - 1.0f) * cos_w0 + 2.0f * sqrt(A) * alpha);
+            spec.b[1] = -2.0f * A * ((A - 1.0f) + (A + 1.0f) * cos_w0);
+            spec.b[2] = A * ((A + 1.0f) + (A - 1.0f) * cos_w0 - 2.0f * sqrt(A) * alpha);
+            spec.a[0] = (A + 1.0f) - (A - 1.0f) * cos_w0 + 2.0f * sqrt(A) * alpha;
+            spec.a[1] = 2.0f * ((A - 1.0f) - (A + 1.0f) * cos_w0);
+            spec.a[2] = (A + 1.0f) - (A - 1.0f) * cos_w0 - 2.0f * sqrt(A) * alpha;
+            break;
+        default:
+            throw std::runtime_error("Filter.cpp - Should never get here.");
     }
 
     // Normalize the coefficients.

@@ -29,13 +29,13 @@ struct Parameters
 {
     AeolusAudioProcessor& processor;
 
-    juce::AudioParameterFloat* reverbWet;
-    juce::AudioParameterFloat* volume;
+    float* reverbWet;
+    float* volume;
 
-    std::vector<juce::AudioParameterFloat*> divisionsGain;
+    std::vector<float*> divisionsGain;
 
     Parameters(AeolusAudioProcessor& proc);
 
-    juce::var toVar() const;
-    void fromVar(const juce::var& v);
+//    juce::var toVar() const;
+//    void fromVar(const juce::var& v);
 };

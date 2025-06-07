@@ -20,14 +20,13 @@
 #include <chrono>
 
 #include "aeolus/globals.h"
-#include "PluginProcessor.h"
+#include "AeolusAudioProcessor.h"
 
-using namespace juce;
+
 
 //==============================================================================
-AeolusAudioProcessor::AeolusAudioProcessor()
-    : AudioProcessor(getBusesProperties())
-    , _engine{}
+AeolusAudioProcessor::AeolusAudioProcessor() :
+    _engine{}
     , _parameters(*this)
     , _processLoad{0.0f}
     , _panicRequest{false}
@@ -43,44 +42,6 @@ AeolusAudioProcessor::~AeolusAudioProcessor()
     _engine.getMidiKeyboardState().removeListener(this);
 
     aeolus::EngineGlobal::getInstance()->unregisterProcessorProxy(this);
-}
-
-//==============================================================================
-const juce::String AeolusAudioProcessor::getName() const
-{
-    return "JucePlugin_Name";
-}
-
-bool AeolusAudioProcessor::acceptsMidi() const
-{
-   #if JucePlugin_WantsMidiInput
-    return true;
-   #else
-    return false;
-   #endif
-}
-
-bool AeolusAudioProcessor::producesMidi() const
-{
-   #if JucePlugin_ProducesMidiOutput
-    return true;
-   #else
-    return false;
-   #endif
-}
-
-bool AeolusAudioProcessor::isMidiEffect() const
-{
-   #if JucePlugin_IsMidiEffect
-    return true;
-   #else
-    return false;
-   #endif
-}
-
-double AeolusAudioProcessor::getTailLengthSeconds() const
-{
-    return _engine.getReverbLengthInSeconds();
 }
 
 int AeolusAudioProcessor::getNumPrograms()
@@ -101,12 +62,12 @@ void AeolusAudioProcessor::setCurrentProgram(int index)
         _engine.getSequencer()->setStep(index);
 }
 
-const juce::String AeolusAudioProcessor::getProgramName(int index)
+const std::string AeolusAudioProcessor::getProgramName(int index)
 {
-    return juce::String("Sequencer step ") + juce::String(index + 1);
+    return std::string("Sequencer step ") + std::string(reinterpret_cast<const char *>(index + 1));
 }
 
-void AeolusAudioProcessor::changeProgramName(int /* index */, const juce::String& /* newName */)
+void AeolusAudioProcessor::changeProgramName(int /* index */, const std::string& /* newName */)
 {
 }
 
@@ -207,13 +168,13 @@ void AeolusAudioProcessor::processorLayoutsChanged()
 
 #endif // JucePlugin_PreferredChannelConfigurations
 
-void AeolusAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void AeolusAudioProcessor::processBlock(AudioBuffer& buffer, MidiBuffer& midiMessages)
 {
     using namespace std::chrono;
 
     auto timestampStart = high_resolution_clock::now();
 
-    juce::ScopedNoDenormals noDenormals;
+    ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
@@ -223,8 +184,9 @@ void AeolusAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     // This is here to avoid people getting screaming feedback
     // when they first compile a plugin, but obviously you don't need to keep
     // this code if your algorithm always overwrites all the output channels.
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i) {
         buffer.clear(i, 0, buffer.getNumSamples());
+    }
 
     processMidi(midiMessages);
 
@@ -297,33 +259,6 @@ void AeolusAudioProcessor::processMidi(juce::MidiBuffer& midiMessages)
     }
 }
 
-//==============================================================================
-bool AeolusAudioProcessor::hasEditor() const
-{
-    return true; // (change this to false if you choose to not supply an editor)
-}
-
-juce::AudioProcessorEditor* AeolusAudioProcessor::createEditor()
-{
-//    auto* editor{ new AeolusAudioProcessorEditor (*this) };
-//
-//    // Use native title bar for a stand-alone window
-//    if (wrapperType == wrapperType_Standalone) {
-//        if (TopLevelWindow::getNumTopLevelWindows() == 1) {
-//            if (TopLevelWindow* topWindow = TopLevelWindow::getTopLevelWindow(0)) {
-//                if (auto* w { dynamic_cast<DocumentWindow*>(topWindow) }) {
-//                    w->setTitleBarButtonsRequired(DocumentWindow::allButtons, false);
-//                }
-//
-//            }
-//        }
-//    }
-//
-//    return editor;
-return nullptr;
-}
-
-//==============================================================================
 void AeolusAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     auto state = _engine.getPersistentState();
@@ -331,7 +266,7 @@ void AeolusAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
     if (auto* obj = state.getDynamicObject())
         obj->setProperty("parameters", _parameters.toVar());
 
-    MemoryOutputStream stream(destData, false);
+    Memorystd::ofstream stream(destData, false);
 
     JSON::writeToStream(stream, state);
 }
@@ -349,9 +284,7 @@ void AeolusAudioProcessor::setStateInformation(const void* data, int sizeInBytes
     _engine.setPersistentState(state);
 }
 
-//==============================================================================
-
-void AeolusAudioProcessor::handleNoteOn(juce::MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float /* velocity */)
+void AeolusAudioProcessor::handleNoteOn(MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float /* velocity */)
 {
     ignoreUnused(source);
 
@@ -362,7 +295,7 @@ void AeolusAudioProcessor::handleNoteOn(juce::MidiKeyboardState* source, int mid
     }
 }
 
-void AeolusAudioProcessor::handleNoteOff(juce::MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float /* velocity */)
+void AeolusAudioProcessor::handleNoteOff(MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float /* velocity */)
 {
     ignoreUnused(source);
 
@@ -372,8 +305,6 @@ void AeolusAudioProcessor::handleNoteOff(juce::MidiKeyboardState* source, int mi
         _engine.noteOff(midiNoteNumber, midiChannel);
     }
 }
-
-//==============================================================================
 
 AudioProcessor::BusesProperties AeolusAudioProcessor::getBusesProperties()
 {
@@ -387,11 +318,4 @@ AudioProcessor::BusesProperties AeolusAudioProcessor::getBusesProperties()
 #endif
 
     return buses;
-}
-
-//==============================================================================
-// This creates new instances of the plugin..
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
-{
-    return new AeolusAudioProcessor();
 }

@@ -37,8 +37,8 @@ public:
                    float max = 1.0f,
                    float smooth = 0.5f);
 
-    void setName(const juce::String& n) { _paramName = n; }
-    const juce::String& name() const noexcept { return _paramName; }
+    void setName(const std::string& n) { _paramName = n; }
+    const std::string& name() const noexcept { return _paramName; }
     void setValue(float v, float s, bool force = false);
     void setValue(float v, bool force = false);
     void setSmoothing(float s) noexcept;
@@ -60,7 +60,7 @@ private:
 
     void updateSmoothing();
 
-    juce::String _paramName;   ///< Optional parameter name.
+    std::string _paramName;   ///< Optional parameter name.
 
     float _currentValue;
     float _minValue;
@@ -80,7 +80,7 @@ public:
     AudioParameter& operator[] (int index);
     const AudioParameter& operator[] (int index) const;
 
-    AudioParameter& findByName(const juce::String& n);
+    AudioParameter& findByName(const std::string& n);
 
 private:
     std::vector<AudioParameter> _params;

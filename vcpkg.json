@@ -1,9 +1,17 @@
 {
-  "builtin-baseline": "57c08a3223a1ec03c3a31986ee38d32e90b6039c",
-  "dependencies": [
-    {
-      "name": "juce",
-      "version>=": "8.0.7#0"
-    }
-  ]
+  "builtin-baseline" : "57c08a3223a1ec03c3a31986ee38d32e90b6039c",
+  "dependencies" : [ {
+    "name" : "alsa",
+    "version>=" : "1.2.14",
+    "platform" : "linux"
+  }, {
+    "name" : "nlohmann-json",
+    "version>=" : "3.12.0"
+  }, {
+    "name" : "audiofile",
+    "version>=" : "1.1.2"
+  }, {
+    "name" : "dp-thread-pool",
+    "version>=" : "0.7.0"
+  } ]
 }

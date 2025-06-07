@@ -17,42 +17,24 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/globals.h"
+#pragma once
 
-AEOLUS_NAMESPACE_BEGIN
-
-//==============================================================================
-
-namespace math {
-
-float exp2ap(float x)
+#include <string>
+#include <vector>
+struct IR
 {
-    int i = (int)(floor (x));
-    x -= i;
-    // return ldexp (1 + x * (0.66 + 0.34 * x), i);
-    return ldexp (1 + x * (0.6930f + x * (0.2416f + x * (0.0517f + x * 0.0137f))), i);
-}
+    std::string name;
+    int channelSamples;
+    std::vector<std::vector<float>> waveform;
 
-} // namespace math
+    void clear() {
+        name.clear();
+        channelSamples = int();
+        waveform.clear();
+    };
+};
 
-//==============================================================================
-
-namespace midi {
-
-int channelToMask(int channel)
-{
-    // Zero means any MIDI channel.
-    if (channel <= 0)
-        return (1 << 16) - 1;
-
-    return 1 << (channel - 1);
-}
-
-bool matchChannelToMask(int mask, int channel)
-{
-    return (mask & channelToMask(channel)) != 0;
-}
-
-} // namespace midi
-
-AEOLUS_NAMESPACE_END
+struct IRs {
+    std::vector<IR> irs;
+    int longestIRLength;
+};

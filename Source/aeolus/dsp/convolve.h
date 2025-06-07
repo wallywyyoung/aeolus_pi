@@ -28,6 +28,7 @@
 #include <cassert>
 #include <atomic>
 #include <vector>
+#include <cstring>
 
 AEOLUS_NAMESPACE_BEGIN
 

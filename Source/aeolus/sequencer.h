@@ -22,6 +22,8 @@
 #include "aeolus/globals.h"
 #include <atomic>
 #include <vector>
+#include <map>
+#include <any>
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -41,26 +43,26 @@ public:
 
         std::vector<bool> links;    ///< Manuals links.
 
-        juce::var getPersistentState() const;
-        void setPersistentState(const juce::var& v);
+//        std::map<std::string, std::any> getPersistentState() const;
+//        void setPersistentState(const std::map<std::string, std::any>& v);
     };
 
     struct OrganState
     {
         std::vector<DivisionState> divisions;
 
-        juce::var getPersistentState() const;
-        void setPersistentState(const juce::var& v);
+//        std::map<std::string, std::any> getPersistentState() const;
+//        void setPersistentState(const std::map<std::string, std::any>& v);
     };
 
     Sequencer() = delete;
     Sequencer(Engine& engine, int numSteps);
 
-    int getStepsCount() const noexcept { return (int)_steps.size(); }
-    int getCurrentStep() const noexcept { return _currentStep; }
+    [[nodiscard]] int getStepsCount() const noexcept { return (int)_steps.size(); }
+    [[nodiscard]] int getCurrentStep() const noexcept { return _currentStep; }
 
-    juce::var getPersistentState() const;
-    void setPersistentState(const juce::var& v);
+//    std::map<std::string, std::any> getPersistentState() const;
+//    void setPersistentState(const std::map<std::string, std::any>& v);
 
     /**
      * Capture the organ state from the engine into the current step.
@@ -75,7 +77,7 @@ public:
     void stepForward();
 
     void setCurrentStepDirty() noexcept { _dirty = true; }
-    bool isCurrentStepDirty() const noexcept { return _dirty; }
+    [[nodiscard]] bool isCurrentStepDirty() const noexcept { return _dirty; }
 
 private:
 
@@ -88,8 +90,6 @@ private:
     std::atomic<int> _currentStep;
 
     bool _dirty;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Sequencer)
 };
 
 AEOLUS_NAMESPACE_END

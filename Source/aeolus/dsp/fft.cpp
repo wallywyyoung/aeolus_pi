@@ -19,12 +19,9 @@
 
 #include "aeolus/dsp/fft.h"
 
-#include <cassert>
 #include <cmath>
-#include <map>
-#include <functional>
 
-using namespace juce;
+
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -32,17 +29,17 @@ namespace dsp {
 
 static float hann(int i, int n)
 {
-    return 0.5f * (1.0f - std::cos (MathConstants<float>::twoPi * i / (n - 1)));
+    return 0.5f * (1.0f - std::cos (M_PI * 2.0f * i / (n - 1)));
 }
 
 static float hamming(int i, int n)
 {
-    return 0.53836f + 0.46164f * std::cos (MathConstants<float>::twoPi * i / (n - 1));
+    return 0.53836f + 0.46164f * std::cos (M_PI * 2.0f * i / (n - 1));
 }
 
 static float blackman(int i, int n)
 {
-    const auto x = MathConstants<float>::twoPi * i / (n - 1);
+    const auto x = M_PI * 2.0f * i / (n - 1);
     return 0.42659f - 0.49656f * std::cos (x) + 0.076849f * std::cos (2.0f * x);
 }
 
@@ -52,7 +49,7 @@ void Fft::direct(Fft::Array& x, Fft::Window win)
 
     // DFT
     unsigned int N = (unsigned int) x.size(), k = N, n;
-    float thetaT = MathConstants<float>::pi / N;
+    float thetaT = M_PI / N;
     Complex phiT = Complex (std::cos (thetaT), std::sin (thetaT)), T;
 
     while (k > 1) {

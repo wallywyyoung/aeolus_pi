@@ -22,6 +22,8 @@
 #include "aeolus/globals.h"
 
 #include <array>
+#include <map>
+#include <string>
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -60,7 +62,7 @@ public:
      */
     float getFrequencyForMidoNote(int midiNote, float tuningFrequency = 440.0f) const;
 
-    static juce::String getNameForType(Type type);
+    static std::string getNameForType(Type type);
 
 private:
     Type _type;

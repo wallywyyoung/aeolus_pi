@@ -19,8 +19,7 @@
 
 #include "aeolus/voice.h"
 #include "aeolus/engine.h"
-
-using namespace juce;
+#include <cstring>
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -39,7 +38,7 @@ Voice::Voice(Engine& engine)
 
 void Voice::trigger(const Pipewave::State& state)
 {
-    jassert(_state.isIdle());
+    assert(_state.isIdle());
     _state = state;
 
     // Chiff
@@ -47,7 +46,7 @@ void Voice::trigger(const Pipewave::State& state)
     const auto dt = 1.0f / freq;
 
     // Delay pipe harmonic signal so that chiff noise builds up first
-    _delay = (int) jmin((float)_delayLine.size(), 0.5f * dt * SAMPLE_RATE_F);
+    _delay = (int) std::min<float>((float)_delayLine.size(), 0.5f * dt * SAMPLE_RATE_F);
 
     _chiff.setAttack(5.0f * dt);
     _chiff.setDecay(100.0f * dt);
@@ -56,7 +55,7 @@ void Voice::trigger(const Pipewave::State& state)
 
     // Frequency-dependant chiff attenuation
     float att = 1.0f - expf(-freq / 3000.0f);
-    _chiff.setGain(jmin(1.0f, 0.02f * _state.chiffGain * att));
+    _chiff.setGain(std::min<float>(1.0f, 0.02f * _state.chiffGain * att));
     _chiff.setFrequency(freq);
     _chiff.trigger();
 
@@ -66,13 +65,13 @@ void Voice::trigger(const Pipewave::State& state)
 
     // Wider spread for low-pitched pipes
     const auto& model = _state.pipewave->getModel();
-    const float width = 0.15f * model.getFd() / model.getFn();
+    const float width = 0.15f * static_cast<float>(model.getFd()) / static_cast<float>(model.getFn());
 
     float x = width * k * (float)abs(note - 65);
 
     // Assuming notes range [36..96]
     float n = k * float(abs(note - 65)); // ~[-30..30]
-    _panPosition = jlimit(0.0f, 1.0f, (n + 30.0f) / 60.0f);
+    _panPosition = limitRange(0.0f, 1.0f, (n + 30.0f) / 60.0f);
 
     _spatialSource.setSampleRate(SAMPLE_RATE_F);
     _spatialSource.setSourcePosition(x, 5.0f);
@@ -112,18 +111,18 @@ void Voice::process(float* outL, float* outR)
     if (_state.env == Pipewave::Over) {
         _postReleaseCounter -= std::min((int)_postReleaseCounter, SUB_FRAME_LENGTH);
 
-        for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
+        for (float & i : _buffer) {
             _delayLine.write(0.0f);
-            _buffer[i] = _delayLine.readNearest(_delay) * gain;
+            i = _delayLine.readNearest(_delay) * gain;
         }
 
     } else {
         auto* pipe = _state.pipewave;
         pipe->play(_state, _buffer);
 
-        for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
-            _delayLine.write(_buffer[i]);
-            _buffer[i] = _delayLine.readNearest(_delay) * gain;
+        for (float & i : _buffer) {
+            _delayLine.write(i);
+            i = _delayLine.readNearest(_delay) * gain;
         }
     }
 
@@ -172,7 +171,7 @@ void Voice::resetAndReturnToPool()
 
 VoicePool::VoicePool(Engine& engine, int maxVoices)
     : _engine{engine}
-    , _voices(maxVoices, engine)
+    , _voices(maxVoices, Voice(engine))
     , _idleVoices{}
     , _voiceCount{0}
 {
@@ -196,7 +195,7 @@ Voice* VoicePool::trigger(const Pipewave::State& state)
 
 void VoicePool::resetAndReturnToPool(Voice* voice)
 {
-    jassert(voice != nullptr);
+    assert(voice != nullptr);
 
     voice->reset();
     _idleVoices.append(voice);

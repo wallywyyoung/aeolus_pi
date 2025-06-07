@@ -22,11 +22,9 @@
 #include "aeolus/sema.h"
 
 #include <atomic>
-#include <mutex>
 #include <thread>
-#include <vector>
 
-using namespace juce;
+
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -59,7 +57,7 @@ struct Worker::Impl
             wait();
 
             if (running && jobsQueue.receive (job)) {
-                jassert(job != nullptr);
+                assert(job != nullptr);
                 job->run();
             }
         }
@@ -67,7 +65,7 @@ struct Worker::Impl
 
     bool addJob (Job* job)
     {
-        jassert(job != nullptr);
+        assert(job != nullptr);
 
         const auto ok = jobsQueue.send (job);
         wakeUp();

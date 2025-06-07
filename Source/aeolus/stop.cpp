@@ -18,9 +18,6 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/stop.h"
-#include "aeolus/engine.h"
-
-using namespace juce;
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -34,85 +31,85 @@ Stop::Stop()
 {
 }
 
-std::vector<Rankwave*> getRankwavesFromPipeVar(const var& v)
-{
-    std::vector<Rankwave*> rankwaves;
-
-    auto addRankwave = [&](const String& name) {
-        auto* g = EngineGlobal::getInstance();
-
-        if (auto* rankwave = g->getStopByName(name)) {
-            rankwaves.push_back(rankwave);
-        } else {
-            DBG("Stop pipe " + name + " cannot be found.");
-        }
-    };
-
-
-    if (const auto* arr = v.getArray()) {
-        for (int i = 0; i < arr->size(); ++i) {
-            const String pipeName = arr->getUnchecked(i);
-            addRankwave(pipeName);
-        }
-    } else {
-        const String pipeName = v;
-        addRankwave(pipeName);
-    }
-
-    return rankwaves;
-}
-
-void Stop::initFromVar(const var& v)
-{
-
-
-    if (const auto* obj = v.getDynamicObject()) {
-        _name = obj->getProperty("name");
-        _type = getTypeFromString(obj->getProperty("type"));
-
-        if (obj->hasProperty("gain"))
-            _gain = obj->getProperty("gain");
-
-        if (obj->hasProperty("chiff"))
-            _chiffGain = obj->getProperty("chiff");
-
-        if (obj->hasProperty("pipe")) {
-            const auto pipeObj = obj->getProperty("pipe");
-
-            const auto rankwaves { getRankwavesFromPipeVar(pipeObj) };
-
-            if (!rankwaves.empty())
-                addZone(rankwaves);
-
-        } else if (obj->hasProperty("zones")) {
-
-            if (const auto* zonesArr = obj->getProperty("zones").getArray()) {
-                for (int i = 0; i < zonesArr->size(); ++i) {
-                    if (const auto* zoneObj = zonesArr->getUnchecked(i).getDynamicObject()) {
-                        Zone zone{};
-                        zone.rankwaves = getRankwavesFromPipeVar(zoneObj->getProperty("pipe"));
-
-                        if (const auto* range = zoneObj->getProperty("range").getArray()) {
-                            if (range->size() >= 2)
-                                zone.keyRange = Range<int>((int)range->getFirst(), (int)range->getLast() + 1);
-                        }
-
-                        if (!zone.rankwaves.empty())
-                            _zones.push_back(zone);
-                    }
-
-                }
-            }
-        }
-    }
-}
+//std::vector<Rankwave*> getRankwavesFromPipeVar(const var& v)
+//{
+//    std::vector<Rankwave*> rankwaves;
+//
+//    auto addRankwave = [&](const std::string& name) {
+//        auto* g = EngineGlobal::getInstance();
+//
+//        if (auto* rankwave = g->getStopByName(name)) {
+//            rankwaves.push_back(rankwave);
+//        } else {
+//            DBG("Stop pipe " + name + " cannot be found.");
+//        }
+//    };
+//
+//
+//    if (const auto* arr = v.getArray()) {
+//        for (int i = 0; i < arr->size(); ++i) {
+//            const std::string pipeName = arr->getUnchecked(i);
+//            addRankwave(pipeName);
+//        }
+//    } else {
+//        const std::string pipeName = v;
+//        addRankwave(pipeName);
+//    }
+//
+//    return rankwaves;
+//}
+//
+//void Stop::initFromVar(const var& v)
+//{
+//
+//
+//    if (const auto* obj = v.getDynamicObject()) {
+//        _name = obj->getProperty("name");
+//        _type = getTypeFromString(obj->getProperty("type"));
+//
+//        if (obj->hasProperty("gain"))
+//            _gain = obj->getProperty("gain");
+//
+//        if (obj->hasProperty("chiff"))
+//            _chiffGain = obj->getProperty("chiff");
+//
+//        if (obj->hasProperty("pipe")) {
+//            const auto pipeObj = obj->getProperty("pipe");
+//
+//            const auto rankwaves { getRankwavesFromPipeVar(pipeObj) };
+//
+//            if (!rankwaves.empty())
+//                addZone(rankwaves);
+//
+//        } else if (obj->hasProperty("zones")) {
+//
+//            if (const auto* zonesArr = obj->getProperty("zones").getArray()) {
+//                for (int i = 0; i < zonesArr->size(); ++i) {
+//                    if (const auto* zoneObj = zonesArr->getUnchecked(i).getDynamicObject()) {
+//                        Zone zone{};
+//                        zone.rankwaves = getRankwavesFromPipeVar(zoneObj->getProperty("pipe"));
+//
+//                        if (const auto* range = zoneObj->getProperty("range").getArray()) {
+//                            if (range->size() >= 2)
+//                                zone.keyRange = Range((int)range->getFirst(), (int)range->getLast() + 1);
+//                        }
+//
+//                        if (!zone.rankwaves.empty())
+//                            _zones.push_back(zone);
+//                    }
+//
+//                }
+//            }
+//        }
+//    }
+//}
 
 void Stop::addZone(Rankwave* ptr)
 {
-    jassert(ptr != nullptr);
+    assert(ptr != nullptr);
 
     Zone zone{};
-    zone.keyRange = Range<int>(ptr->getNoteMin(), ptr->getNoteMax() + 1);
+    zone.keyRange = Range(ptr->getNoteMin(), ptr->getNoteMax() + 1);
     zone.rankwaves.push_back(ptr);
 
     _zones.push_back(zone);
@@ -120,25 +117,27 @@ void Stop::addZone(Rankwave* ptr)
 
 void Stop::addZone(const std::vector<Rankwave*> rw)
 {
-    if (rw.empty())
+    if (rw.empty()) {
         return;
+    }
 
     Zone zone{};
-    zone.keyRange = Range<int>(rw[0]->getNoteMin(), rw[0]->getNoteMax() + 1);
+    zone.keyRange = Range(rw[0]->getNoteMin(), rw[0]->getNoteMax() + 1);
 
     for (auto* ptr : rw) {
-        Range<int> range(ptr->getNoteMin(), ptr->getNoteMax() + 1);
-        zone.keyRange = zone.keyRange.getUnionWith(range);\
+        Range range(ptr->getNoteMin(), ptr->getNoteMax() + 1);
+        zone.keyRange = zone.keyRange.getUnionWith(range);
         zone.rankwaves.push_back(ptr);
     }
 
     _zones.push_back(zone);
 }
 
-Range<int> Stop::getKeyRange() const
+Range Stop::getKeyRange() const
 {
-    if (_zones.empty())
+    if (_zones.empty()) {
         return {};
+    }
 
     auto range(_zones[0].keyRange);
 
@@ -148,9 +147,9 @@ Range<int> Stop::getKeyRange() const
     return range;
 }
 
-Stop::Type Stop::getTypeFromString(const String& n)
+Stop::Type Stop::getTypeFromString(const std::string& n)
 {
-    const static std::map<String, Stop::Type> nameToType {
+    const static std::map<std::string, Stop::Type> nameToType {
         { "principal", Stop::Type::Principal },
         { "flute",     Stop::Type::Flute },
         { "reed",      Stop::Type::Reed },
@@ -159,10 +158,14 @@ Stop::Type Stop::getTypeFromString(const String& n)
 
     auto type = Stop::Type::Unknown;
 
-    const auto it = nameToType.find(n.toLowerCase());
+    // TODO: This is ugly, make cleaner.
+    auto nameToFind = n;
+    std::transform(nameToFind.begin(), nameToFind.end(), nameToFind.begin(), ::tolower);
+    const auto it = nameToType.find(nameToFind);
 
-    if (it != nameToType.end())
+    if (it != nameToType.end()) {
         type = it->second;
+    }
 
     return type;
 }

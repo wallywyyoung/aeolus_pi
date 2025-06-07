@@ -20,7 +20,7 @@
 #pragma once
 
 #include "aeolus/globals.h"
-#include <stdint.h>
+#include <cstdint>
 
 AEOLUS_NAMESPACE_BEGIN
 

@@ -53,7 +53,7 @@ public:
     Convolver();
     ~Convolver();
 
-    void setIR(const juce::AudioBuffer<float>& ir);
+    void setIR(const IR& ir);
 
     void setDryWet(float dry, float wet, bool force = false);
     bool isAudible() const;

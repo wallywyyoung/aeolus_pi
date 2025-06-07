@@ -18,6 +18,7 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/delay.h"
+#include <cstring>
 
 AEOLUS_NAMESPACE_BEGIN
 

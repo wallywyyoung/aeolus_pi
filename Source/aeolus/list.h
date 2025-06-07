@@ -48,7 +48,7 @@ struct ListItem : public ListNode<ListItem<Item>>
 {
     void appendAfter (ListItem* item) noexcept
     {
-        jassert (item != nullptr);
+        assert (item != nullptr);
 
         this->_prev = item;
         this->_next = item->_next;
@@ -79,7 +79,7 @@ struct List
 
     void append(Item* item) noexcept
     {
-        jassert (item != nullptr);
+        assert (item != nullptr);
 
         if (_head == nullptr) {
             _head = item;
@@ -92,7 +92,7 @@ struct List
 
     void prepend(Item* item) noexcept
     {
-        jassert (item != nullptr);
+        assert (item != nullptr);
 
         item->_next = _head;
         _head = item;
@@ -103,7 +103,7 @@ struct List
 
     void remove (Item* item) noexcept
     {
-        jassert (item != nullptr);
+        assert (item != nullptr);
 
         if (_head == item)
             _head = item->next();
@@ -135,7 +135,7 @@ struct List
         return n;
     }
 
-    bool isEmpty() const noexcept
+    [[nodiscard]] bool isEmpty() const noexcept
     {
         return _head == nullptr;
     }

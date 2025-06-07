@@ -26,6 +26,8 @@
 #include "aeolus/audioparam.h"
 #include "aeolus/levelmeter.h"
 #include "aeolus/dsp/filter.h"
+#include "aeolus/MidiMessage.h"
+#include "AudioBuffer.h"
 
 #include <atomic>
 #include <vector>
@@ -59,31 +61,31 @@ public:
         bool enabled = false;
     };
 
-    /// Volume level
-    struct Level
-    {
-        LevelMeter left;
-        LevelMeter right;
-    };
+//    /// Volume level
+//    struct Level
+//    {
+//        LevelMeter left;
+//        LevelMeter right;
+//    };
 
     //--------------------------------------------------------------------------
 
-    Division(Engine& engine, const juce::String& name = juce::String());
+    Division(Engine& engine, const std::string& name = std::string());
 
     /**
      * @brief Load the division configuration from a JSON object.
      *
      * This will configure the division from an organ configuration data.
      */
-    void initFromVar(const juce::var& v);
+//    void initFromVar(const std::map<std::string, std::any>& v);
 
-    juce::var getPersistentState() const;
-    void setPersistentState(const juce::var& v);
+//    std::map<std::string, std::any> getPersistentState() const;
+//    void setPersistentState(const std::map<std::string, std::any>& v);
 
     Engine& getEngine() noexcept { return _engine; }
 
-    juce::String getName() const { return _name; }
-    juce::String getMnemonic() const { return _mnemonic; }
+    std::string getName() const { return _name; }
+    std::string getMnemonic() const { return _mnemonic; }
 
     /**
      * Remove all the links between the divisions.
@@ -105,15 +107,15 @@ public:
 
 
     void clear();
-    Stop& addRankwave(Rankwave* ptr, bool ena = false, const juce::String& name = juce::String());
-    Stop& addRankwaves(const std::vector<Rankwave*> rw, bool ena = false, const juce::String& name = juce::String());
+    Stop& addRankwave(Rankwave* ptr, bool ena = false, const std::string& name = std::string());
+    Stop& addRankwaves(const std::vector<Rankwave*> rw, bool ena = false, const std::string& name = std::string());
 
-    juce::AudioParameterFloat* getParamGain() noexcept { return _paramGain; }
-    void setParamGain(juce::AudioParameterFloat* param) noexcept { _paramGain = param; }
+    float* getParamGain() noexcept { return _paramGain; }
+    void setParamGain(float* param) noexcept { _paramGain = param; }
 
     AudioParameterPool& parameters() noexcept { return _params; }
 
-    Level& volumeLevel() noexcept { return _volumeLevel; }
+//    Level& volumeLevel() noexcept { return _volumeLevel; }
 
     int getStopsCount() const noexcept;
     void enableStop(int i, bool ena);
@@ -144,10 +146,10 @@ public:
     void noteOff(int note, int midiChannel);
     void allNotesOff();
 
-    void handleControlMessage(const juce::MidiMessage& msg);
+    void handleControlMessage(const MidiMessage& msg);
 
-    bool process(juce::AudioBuffer<float>& targetBuffer, juce::AudioBuffer<float>& voiceBuffer);
-    void modulate(juce::AudioBuffer<float>& targetBuffer, const juce::AudioBuffer<float>& tremulantBuffer);
+    bool process(AudioBuffer& targetBuffer, AudioBuffer& voiceBuffer);
+    void modulate(AudioBuffer& targetBuffer, const AudioBuffer& tremulantBuffer);
 
     void releaseVoicesOfDisabledStops();
     void triggerVoicesOfEnabledStops();
@@ -181,11 +183,11 @@ private:
 
     Engine& _engine;
 
-    juce::String _name;     ///< The division name.
-    juce::String _mnemonic; ///< Short mnemonic name.
+    std::string _name;     ///< The division name.
+    std::string _mnemonic; ///< Short mnemonic name.
 
     /// List of linked divisions names.
-    juce::StringArray _linkedDivisionNames;
+    std::vector<std::string> _linkedDivisionNames;
     std::vector<Link> _linkedDivisions;
     std::vector<Division*> _linkedFromDivisions;
 
@@ -200,7 +202,7 @@ private:
     std::atomic<float> _tremulantTargetLevel;
 
     /// Stored gain parameter for easy access from the devision control UI component
-    juce::AudioParameterFloat* _paramGain;
+    float* _paramGain;
     AudioParameterPool _params;
 
     /// Swell low-pass filter.
@@ -225,9 +227,9 @@ private:
     /// for linked divisions.
     bool _triggerFlag;
 
-    Level _volumeLevel;
+//    Level _volumeLevel;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Division)
+//    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Division)
 };
 
 AEOLUS_NAMESPACE_END

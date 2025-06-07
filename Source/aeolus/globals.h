@@ -19,11 +19,24 @@
 
 #pragma once
 
-#include <JuceHeader.h>
+#include <cstddef>
+#include <cmath>
+#include <cassert>
+#include <fstream>
+#include <expected>
+#include "IR.h"
+
+template <typename T> T limitRange(T min, T max, T value) {
+    return std::max(min, std::min(max, value));
+}
+
+// TODO: Fix mixed comparison with large unsigned types.
+template <typename T1, typename T2> bool isPositiveAndBelow(T1 instance, T2 threshold) {
+    return T1() <= instance && instance < static_cast<T1>(threshold);
+}
 
 #define AEOLUS_NAMESPACE_BEGIN namespace aeolus {
 #define AEOLUS_NAMESPACE_END }
-#define AEOLUS_USING_NAMESPACE using namespace aeolus;
 
 /// Multibus output option (must be set in the project configuration)
 #ifndef AEOLUS_MULTIBUS_OUTPUT
@@ -77,7 +90,7 @@ constexpr static int SUB_FRAME_LENGTH = 64;
 
 /// Tremulant modulation frequency.
 constexpr static float TREMULANT_FREQUENCY = 6.283184f;
-constexpr static float TREMULANT_PHASE_INCREMENT = juce::MathConstants<float>::twoPi * TREMULANT_FREQUENCY / SAMPLE_RATE;
+constexpr static float TREMULANT_PHASE_INCREMENT = static_cast<float>(M_PI) * 2.0f * TREMULANT_FREQUENCY / SAMPLE_RATE;
 
 /// Tremulant OSC wavetable amplitude.
 constexpr static float TREMULANT_LEVEL = 1.0f;
@@ -131,15 +144,6 @@ namespace deprecated {
     constexpr static int NOTE_MAX = 46;
 } // namespace deprecated
 
-//==============================================================================
-
-/// Returns a location of a custom organ configuration file.
-/// Currently it's <My Documents>/Aeolus/organ_config.json
-/// @note This function does not check the file exists.
-juce::File getCustomOrganConfigFile();
-
-//==============================================================================
-
 namespace math {
 
 float exp2ap(float x);
@@ -173,7 +177,7 @@ template<unsigned M, unsigned N, unsigned B, unsigned A>
 struct SinCosSeries
 {
     constexpr static double value =
-        1.0 - (A * juce::MathConstants<double>::pi / B) * ( A * juce::MathConstants<double>::pi / B) / M / (M + 1)
+        1.0 - (A * M_PI/ B) * ( A * M_PI / B) / M / (M + 1)
         * SinCosSeries<M + 2, N, B, A>::value;
 };
 
@@ -188,12 +192,12 @@ struct Sin;
 template<unsigned B, unsigned A>
 struct Sin<B, A, float>
 {
-    constexpr static float value = (A * juce::MathConstants<float>::pi / B) * float (SinCosSeries<2, 24, B, A>::value);
+    constexpr static float value = (A * static_cast<float>(M_PI) / B) * float (SinCosSeries<2, 24, B, A>::value);
 };
 
 template<unsigned B, unsigned A>
 struct Sin<B, A, double> {
-    constexpr static double value = (A * juce::MathConstants<double>::pi / B) * SinCosSeries<2, 34, B, A>::value;
+    constexpr static double value = (A * static_cast<float>(M_PI) / B) * SinCosSeries<2, 34, B, A>::value;
 };
 
 template<unsigned B, unsigned A, typename T = double>

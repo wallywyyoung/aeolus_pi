@@ -21,11 +21,11 @@
 #include "division.h"
 #include "engine.h"
 
-using namespace juce;
+
 
 AEOLUS_NAMESPACE_BEGIN
 
-Division::Division(Engine& engine, const String& name)
+Division::Division(Engine& engine, const std::string& name)
     : _engine{engine}
     , _name{name}
     , _mnemonic{name}
@@ -49,7 +49,7 @@ Division::Division(Engine& engine, const String& name)
     , _activeVoices{}
     , _keysState{}
     , _triggerFlag{}
-    , _volumeLevel{}
+//    , _volumeLevel{}
 {
     _swellFilterSpec.type = dsp::BiquadFilter::LowPass;
     _swellFilterSpec.sampleRate = SAMPLE_RATE_F;
@@ -62,124 +62,124 @@ Division::Division(Engine& engine, const String& name)
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateR);
 }
 
-void Division::initFromVar(const var& v)
-{
-    if (const auto* obj = v.getDynamicObject()) {
-        _name = obj->getProperty("name");
-        _mnemonic = obj->getProperty("mnemonic");
-
-        if (const auto* link = obj->getProperty("link").getArray()) {
-            for (const auto& item : *link)
-                _linkedDivisionNames.add(item.toString());
-        }
-
-        _hasSwell = obj->getProperty("swell");
-        _hasTremulant = obj->getProperty("tremulant");
-
-        _tremulantMaxLevel = 0.0f;
-
-        if (_hasTremulant)
-            _tremulantMaxLevel = obj->getProperty("tremulant_level");
-
-        if (const auto* arr = obj->getProperty("stops").getArray()) {
-            for (int i = 0; i < arr->size(); ++i) {
-                Stop stop{};
-                stop.initFromVar(arr->getUnchecked(i));
-
-                if (!stop.getZones().empty())
-                    _stops.push_back(stop);
-            }
-        }
-    }
-}
-
-var Division::getPersistentState() const
-{
-    auto* divisionObj = new DynamicObject();
-
-    divisionObj->setProperty("midi_channels_mask", getMIDIChannelsMask());
-    divisionObj->setProperty("tremulant_enabled", isTremulantEnabled());
-
-    {
-        Array<var> stops;
-
-        for (const auto& stop : _stops) {
-            auto* stopObj = new DynamicObject();
-            stopObj->setProperty("name", stop.getName());
-            stopObj->setProperty("enabled", stop.isEnabled());
-
-            stops.add(var{stopObj});
-        }
-
-        divisionObj->setProperty("stops", stops);
-    }
-
-    {
-        Array<var> links;
-
-        for (const auto& link : _linkedDivisions) {
-            auto* linkObj = new DynamicObject();
-            linkObj->setProperty("division", link.division->getName());
-            linkObj->setProperty("enabled", link.enabled);
-
-            links.add(var{linkObj});
-        }
-
-        divisionObj->setProperty("links", links);
-    }
-
-    return var{divisionObj};
-}
-
-void Division::setPersistentState(const juce::var& v)
-{
-    if (const auto* divisionObj = v.getDynamicObject()) {
-
-        if (const auto& v = divisionObj->getProperty("midi_channel"); !v.isVoid()) {
-            // Handle legacy setting with only one MIDI channel allowed
-            const int channel{ (int)v };
-
-            if (channel == 0)
-                setMIDIChannelsMask((1 << 16) - 1); // Select all MIDI channels
-            else
-                setMIDIChannelsMask(1 << (channel - 1));
-        } else {
-            setMIDIChannelsMask(divisionObj->getProperty("midi_channels_mask"));
-        }
-
-        setTremulantEnabled(divisionObj->getProperty("tremulant_enabled"));
-
-        if (const auto* stops = divisionObj->getProperty("stops").getArray()) {
-            for (int i = 0; i < stops->size(); ++i) {
-                if (const auto* stopObj = stops->getReference(i).getDynamicObject()) {
-                    const String stopName = stopObj->getProperty("name");
-                    const bool enabled = stopObj->getProperty("enabled");
-
-                    for (auto& stop : _stops) {
-                        if (stop.getName()== stopName) {
-                            stop.setEnabled(enabled);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (const auto* links = divisionObj->getProperty("links").getArray()) {
-            for (int i = 0; i < links->size(); ++i) {
-                if (const auto* linkObj = links->getReference(i).getDynamicObject()) {
-                    const String divisionName = linkObj->getProperty("division");
-                    const bool enabled = linkObj->getProperty("enabled");
-
-                    for (auto& link : _linkedDivisions) {
-                        if (link.division->getName() == divisionName)
-                            link.enabled = enabled;
-                    }
-                }
-            }
-        }
-    }
-}
+//void Division::initFromVar(const var& v)
+//{
+//    if (const auto* obj = v.getDynamicObject()) {
+//        _name = obj->getProperty("name");
+//        _mnemonic = obj->getProperty("mnemonic");
+//
+//        if (const auto* link = obj->getProperty("link").getArray()) {
+//            for (const auto& item : *link)
+//                _linkedDivisionNames.add(item.toString());
+//        }
+//
+//        _hasSwell = obj->getProperty("swell");
+//        _hasTremulant = obj->getProperty("tremulant");
+//
+//        _tremulantMaxLevel = 0.0f;
+//
+//        if (_hasTremulant)
+//            _tremulantMaxLevel = obj->getProperty("tremulant_level");
+//
+//        if (const auto* arr = obj->getProperty("stops").getArray()) {
+//            for (int i = 0; i < arr->size(); ++i) {
+//                Stop stop{};
+//                stop.initFromVar(arr->getUnchecked(i));
+//
+//                if (!stop.getZones().empty())
+//                    _stops.push_back(stop);
+//            }
+//        }
+//    }
+//}
+//
+//var Division::getPersistentState() const
+//{
+//    auto* divisionObj = new DynamicObject();
+//
+//    divisionObj->setProperty("midi_channels_mask", getMIDIChannelsMask());
+//    divisionObj->setProperty("tremulant_enabled", isTremulantEnabled());
+//
+//    {
+//        Array<var> stops;
+//
+//        for (const auto& stop : _stops) {
+//            auto* stopObj = new DynamicObject();
+//            stopObj->setProperty("name", stop.getName());
+//            stopObj->setProperty("enabled", stop.isEnabled());
+//
+//            stops.add(var{stopObj});
+//        }
+//
+//        divisionObj->setProperty("stops", stops);
+//    }
+//
+//    {
+//        Array<var> links;
+//
+//        for (const auto& link : _linkedDivisions) {
+//            auto* linkObj = new DynamicObject();
+//            linkObj->setProperty("division", link.division->getName());
+//            linkObj->setProperty("enabled", link.enabled);
+//
+//            links.add(var{linkObj});
+//        }
+//
+//        divisionObj->setProperty("links", links);
+//    }
+//
+//    return var{divisionObj};
+//}
+//
+//void Division::setPersistentState(const std::map<std::string, std::any>& v)
+//{
+//    if (const auto* divisionObj = v.getDynamicObject()) {
+//
+//        if (const auto& v = divisionObj->getProperty("midi_channel"); !v.isVoid()) {
+//            // Handle legacy setting with only one MIDI channel allowed
+//            const int channel{ (int)v };
+//
+//            if (channel == 0)
+//                setMIDIChannelsMask((1 << 16) - 1); // Select all MIDI channels
+//            else
+//                setMIDIChannelsMask(1 << (channel - 1));
+//        } else {
+//            setMIDIChannelsMask(divisionObj->getProperty("midi_channels_mask"));
+//        }
+//
+//        setTremulantEnabled(divisionObj->getProperty("tremulant_enabled"));
+//
+//        if (const auto* stops = divisionObj->getProperty("stops").getArray()) {
+//            for (int i = 0; i < stops->size(); ++i) {
+//                if (const auto* stopObj = stops->getReference(i).getDynamicObject()) {
+//                    const String stopName = stopObj->getProperty("name");
+//                    const bool enabled = stopObj->getProperty("enabled");
+//
+//                    for (auto& stop : _stops) {
+//                        if (stop.getName()== stopName) {
+//                            stop.setEnabled(enabled);
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (const auto* links = divisionObj->getProperty("links").getArray()) {
+//            for (int i = 0; i < links->size(); ++i) {
+//                if (const auto* linkObj = links->getReference(i).getDynamicObject()) {
+//                    const String divisionName = linkObj->getProperty("division");
+//                    const bool enabled = linkObj->getProperty("enabled");
+//
+//                    for (auto& link : _linkedDivisions) {
+//                        if (link.division->getName() == divisionName)
+//                            link.enabled = enabled;
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
 
 void Division::clearLinkedDivisions()
 {
@@ -205,7 +205,7 @@ int Division::getLinksCount() const noexcept
 
 void Division::enableLink(int i, bool ena)
 {
-    jassert(isPositiveAndBelow(i, _linkedDivisions.size()));
+    assert(isPositiveAndBelow(i, _linkedDivisions.size()));
 
     if (_linkedDivisions[i].enabled != ena) {
         _linkedDivisions[i].enabled = ena;
@@ -215,13 +215,13 @@ void Division::enableLink(int i, bool ena)
 
 bool Division::isLinkEnabled(int i)
 {
-    jassert(isPositiveAndBelow(i, _linkedDivisions.size()));
+    assert(isPositiveAndBelow(i, _linkedDivisions.size()));
     return _linkedDivisions[i].enabled;
 }
 
 Division::Link& Division::getLinkByIndex(int i)
 {
-    jassert(isPositiveAndBelow(i, _linkedDivisions.size()));
+    assert(isPositiveAndBelow(i, _linkedDivisions.size()));
     return _linkedDivisions[i];
 }
 
@@ -245,26 +245,26 @@ void Division::clear()
     _stops.clear();
 }
 
-Stop& Division::addRankwave(Rankwave* ptr, bool ena, const String& name)
+Stop& Division::addRankwave(Rankwave* ptr, bool ena, const std::string& name)
 {
-    jassert(ptr != nullptr);
+    assert(ptr != nullptr);
 
     Stop ref{};
     ref.addZone(ptr);
     ref.setEnabled(ena);
-    ref.setName(name.isEmpty() ? ptr->getStopName() : name);
+    ref.setName(name.empty() ? ptr->getStopName() : name);
 
     _stops.push_back(ref);
     return _stops.back();
 }
 
-Stop& Division::addRankwaves(const std::vector<Rankwave*> rw, bool ena, const String& name)
+Stop& Division::addRankwaves(const std::vector<Rankwave*> rw, bool ena, const std::string& name)
 {
-    jassert(!rw.empty());
+    assert(!rw.empty());
     Stop ref{};
     ref.addZone(rw);
     ref.setEnabled(ena);
-    ref.setName(name.isEmpty() ? rw[0]->getStopName() : name);
+    ref.setName(name.empty() ? rw[0]->getStopName() : name);
 
     _stops.push_back(ref);
     return _stops.back();
@@ -277,7 +277,7 @@ int Division::getStopsCount() const noexcept
 
 void Division::enableStop(int i, bool ena)
 {
-    jassert(isPositiveAndBelow(i, _stops.size()));
+    assert(isPositiveAndBelow(i, _stops.size()));
 
     if (_stops[i].isEnabled() != ena) {
         _stops[i].setEnabled(ena);
@@ -288,13 +288,13 @@ void Division::enableStop(int i, bool ena)
 
 bool Division::isStopEnabled(int i) const
 {
-    jassert(isPositiveAndBelow(i, _stops.size()));
+    assert(isPositiveAndBelow(i, _stops.size()));
     return _stops[i].isEnabled();
 }
 
 Stop& Division::getStopByIndex(int i)
 {
-    jassert(isPositiveAndBelow(i, _stops.size()));
+    assert(isPositiveAndBelow(i, _stops.size()));
     return _stops[i];
 }
 
@@ -420,7 +420,7 @@ void Division::allNotesOff()
     }
 }
 
-void Division::handleControlMessage(const juce::MidiMessage& msg)
+void Division::handleControlMessage(const MidiMessage& msg)
 {
     const int cc{ msg.getControllerNumber() };
 
@@ -447,10 +447,10 @@ void Division::handleControlMessage(const juce::MidiMessage& msg)
         allNotesOff();
 }
 
-bool Division::process(AudioBuffer<float>& targetBuffer, AudioBuffer<float>& voiceBuffer)
+bool Division::process(AudioBuffer& targetBuffer, AudioBuffer& voiceBuffer)
 {
-    jassert(targetBuffer.getNumSamples() == SUB_FRAME_LENGTH);
-    jassert(voiceBuffer.getNumSamples() == SUB_FRAME_LENGTH);
+    assert(targetBuffer.getNumSamples() == SUB_FRAME_LENGTH);
+    assert(voiceBuffer.getNumSamples() == SUB_FRAME_LENGTH);
 
     updateAggregatedKeysState();
     releaseVoicesOfDisabledStops();
@@ -470,7 +470,7 @@ bool Division::process(AudioBuffer<float>& targetBuffer, AudioBuffer<float>& voi
 
 #if AEOLUS_MULTIBUS_OUTPUT
         // Mix voice to the corresponding output channel depending on the pan-position
-        int ch = jlimit(0, targetBuffer.getNumChannels() - 1, int(voice->getPanPosition() * targetBuffer.getNumChannels()));
+        int ch = Limit(0, targetBuffer.getNumChannels() - 1, int(voice->getPanPosition() * targetBuffer.getNumChannels()));
         targetBuffer.addFrom(ch, 0, voiceBuffer, 0, 0, SUB_FRAME_LENGTH);
 #else
         targetBuffer.addFrom(0, 0, voiceBuffer, 0, 0, SUB_FRAME_LENGTH);
@@ -488,13 +488,13 @@ bool Division::process(AudioBuffer<float>& targetBuffer, AudioBuffer<float>& voi
     return true;
 }
 
-void Division::modulate(juce::AudioBuffer<float>& targetBuffer, const juce::AudioBuffer<float>& tremulantBuffer)
+void Division::modulate(AudioBuffer& targetBuffer, const AudioBuffer& tremulantBuffer)
 {
-    jassert(targetBuffer.getNumSamples() == SUB_FRAME_LENGTH);
-    jassert(tremulantBuffer.getNumSamples() == SUB_FRAME_LENGTH);
+    assert(targetBuffer.getNumSamples() == SUB_FRAME_LENGTH);
+    assert(tremulantBuffer.getNumSamples() == SUB_FRAME_LENGTH);
 
     const float* gain = tremulantBuffer.getReadPointer(0);
-    jassert(gain != nullptr);
+    assert(gain != nullptr);
 
     const float lvl = getTremulantLevel(true);
 
@@ -535,8 +535,8 @@ void Division::modulate(juce::AudioBuffer<float>& targetBuffer, const juce::Audi
     float* outL = targetBuffer.getWritePointer(0);
     float* outR = targetBuffer.getWritePointer(1);
 
-    jassert(outL != nullptr);
-    jassert(outR != nullptr);
+    assert(outL != nullptr);
+    assert(outR != nullptr);
 
     for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
         _tremulantDelayL.write(outL[i]);
@@ -555,8 +555,8 @@ void Division::modulate(juce::AudioBuffer<float>& targetBuffer, const juce::Audi
     // Apply swell filter
     if (hasSwell()) {
         // Close the filter along with the gain
-        const float k = powf(jlimit(0.0f, 1.0f, paramGain.target()), 1.3f);
-        _swellFilterSpec.freq = jmap(k, 400.0f, 18000.0f);
+        const float k = powf(limitRange(0.0f, 1.0f, paramGain.target()), 1.3f);
+        _swellFilterSpec.freq = 400.0f + k * (18000.0f - 400.0f);
         dsp::BiquadFilter::updateSpec(_swellFilterSpec);
         dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateL, outL, outL, SUB_FRAME_LENGTH);
         dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateR, outR, outR, SUB_FRAME_LENGTH);
@@ -649,7 +649,7 @@ void Division::updateAggregatedKeysState()
 
 bool Division::triggerVoicesForStop(int stopIndex, int note)
 {
-    jassert(isPositiveAndBelow(stopIndex, _stops.size()));
+    assert(isPositiveAndBelow(stopIndex, _stops.size()));
 
     if (isAlreadyVoiced(stopIndex, note))
         return true;

@@ -31,140 +31,18 @@
 #include "aeolus/levelmeter.h"
 #include "aeolus/dsp/convolver.h"
 #include "aeolus/dsp/interpolator.h"
-
-#include "mts/libMTSClient.h"
+#include "aeolus/MidiMessage.h"
+#include "aeolus/MidiKeyboardState.h"
+#include "AudioBuffer.h"
 
 #include <optional>
 #include <vector>
+#include <any>
+#include <set>
 
 AEOLUS_NAMESPACE_BEGIN
 
 class Engine;
-
-/**
- * @brief A global shared instance of the organ engine.
- *
- * This class in a singleton which is shared among all the plugin instances.
- */
-class EngineGlobal : public juce::DeletedAtShutdown,
-                     private juce::Timer
-{
-public:
-
-    class ProcessorProxy
-    {
-    public:
-        virtual ~ProcessorProxy() = default;
-        virtual juce::AudioProcessor* getAudioProcessor() = 0;
-        virtual Engine& getEngine() = 0;
-        virtual void killAllVoices() = 0;
-        virtual int getNumberOfActiveVoices() = 0;
-    };
-
-    void registerProcessorProxy(ProcessorProxy* proxy);
-    void unregisterProcessorProxy(ProcessorProxy* proxy);
-
-    class Listener
-    {
-    public:
-        virtual ~Listener() = default;
-        virtual void onUIScalingFactorChanged(float scalingPercent) = 0;
-    };
-
-    void addListener(Listener* listener);
-    void removeListener(Listener* listener);
-
-    /**
-     * Impulse response descriptor for IRs embedded as binary resources.
-     */
-    struct IR
-    {
-        juce::String name;
-        const char* data;
-        size_t size;
-
-        float gain;
-        bool zeroDelay;
-        size_t startOffset; // Sample offset from the beginning of the IR waveform
-
-        juce::AudioBuffer<float> waveform;
-    };
-
-    void loadSettings();
-    void saveSettings();
-
-    int getStopsCount() const noexcept { return _rankwaves.size(); }
-    Rankwave* getStop(int i) { return _rankwaves[i]; }
-
-    juce::StringArray getAllStopNames() const;
-    Rankwave* getStopByName(const juce::String& name);
-
-    const std::vector<IR>& getIRs() const noexcept { return _irs; }
-    int getLongestIRLength() const noexcept { return _longestIRLength; }
-
-    void updateStops(float sampleRate);
-
-    float getTuningFrequency() const noexcept { return _tuningFrequency; }
-    void setTuningFrequency(float f) noexcept { _tuningFrequency = f; }
-
-    const Scale& getScale() const noexcept { return _scale; }
-    void setScaleType(Scale::Type type) noexcept { _scale.setType(type); }
-
-    bool isConnectedToMTSMaster();
-    juce::String getMTSScaleName();
-    float getMTSNoteToFrequency(int midiNote, int midiChannel = -1);
-    bool shouldMTSFilterNote(int midiNote, int midiChannel = -1);
-
-    bool isMTSEnabled() const { return _mtsEnabled; }
-    void setMTSEnabled(bool shouldBeEnabled);
-
-    float getUIScalingFactor() const noexcept { return _uiScalingFactor; }
-    void setUIScalingFactor(float f);
-
-    void rebuildRankwaves();
-
-    JUCE_DECLARE_SINGLETON (EngineGlobal, false)
-
-private:
-    EngineGlobal();
-    ~EngineGlobal() override;
-
-    void loadRankwaves();
-    void loadIRs();
-
-    /**
-     * Refresh MTS tuning table for all MIDI notes.
-     * Returns true if there was a change to the tuning.
-     */
-    bool updateMTSTuningCache();
-
-    // juce::Timer
-    void timerCallback() override;
-
-    juce::Array<ProcessorProxy*> _processors;
-
-    juce::ListenerList<Listener> _listeners;
-
-    juce::OwnedArray<Rankwave> _rankwaves;
-    juce::HashMap<juce::String, Rankwave*> _rankwavesByName;
-
-    std::vector<IR> _irs;
-    int _longestIRLength;   ///< Longest IR length in samples
-
-    float _sampleRate;
-    Scale _scale;
-    float _tuningFrequency;
-
-    MTSClient* _mtsClient{};
-    bool _mtsEnabled{};
-    std::array<float, 128> _mtsTuningCache{};
-
-    float _uiScalingFactor{ UI_SCALING_DEFAULT };
-
-    juce::ApplicationProperties _globalProperties;
-};
-
-//==============================================================================
 
 /**
  * @brief Organ engine.
@@ -174,9 +52,6 @@ private:
 class Engine
 {
 public:
-
-    //--------------------------------------------------------------------------
-
     struct NoteEvent
     {
         bool on;
@@ -189,11 +64,11 @@ public:
         int num;
     };
 
-    struct Level
-    {
-        LevelMeter left;
-        LevelMeter right;
-    };
+//    struct Level
+//    {
+//        LevelMeter left;
+//        LevelMeter right;
+//    };
 
     enum {
         VOLUME = 0,
@@ -256,10 +131,10 @@ public:
      */
     void setVolume(float v);
 
-    /**
-     * Returns volume levels.
-     */
-    Level& getVolumeLevel() noexcept { return _volumeLevel; }
+//    /**
+//     * Returns volume levels.
+//     */
+//    Level& getVolumeLevel() noexcept { return _volumeLevel; }
 
     /**
      * Returns currently set MIDI control channel.
@@ -287,12 +162,12 @@ public:
     void process(float* outL, float* outR, int numFrames, bool isNonRealtime = false);
 
     // Multibus version of the processing (does not include the convolver).
-    void process(juce::AudioBuffer<float>& out, bool isNonRealtime = false);
+    void process(std::vector<float>& out, bool isNonRealtime = false);
 
     /**
      * Process incoming MIDI messages.
      */
-    void processMIDIMessage(const juce::MidiMessage& message);
+    void processMIDIMessage(const MidiMessage& message);
 
     /**
      * Handle note-on events.
@@ -309,29 +184,29 @@ public:
      */
     void allNotesOff();
 
-    juce::MidiKeyboardState& getMidiKeyboardState() noexcept { return _midiKeyboardState; }
+    MidiKeyboardState& getMidiKeyboardState() noexcept { return _midiKeyboardState; }
 
-    juce::Range<int> getMidiKeyboardRange() const;
+    Range getMidiKeyboardRange() const;
 
     std::set<int> getKeySwitches() const;
 
     VoicePool& getVoicePool() noexcept { return _voicePool; }
 
     int getDivisionCount() const noexcept { return _divisions.size(); }
-    Division* getDivisionByIndex(int i) { return _divisions[i]; }
-    Division* getDivisionByName(const juce::String& name);
+    Division* getDivisionByIndex(int i) { return &_divisions[i]; }
+    Division* getDivisionByName(const std::string& name);
 
     Sequencer* getSequencer() noexcept { return _sequencer.get(); }
 
-    juce::var getPersistentState() const;
-    void setPersistentState(const juce::var& state);
+    std::map<std::string, std::any> getPersistentState() const;
+    void setPersistentState(const std::map<std::string, std::any>& state);
 
     void postNoteEvent(bool onOff, int note, int midiChannel);
 
 private:
 
-    void populateDivisions();
-    void loadDivisionsFromConfig(juce::InputStream& stream);
+//    void populateDivisions();
+//    void loadDivisionsFromConfig(std::ifstream& stream);
 
     void clearDivisionsTriggerFlag();
 
@@ -344,11 +219,11 @@ private:
     void generateTremulant();
 
     /// Apply the gloval volume.
-    void applyVolume(juce::AudioBuffer<float>& out);
+    void applyVolume(std::vector<float>& out);
     void applyVolume(float* outL, float* outR, int numFrames);
 
     /// Process control MIDI messages: program change (sequencer) and stop buttons CC.
-    void processControlMIDIMessage(const juce::MidiMessage& message);
+    void processControlMIDIMessage(const MidiMessage& message);
 
     /// Process stop buttons MIDI controls.
     void processStopControlMessage();
@@ -369,20 +244,20 @@ private:
     int _stopControlButton{};
 
     /// List of all divisions
-    juce::OwnedArray<Division> _divisions;
+    std::vector<Division> _divisions;
 
     std::unique_ptr<Sequencer> _sequencer;
 
     std::vector<int> _sequencerStepBackwardKeySwitches{ SEQUENCER_BACKWARD_MIDI_KEY };
     std::vector<int> _sequencerStepForwardKeySwitches{ SEQUENCER_FORWARD_MIDI_KEY };
 
-    juce::AudioBuffer<float> _subFrameBuffer;
-    juce::AudioBuffer<float> _divisionFrameBuffer;
-    juce::AudioBuffer<float> _voiceFrameBuffer;
+    AudioBuffer _subFrameBuffer;
+    AudioBuffer _divisionFrameBuffer;
+    AudioBuffer _voiceFrameBuffer;
 
     int _remainedSamples;
 
-    juce::AudioBuffer<float> _tremulantBuffer;
+    std::vector<float> _tremulantBuffer;
     float _tremulantPhase;
 
     dsp::Convolver _convolver;
@@ -392,14 +267,12 @@ private:
 
     dsp::Interpolator _interpolator;
 
-    juce::MidiKeyboardState _midiKeyboardState;
+    MidiKeyboardState _midiKeyboardState;
 
-    Level _volumeLevel;
+//    Level _volumeLevel;
 
     std::atomic<int> _midiControlChannelsMask;
     std::atomic<int> _midiSwellChannelsMask;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Engine)
 };
 
 AEOLUS_NAMESPACE_END

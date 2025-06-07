@@ -21,6 +21,7 @@
 
 #include "aeolus/globals.h"
 #include "aeolus/rankwave.h"
+#include "aeolus/utilities/Range.h"
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -45,7 +46,7 @@ public:
 
     // Zone - a grouping pipes for a range of keys.
     struct Zone {
-        juce::Range<int> keyRange;
+        Range keyRange;
         std::vector<Rankwave*> rankwaves;
 
         bool isForKey(int key) const noexcept { return keyRange.contains(key); }
@@ -55,13 +56,13 @@ public:
 
     Stop();
 
-    void initFromVar(const juce::var& v);
+//    void initFromVar(const std::map<std::string, std::any>& v);
 
     Type getType() const noexcept { return _type; }
     void setType(Type t) noexcept { _type = t; }
 
-    juce::String getName() const { return _name; }
-    void setName(const juce::String& name) { _name = name; }
+    std::string getName() const { return _name; }
+    void setName(const std::string& name) { _name = name; }
 
     float getGain() const noexcept { return _gain; }
     void setGain(float g) noexcept { _gain = g; }
@@ -88,14 +89,14 @@ public:
     /**
      * Returns the range of keys this stop can be triggered by.
      */
-    juce::Range<int> getKeyRange() const;
+    Range getKeyRange() const;
 
     // Convert stop type from its string name.
-    static Type getTypeFromString(const juce::String& n);
+    static Type getTypeFromString(const std::string& n);
 
 private:
     Type _type{Type::Unknown};
-    juce::String _name;
+    std::string _name;
     std::vector<Zone> _zones;
     float _gain{1.0f};
     float _chiffGain{0.0f};

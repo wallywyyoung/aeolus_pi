@@ -20,8 +20,9 @@
 
 #include "rankwave.h"
 #include "engine.h"
+#include "EngineGlobal.h"
+#include <cstring>
 
-using namespace juce;
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -68,12 +69,12 @@ Pipewave::~Pipewave() = default;
 
 float Pipewave::getPipeFrequency() const noexcept
 {
-    return _freq * _model.getFn() / _model.getFd();
+    return _freq * static_cast<float>(_model.getFn()) / static_cast<float>(_model.getFd());
 }
 
 void Pipewave::prepateToPlay(float sampleRate)
 {
-    if (_wavetable.size() == 0 || _sampleRate != sampleRate || _needsToBeRebuilt.load()) {
+    if (_wavetable.empty() || _sampleRate != sampleRate || _needsToBeRebuilt.load()) {
         _sampleRate = sampleRate;
 
         genwave();
@@ -94,8 +95,8 @@ Pipewave::State Pipewave::trigger()
 
 void Pipewave::release(Pipewave::State& state)
 {
-    jassert(state.env == Pipewave::Attack || state.env == Pipewave::Release);
-    jassert(state.pipewave == this);
+    assert(state.env == Pipewave::Attack || state.env == Pipewave::Release);
+    assert(state.pipewave == this);
     state.env = Pipewave::Release;
 }
 
@@ -103,11 +104,11 @@ void Pipewave::play(Pipewave::State& state, float* out)
 {
     static Random rnd;
 
-    jassert(out != nullptr);
-    jassert(state.env != Pipewave::Idle);
-    jassert(_attackStartPtr != nullptr);
-    jassert(_loopStartPtr != nullptr);
-    jassert(_loopEndPtr != nullptr);
+    assert(out != nullptr);
+    assert(state.env != Pipewave::Idle);
+    assert(_attackStartPtr != nullptr);
+    assert(_loopStartPtr != nullptr);
+    assert(_loopEndPtr != nullptr);
 
     if (_needsToBeRebuilt.load()) {
         // Drastic measures - pipe has been retuned while playing.
@@ -137,7 +138,7 @@ void Pipewave::play(Pipewave::State& state, float* out)
             state.releaseCount = _releaseLength;
         }
     } else {
-        jassertfalse; // Invalid envelope state
+        assert(false); // Invalid envelope state
     }
 
     if (r != nullptr) {
@@ -205,7 +206,7 @@ void Pipewave::play(Pipewave::State& state, float* out)
         } else {
             float y = state.playInterpolation;
             state.playInterpolationSpeed += _instability * 0.0005f * (0.05f * _instability * (rnd.nextFloat() - 0.5f) - state.playInterpolationSpeed);
-            float dy = state.playInterpolationSpeed * _sampleStep;
+            float dy = state.playInterpolationSpeed * static_cast<float>(_sampleStep);
 
             while (k--) {
                 y += dy;
@@ -282,9 +283,9 @@ void Pipewave::genwave()
 
     int nc = 0;
 
-    Pipewave::looplen(f1 * _sampleRate, _sampleStep * _sampleRate, (int)(_sampleRate / 6.0f), _loopLength, nc);
-    jassert(_loopLength > 0);
-    jassert(nc > 0);
+    Pipewave::looplen(f1 * _sampleRate, static_cast<float>(_sampleStep) * _sampleRate, (int)(_sampleRate / 6.0f), _loopLength, nc);
+    assert(_loopLength > 0);
+    assert(nc > 0);
 
     if (_loopLength < _sampleStep * SUB_FRAME_LENGTH) {
         int k = (_sampleStep * SUB_FRAME_LENGTH - 1) / _loopLength + 1;
@@ -305,8 +306,8 @@ void Pipewave::genwave()
     memset(_attackStartPtr, 0, sizeof(float) * _wavetable.size());
 
     _releaseLength = (int)(ceilf(_model.getNoteRelease(_note) * _sampleRate / SUB_FRAME_LENGTH) + 1);
-    _releaseMultiplier = 1.0f - powf(0.1f, 1.0f / _releaseLength);
-    _releaseDetune = _sampleStep * (math::exp2ap(_model.getNoteReleaseDetune(_note) / 1200.0f) - 1.0f);
+    _releaseMultiplier = 1.0f - powf(0.1f, 1.0f / static_cast<float>(_releaseLength));
+    _releaseDetune = static_cast<float>(_sampleStep) * (math::exp2ap(_model.getNoteReleaseDetune(_note) / 1200.0f) - 1.0f);
     _instability = _model.getNoteInstability(_note);
 
     int k = (int)(_sampleRate * _model.getNoteAttack(_note) + 0.5);
@@ -319,20 +320,20 @@ void Pipewave::genwave()
         // Interpolate from frequency f1 to f0 during the attack
         for (int i = 0; i <= _attackLength; ++i) {
             arg [i] = t - floorf(t + 0.5f);
-            t += (i < k) ? (((k - i) * f0 + i * f1) / k) : f1;
+            t += (i < k) ? ((static_cast<float>(k - i) * f0 + static_cast<float>(i) * f1) / static_cast<float>(k)) : f1;
         }
     }
 
     // Generate phase steps of the sustained loop
     for (int i = 1; i < _loopLength; ++i) {
-        float t = arg[_attackLength] + (float)i * nc / _loopLength;
+        float t = arg[_attackLength] + (float)i * static_cast<float>(nc) / static_cast<float>(_loopLength);
         arg[i + _attackLength] = t - floorf(t + 0.5f);
     }
 
     float v0 = math::exp2ap(0.1661f * _model.getNoteVolume(_note));
 
     for (int h = 0; h < N_HARM; ++h) {
-        if ((h + 1) * f1 > 0.45f)
+        if (static_cast<float>(h + 1) * f1 > 0.45f)
             break;
 
         float v = _model.getHarmonicLevel(h, _note);
@@ -349,19 +350,21 @@ void Pipewave::genwave()
         attgain(att.data(), k, _model.getHarmonicAttackProfile(h, _note));
 
         for (int i = 0; i < _attackLength + _loopLength; ++i) {
-            float t = arg[i] * (h + 1);
+            float t = arg[i] * static_cast<float>(h + 1);
             t -= floorf(t);
-            m = v * sinf(MathConstants<float>::twoPi * t);
+            m = v * sinf(M_PI * 2.0f * t);
 
-            if (i < k)
+            if (i < k) {
                 m *= att[i];
+            }
 
             _attackStartPtr[i] += m;
         }
     }
 
-    for (int i = 0; i < _sampleStep * (SUB_FRAME_LENGTH + 4); ++i)
+    for (int i = 0; i < _sampleStep * (SUB_FRAME_LENGTH + 4); ++i) {
         _attackStartPtr[i + _attackLength + _loopLength] = _attackStartPtr[i + _attackLength];
+    }
 
     _needsToBeRebuilt = false;
 }
@@ -400,7 +403,7 @@ void Pipewave::looplen(float f, float sampleRate, int lmax, int& aa, int& bb)
 
             g = (fabs(g) < 1e-6f) ? 1e6f : 1.0f / g;
         } else  {
-            b = (int)(lmax * f / sampleRate);
+            b = (int)(static_cast<float>(lmax) * f / sampleRate);
             a = (int)(b * sampleRate / f + 0.5f);
             d = sampleRate * b / a - f;
             break;
@@ -428,7 +431,7 @@ void Pipewave::attgain(float* att, int n, float p)
         int k = n * i / 24;
         float x =  1.0f - z - 1.5f * y;
         y += w * x;
-        float d = k == j ? 0.0f : w * y * p / (k - j);
+        float d = k == j ? 0.0f : w * y * p / static_cast<float>(k - j);
 
         while (j < k) {
             float m = (float) j / n;
@@ -446,7 +449,7 @@ Rankwave::Rankwave(Addsynth& model)
     , _noteMax(model.getNoteMax())
     , _pipes{}
 {
-    jassert(_noteMax - _noteMin + 1 > 0);
+    assert(_noteMax - _noteMin + 1 > 0);
 }
 
 void Rankwave::createPipes(const Scale& scale, float tuningFrequency)
@@ -460,12 +463,12 @@ void Rankwave::createPipes(const Scale& scale, float tuningFrequency)
     const auto fd = _model.getFd();
 
     const auto& s = scale.getTable();
-    float fbase = tuningFrequency * fn / fd;
+    float fbase = tuningFrequency * static_cast<float>(fn) / static_cast<float>(fd);
 
     for (int i = _noteMin; i <= _noteMax; ++i) {
         for (size_t j = 0; j < _pipes.size(); ++j) {
             auto pipe = std::make_unique<Pipewave>(_model, i - _noteMin, scale.getFrequencyForMidoNote(i, fbase));
-            _pipes[j].add(pipe.release());
+            _pipes[j].push_back(pipe.release());
         }
     }
 }
@@ -482,10 +485,10 @@ void Rankwave::retunePipes(const Scale& scale, float tuningFrequency)
     if (g->isMTSEnabled()) {
         // Use MTS provided tuning
         for (int i = _noteMin; i <= _noteMax; ++i) {
-            Pipewave* pipe = _pipes[nextPipeSetIndex][i - _noteMin];
+            Pipewave* pipe = &_pipes[nextPipeSetIndex].at(i - _noteMin);
 
             // @note MTS tuning may return some weird frequencies, we need to clamp them
-            const float f{ jlimit(0.1f, SAMPLE_RATE * 0.5f - 0.1f, g->getMTSNoteToFrequency(i) * fnd) };
+            const float f{limitRange(0.1f, SAMPLE_RATE * 0.5f - 0.1f, g->getMTSNoteToFrequency(i) * fnd) };
 
             if (pipe->getPipeFrequency() != f) {
                 pipe->setFrequency(f);
@@ -527,7 +530,7 @@ Pipewave::State Rankwave::trigger(int note)
     int pipeSetIndex{ _pipeSetIndex.load() };
 
     if (!isPositiveAndBelow(index, _pipes[pipeSetIndex].size())) {
-        jassertfalse;
+        assert(false);
         return {};
     }
 

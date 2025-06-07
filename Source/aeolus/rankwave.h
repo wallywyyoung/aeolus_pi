@@ -25,6 +25,7 @@
 #include "aeolus/scale.h"
 
 #include <vector>
+#include <atomic>
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -64,9 +65,9 @@ public:
         float chiffGain = 0.0f;
 
         void release() { if (pipewave != nullptr) pipewave->release(*this); }
-        bool isTriggered() const noexcept { return pipewave != nullptr && env == Attack; }
-        bool isIdle() const noexcept { return env == Idle; }
-        bool isOver() const noexcept { return env == Over; }
+        [[nodiscard]] bool isTriggered() const noexcept { return pipewave != nullptr && env == Attack; }
+        [[nodiscard]] bool isIdle() const noexcept { return env == Idle; }
+        [[nodiscard]] bool isOver() const noexcept { return env == Over; }
         void reset() { pipewave = nullptr; env = Idle;}
     };
 
@@ -135,7 +136,7 @@ private:
 class Rankwave
 {
 public:
-    Rankwave(Addsynth& model);
+    explicit Rankwave(Addsynth& model);
 
     void createPipes(const Scale& scale, float tuningFreq);
 
@@ -143,7 +144,7 @@ public:
     // or global MTS tuning if enabed.
     void retunePipes(const Scale& scale, float tuningFreq);
 
-    juce::String getStopName() const { return _model.getStopName(); }
+    std::string getStopName() const { return _model.getStopName(); }
     bool isForNote(int note) const noexcept { return note >= _noteMin && note <= _noteMax; }
     int getNoteMin() const noexcept { return _noteMin; }
     int getNoteMax() const noexcept { return _noteMax; }
@@ -159,7 +160,7 @@ private:
 
     // Two sets of pipes to be able to switch between tunings
     // without releasing all the voices.
-    std::array<juce::OwnedArray<Pipewave>, 2> _pipes;
+    std::vector<Pipewave> _pipes[2];
     std::atomic<int> _pipeSetIndex{ 0 };
 };
 

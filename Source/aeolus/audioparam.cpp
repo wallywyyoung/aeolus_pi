@@ -17,10 +17,7 @@
 //
 // ----------------------------------------------------------------------------
 
-#include <climits>
 #include "aeolus/audioparam.h"
-
-using namespace juce;
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -39,9 +36,9 @@ AudioParameter::AudioParameter(float value,
 
 void AudioParameter::setValue(float v, float s, bool force)
 {
-    _targetValue = jlimit(_minValue, _maxValue, v);
+    _targetValue = limitRange(_minValue, _maxValue, v);
 
-    _frac = jlimit(0.0f, 1.0f, s);
+    _frac = limitRange(0.0f, 1.0f, s);
 
     if (force) {
         _currentValue = _targetValue;
@@ -53,7 +50,7 @@ void AudioParameter::setValue(float v, float s, bool force)
 
 void AudioParameter::setValue(float v, bool force)
 {
-    _targetValue = jlimit(_minValue, _maxValue, v);
+    _targetValue = limitRange(_minValue, _maxValue, v);
 
     if (force) {
         _currentValue = _targetValue;
@@ -65,13 +62,13 @@ void AudioParameter::setValue(float v, bool force)
 
 void AudioParameter::setSmoothing(float s) noexcept
 {
-    _frac = jlimit(0.0f, 1.0f, s);
+    _frac = limitRange(0.0f, 1.0f, s);
 }
 
 void AudioParameter::setRange(float min, float max)
 {
-    _minValue = jmin(min, max);
-    _maxValue = jmax(min, max);
+    _minValue = std::min<float>(min, max);
+    _maxValue = std::max<float>(min, max);
 }
 
 AudioParameter& AudioParameter::operator = (float v)
@@ -115,7 +112,7 @@ AudioParameterPool::AudioParameterPool (size_t size)
 
 AudioParameter& AudioParameterPool::operator[] (int index)
 {
-    jassert(index >= 0 && index < (int)_params.size());
+    assert(index >= 0 && index < (int)_params.size());
 
     if (index >= 0 && index < (int)_params.size())
         return _params.at(index);
@@ -125,7 +122,7 @@ AudioParameter& AudioParameterPool::operator[] (int index)
 
 const AudioParameter& AudioParameterPool::operator[] (int index) const
 {
-    jassert(index >= 0 && index < (int)_params.size());
+    assert(index >= 0 && index < (int)_params.size());
 
     if (index >= 0 && index < (int)_params.size())
         return _params.at(index);
@@ -133,7 +130,7 @@ const AudioParameter& AudioParameterPool::operator[] (int index) const
     return _dummyParameter;
 }
 
-AudioParameter& AudioParameterPool::findByName(const String& n)
+AudioParameter& AudioParameterPool::findByName(const std::string& n)
 {
     for (auto& p : _params) {
         if (p.name() == n)

@@ -18,8 +18,6 @@
 // ----------------------------------------------------------------------------
 
 #include <cmath>
-#include <cassert>
-#include <algorithm>
 #include "adsrenv.h"
 
 AEOLUS_NAMESPACE_BEGIN

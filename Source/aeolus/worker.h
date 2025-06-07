@@ -64,7 +64,7 @@ public:
      */
     bool addJob(Job* job);
     bool hasPendingJobs() noexcept;
-    bool isRunning() const noexcept;
+    [[nodiscard]] bool isRunning() const noexcept;
 
     void purge();
 

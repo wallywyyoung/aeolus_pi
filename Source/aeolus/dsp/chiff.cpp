@@ -18,10 +18,9 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/chiff.h"
+#include <random>
 
 AEOLUS_NAMESPACE_BEGIN
-
-using namespace juce;
 
 namespace dsp {
 
@@ -70,7 +69,7 @@ void Chiff::setGain(float v)
 void Chiff::setFrequency(float f)
 {
     _pipeDelay = SAMPLE_RATE / f;
-    _lpSpec.freq = jmin(0.45f * SAMPLE_RATE, f * 4.0f);
+    _lpSpec.freq = fmin(0.45f * SAMPLE_RATE, f * 4.0f);
 }
 
 void Chiff::reset()
@@ -104,7 +103,9 @@ bool Chiff::isActive() const noexcept
 
 void Chiff::process(float* out, int numFrames)
 {
-    static Random rnd;
+    static std::random_device rnd;
+    std::mt19937 gen(rnd());
+    std::uniform_real_distribution<float> dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
 
     if (!isActive())
         return;
@@ -117,7 +118,7 @@ void Chiff::process(float* out, int numFrames)
             return; // Noise is too quiet
 
         for (int i = 0; i < numFrames; ++i) {
-            const float x0{ 2.0f * rnd.nextFloat() - 1.0f };
+            const float x0{ 2.0f * dist(gen) - 1.0f };
             const float x{ x0 * noiseLevel };
             float y{ _pipeResonator.read(_pipeDelay) };
             y = BiquadFilter::tick(_lpSpec, _lpState, y);
@@ -131,7 +132,7 @@ void Chiff::process(float* out, int numFrames)
     }
 
     for (int i = 0; i < numFrames; ++i) {
-        float x0 = 2.0f * rnd.nextFloat() - 1.0f;
+        float x0 = 2.0f * dist(gen) - 1.0f;
         float x = x0 * _noiseEnvelope.next();
         float y = _pipeResonator.read(_pipeDelay);
         y = BiquadFilter::tick(_lpSpec, _lpState, y);

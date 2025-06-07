@@ -219,7 +219,7 @@ Scale::Scale(Scale::Type type)
 const Scale::Table& Scale::getTable() const
 {
     const auto it = _scales.find(_type);
-    jassert(it != _scales.end());
+    assert(it != _scales.end());
 
     return it->second;
 }
@@ -231,9 +231,9 @@ float Scale::getFrequencyForMidoNote(int midiNote, float tuningFrequency) const
     return ldexpf(fbase * scaleTable[midiNote % 12], midiNote / 12 - 5);
 }
 
-juce::String Scale::getNameForType(Type type)
+std::string Scale::getNameForType(Type type)
 {
-    static const std::map<Type, juce::String> names {
+    static const std::map<Type, std::string> names {
         { Pythagorean, "Pythagorean" },
         { MeanQuart,   "Meantone" },
         { Werckm3,     "Werckmeister" },
