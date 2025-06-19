@@ -38,8 +38,16 @@ public:
     /**
      * Impulse response descriptor for IRs embedded as binary resources.
      */
-    EngineGlobal(IRs &irs, std::vector<Addsynth> &synths);
+    static EngineGlobal& getInstance() {
+        static EngineGlobal instance;
+        return instance;
+    }
+    EngineGlobal(const EngineGlobal&) = delete;
+    EngineGlobal& operator=(const EngineGlobal&) = delete;
+    EngineGlobal(EngineGlobal&&) = delete;
+    EngineGlobal& operator=(EngineGlobal&&) = delete;
 
+    void init(IRs newIrs);
     void loadSettings();
     void saveSettings();
 
@@ -71,9 +79,10 @@ public:
     void rebuildRankwaves();
 
 private:
-    ~EngineGlobal() ;
+    EngineGlobal();
+    ~EngineGlobal();
 
-    void loadRankwaves(std::vector<Addsynth> &synths);
+    void loadRankwaves();
 
     /**
      * Refresh MTS tuning table for all MIDI notes.
@@ -84,8 +93,8 @@ private:
     // juce::Timer
     void timerCallback();
 
-    std::vector<Rankwave> _rankwaves;
-    std::unordered_map<std::string, Rankwave*> _rankwavesByName;
+//    std::vector<std::shared_ptr<Rankwave>> _rankwaves;
+    std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName;
 
 //    std::vector<IR> _irs;
     IRs irs;
@@ -100,8 +109,6 @@ private:
     std::array<float, 128> _mtsTuningCache{};
 
     float _uiScalingFactor{ UI_SCALING_DEFAULT };
-
-    juce::ApplicationProperties _globalProperties;
 };
 
 AEOLUS_NAMESPACE_END

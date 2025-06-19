@@ -224,7 +224,7 @@ const Scale::Table& Scale::getTable() const
     return it->second;
 }
 
-float Scale::getFrequencyForMidoNote(int midiNote, float tuningFrequency) const
+float Scale::getFrequencyForMidiNote(int midiNote, float tuningFrequency) const
 {
     const auto& scaleTable{ getTable() };
     float fbase{ tuningFrequency / scaleTable[9] };

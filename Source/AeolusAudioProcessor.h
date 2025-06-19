@@ -20,6 +20,7 @@
 #pragma once
 
 #include "aeolus/engine.h"
+#include "aeolus/EngineGlobal.h"
 
 #include "Parameters.h"
 
@@ -45,8 +46,7 @@ public:
     bool canApplyBusCountChange(bool isInput, bool isAdding, BusProperties& outProperties);
     bool isBusesLayoutSupported(const BusesLayout& layouts) const;
     void processorLayoutsChanged();
-
-    void processBlock (std::vector<float>&, MidiBuffer&);
+    void processBlock(AudioBuffer& buffer, MidiBuffer& midiMessages);
     void processMidi (MidiBuffer& midiMessages);
 
     int getNumPrograms();
@@ -54,9 +54,6 @@ public:
     void setCurrentProgram (int index);
     const std::string getProgramName (int index);
     void changeProgramName (int index, const std::string& newName);
-
-    void getStateInformation (MemoryBlock& destData);
-    void setStateInformation (const void* data, int sizeInBytes);
 
     float getProcessLoad() const noexcept { return _processLoad; }
     int getActiveVoiceCount() const noexcept { return (int) _engine.getVoiceCount(); }

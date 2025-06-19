@@ -35,7 +35,4 @@ struct Parameters
     std::vector<float*> divisionsGain;
 
     Parameters(AeolusAudioProcessor& proc);
-
-//    juce::var toVar() const;
-//    void fromVar(const juce::var& v);
 };

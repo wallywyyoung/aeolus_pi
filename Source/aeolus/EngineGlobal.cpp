@@ -7,31 +7,20 @@
 
 using namespace aeolus;
 
-EngineGlobal::EngineGlobal(IRs &irs, std::vector<Addsynth> &synths)
-        : _rankwaves{}
+EngineGlobal::EngineGlobal()
+        : _rankwavesByName{}
         , _scale(Scale::EqualTemp)
         , _tuningFrequency(TUNING_FREQUENCY_DEFAULT)
-        , _globalProperties{}
         , _mtsClient{ nullptr }
 {
     _mtsClient = MTS_RegisterClient();
 
-    PropertiesFile::Options options{};
-
-    options.applicationName = ProjectInfo::projectName;
-    options.filenameSuffix = ".settings";
-    //options.osxLibrarySubFolder = "~/Library/Application Support";
-    options.osxLibrarySubFolder = "Application Support";
-    options.storageFormat = PropertiesFile::storeAsXML;
-
-    _globalProperties.setStorageParameters(options);
-
     loadSettings();
+}
 
-    loadRankwaves(synths);
-    this->irs = irs;
-
-    startTimer(100);
+void EngineGlobal::init(IRs newIrs) {
+    irs = newIrs;
+    loadRankwaves();
 }
 
 EngineGlobal::~EngineGlobal() {
@@ -74,8 +63,8 @@ std::vector<std::string> EngineGlobal::getAllStopNames() const
 {
     auto names = std::vector<std::string>();
 
-    for (const auto rankwave : _rankwaves) {
-        names.push_back(rankwave.getStopName());
+    for (const auto &rankwave : _rankwavesByName) {
+        names.push_back(rankwave.second->getStopName());
     }
 
     return names;
@@ -86,17 +75,17 @@ Rankwave* EngineGlobal::getStopByName(const std::string& name)
     if (!_rankwavesByName.contains(name))
         return nullptr;
 
-    return _rankwavesByName[name];
+    return _rankwavesByName[name].get();
 }
 
 void EngineGlobal::updateStops(float sampleRate)
 {
     _sampleRate = sampleRate;
 
-    dp::thread_pool pool(_rankwaves.size());
+    dp::thread_pool pool(_rankwavesByName.size());
 
-    for (auto& rw : _rankwaves) {
-        auto *rwp = &rw;
+    for (auto& rw : _rankwavesByName) {
+        auto *rwp = rw.second.get();
         pool.enqueue_detach([sampleRate, rwp]() {
             rwp->prepareToPlay(sampleRate);
         });
@@ -127,7 +116,7 @@ std::string EngineGlobal::getMTSScaleName() {
 
 float EngineGlobal::getMTSNoteToFrequency(int midiNote, int midiChannel) {
     if (_mtsClient == nullptr || !isConnectedToMTSMaster()) {
-        return _scale.getFrequencyForMidoNote(midiNote);
+        return _scale.getFrequencyForMidiNote(midiNote);
     }
 
     return static_cast<float>(MTS_NoteToFrequency(_mtsClient, (char)midiNote, (char)midiChannel));
@@ -155,8 +144,8 @@ void EngineGlobal::setMTSEnabled(bool shouldBeEnabled) {
 void EngineGlobal::rebuildRankwaves()
 {
     // Prepare all the rankwaves to be retuned
-    for (auto& rw : _rankwaves) {
-        rw.retunePipes(_scale, _tuningFrequency);
+    for (auto& rw : _rankwavesByName) {
+        rw.second.get()->retunePipes(_scale, _tuningFrequency);
     }
 
     // @note We don't kill active voices - they will be using pipes from a parallel set.
@@ -166,19 +155,16 @@ void EngineGlobal::rebuildRankwaves()
     updateStops(_sampleRate);
 }
 
-void EngineGlobal::loadRankwaves(std::vector<Addsynth> &synths) {
-    auto& model = Model(synths);
+void EngineGlobal::loadRankwaves() {
+    auto& model = Model::getInstance();
 
     for (int i = 0; i < model.getStopsCount(); ++i) {
-        auto* synth = model[i];
+        auto synth = model[i];
         assert(synth);
 
-        auto rankwave = std::make_unique<Rankwave>(*synth);
+        auto rankwave = std::make_unique<Rankwave>(synth);
         rankwave->createPipes(_scale, _tuningFrequency);
-
-        auto* ptr = rankwave.get();
-        _rankwaves.push_back(rankwave.release());
-        _rankwavesByName.insert(ptr->getStopName(), ptr);
+        _rankwavesByName[rankwave->getStopName()] = std::move(rankwave);
     }
 }
 

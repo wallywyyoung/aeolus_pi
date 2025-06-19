@@ -18,6 +18,7 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/stop.h"
+#include "aeolus/EngineGlobal.h"
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -31,78 +32,65 @@ Stop::Stop()
 {
 }
 
-//std::vector<Rankwave*> getRankwavesFromPipeVar(const var& v)
-//{
-//    std::vector<Rankwave*> rankwaves;
-//
-//    auto addRankwave = [&](const std::string& name) {
-//        auto* g = EngineGlobal::getInstance();
-//
-//        if (auto* rankwave = g->getStopByName(name)) {
-//            rankwaves.push_back(rankwave);
-//        } else {
-//            DBG("Stop pipe " + name + " cannot be found.");
-//        }
-//    };
-//
-//
-//    if (const auto* arr = v.getArray()) {
-//        for (int i = 0; i < arr->size(); ++i) {
-//            const std::string pipeName = arr->getUnchecked(i);
-//            addRankwave(pipeName);
-//        }
-//    } else {
-//        const std::string pipeName = v;
-//        addRankwave(pipeName);
-//    }
-//
-//    return rankwaves;
-//}
-//
-//void Stop::initFromVar(const var& v)
-//{
-//
-//
-//    if (const auto* obj = v.getDynamicObject()) {
-//        _name = obj->getProperty("name");
-//        _type = getTypeFromString(obj->getProperty("type"));
-//
-//        if (obj->hasProperty("gain"))
-//            _gain = obj->getProperty("gain");
-//
-//        if (obj->hasProperty("chiff"))
-//            _chiffGain = obj->getProperty("chiff");
-//
-//        if (obj->hasProperty("pipe")) {
-//            const auto pipeObj = obj->getProperty("pipe");
-//
-//            const auto rankwaves { getRankwavesFromPipeVar(pipeObj) };
-//
-//            if (!rankwaves.empty())
-//                addZone(rankwaves);
-//
-//        } else if (obj->hasProperty("zones")) {
-//
-//            if (const auto* zonesArr = obj->getProperty("zones").getArray()) {
-//                for (int i = 0; i < zonesArr->size(); ++i) {
-//                    if (const auto* zoneObj = zonesArr->getUnchecked(i).getDynamicObject()) {
-//                        Zone zone{};
-//                        zone.rankwaves = getRankwavesFromPipeVar(zoneObj->getProperty("pipe"));
-//
-//                        if (const auto* range = zoneObj->getProperty("range").getArray()) {
-//                            if (range->size() >= 2)
-//                                zone.keyRange = Range((int)range->getFirst(), (int)range->getLast() + 1);
-//                        }
-//
-//                        if (!zone.rankwaves.empty())
-//                            _zones.push_back(zone);
-//                    }
-//
-//                }
-//            }
-//        }
-//    }
-//}
+std::vector<Rankwave*> getRankwavesFromPipeVar(const nlohmann::json& v)
+{
+    std::vector<Rankwave*> rankwaves;
+
+    auto addRankwave = [&](const std::string& name) {
+        if (auto* rankwave = aeolus::EngineGlobal::getInstance().getStopByName(name)) {
+            rankwaves.push_back(rankwave);
+        } else {
+            throw std::runtime_error("Stop pipe " + name + " cannot be found.");
+        }
+    };
+
+
+    if (v.is_array()) {
+        for (const auto& i : v) {
+            addRankwave(i);
+        }
+    } else {
+        const std::string pipeName = v;
+        addRankwave(pipeName);
+    }
+
+    return rankwaves;
+}
+
+void Stop::initFromJson(const nlohmann::json& v) {
+        _name = v["name"];
+        _type = getTypeFromString(v["type"]);
+
+        if (!v["gain"].is_null())
+            _gain = v["gain"];
+
+        if (!v["chiff"].is_null())
+            _chiffGain = v["chiff"];
+
+        if (!v["pipe"].is_null()) {
+            const auto pipeObj = v["pipe"];
+            const auto rankwaves{getRankwavesFromPipeVar(pipeObj)};
+
+            if (!rankwaves.empty())
+                addZone(rankwaves);
+
+        } else if (!v["zones"].is_null()) {
+            for (auto &zoneDef: v["zones"]) {
+                    Zone zone{};
+                    zone.rankwaves = getRankwavesFromPipeVar(zoneDef["pipe"]);
+
+                    const auto range = zoneDef["range"];
+                    if (range.is_array()) {
+                        if (range.size() >= 2)
+                            zone.keyRange = Range((int) range.front(), (int) range.back() + 1);
+                    }
+
+                    if (!zone.rankwaves.empty())
+                        _zones.push_back(zone);
+                }
+
+        }
+    }
 
 void Stop::addZone(Rankwave* ptr)
 {

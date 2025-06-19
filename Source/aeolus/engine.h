@@ -162,7 +162,7 @@ public:
     void process(float* outL, float* outR, int numFrames, bool isNonRealtime = false);
 
     // Multibus version of the processing (does not include the convolver).
-    void process(std::vector<float>& out, bool isNonRealtime = false);
+    void process(AudioBuffer& out, bool isNonRealtime = false);
 
     /**
      * Process incoming MIDI messages.
@@ -193,20 +193,15 @@ public:
     VoicePool& getVoicePool() noexcept { return _voicePool; }
 
     int getDivisionCount() const noexcept { return _divisions.size(); }
-    Division* getDivisionByIndex(int i) { return &_divisions[i]; }
-    Division* getDivisionByName(const std::string& name);
+    std::shared_ptr<Division> getDivisionByIndex(int i) { return _divisions[i]; }
+    std::shared_ptr<Division> getDivisionByName(const std::string& name);
 
     Sequencer* getSequencer() noexcept { return _sequencer.get(); }
-
-    std::map<std::string, std::any> getPersistentState() const;
-    void setPersistentState(const std::map<std::string, std::any>& state);
 
     void postNoteEvent(bool onOff, int note, int midiChannel);
 
 private:
-
-//    void populateDivisions();
-//    void loadDivisionsFromConfig(std::ifstream& stream);
+    void populateDivisions();
 
     void clearDivisionsTriggerFlag();
 
@@ -219,7 +214,7 @@ private:
     void generateTremulant();
 
     /// Apply the gloval volume.
-    void applyVolume(std::vector<float>& out);
+    void applyVolume(AudioBuffer& out);
     void applyVolume(float* outL, float* outR, int numFrames);
 
     /// Process control MIDI messages: program change (sequencer) and stop buttons CC.
@@ -230,6 +225,8 @@ private:
 
     bool isKeySwitchForward(int key) const;
     bool isKeySwitchBackward(int key) const;
+
+    static void populateKeySwitchesVector(std::vector<int>& switches, const nlohmann::json& v);
 
     float _sampleRate;
 
@@ -244,7 +241,7 @@ private:
     int _stopControlButton{};
 
     /// List of all divisions
-    std::vector<Division> _divisions;
+    std::vector<std::shared_ptr<Division>> _divisions;
 
     std::unique_ptr<Sequencer> _sequencer;
 
@@ -257,7 +254,7 @@ private:
 
     int _remainedSamples;
 
-    std::vector<float> _tremulantBuffer;
+    AudioBuffer _tremulantBuffer;
     float _tremulantPhase;
 
     dsp::Convolver _convolver;

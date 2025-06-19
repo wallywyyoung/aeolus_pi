@@ -22,7 +22,7 @@
 #include <fstream>
 #include <cassert>
 #include <map>
-#include <any>
+#include <cstring>
 
 template <typename T>
 static inline bool isPositiveAndBelow(T valueToTest, T upperLimit) {
@@ -167,19 +167,18 @@ float N_func::operator[](int note) const
 //    return obj;
 //}
 //
-//void N_func::fromVar(const std::map<std::string, std::any>& v)
-//{
-//    if (auto* obj = v.getDynamicObject()) {
-//        _b = obj->getProperty("mask");
-//
-//        if (auto* varr = obj->getProperty("values").getArray()) {
-//            if (varr->size() >= _v.size()) {
-//                for (int i = 0; i < _v.size(); ++i)
-//                    _v[i] = varr->getUnchecked(i);
-//            }
-//        }
-//    }
-//}
+void N_func::fromJson(const nlohmann::json& v)
+{
+    _b = v["mask"];
+
+    auto varr = v["values"];
+    if (varr.is_array()) {
+        if (varr.size() >= _v.size()) {
+            for (int i = 0; i < _v.size(); ++i)
+                _v[i] = varr[i];
+        }
+    }
+}
 //
 //void N_func::write(std::ofstream stream) const
 //{
@@ -190,14 +189,13 @@ float N_func::operator[](int note) const
 //    }
 //}
 //
-//void N_func::read(std::ifstream stream)
-//{
-//    _b = stream.readInt();
-//
-//    for (int i = 0; i < _v.size(); ++i) {
-//        _v[i] = stream.readFloat();
-//    }
-//}
+void N_func::read(std::istream& stream)
+{
+    stream.read(reinterpret_cast<char*>(&_b), sizeof(int));
+
+    for (int i = 0; i < _v.size(); ++i)
+        stream.read(reinterpret_cast<char*>(&_v[i]), sizeof(float));
+}
 
 //==============================================================================
 
@@ -275,15 +273,13 @@ bool HN_func::isSet(int harm, int idx) const
 //    return varr;
 //}
 //
-//void HN_func::fromVar(const var& v)
-//{
-//    if (const auto* varr = v.getArray()) {
-//        if (varr->size() >= _h.size()) {
-//            for (int i = 0; i < _h.size(); ++i)
-//                _h[i].fromVar(varr->getUnchecked(i));
-//        }
-//    }
-//}
+void HN_func::fromJson(const nlohmann::json& v)
+{
+    if (v.size() >= _h.size()) {
+        for (int i = 0; i < _h.size(); ++i)
+            _h[i].fromJson(v[i]);
+    }
+}
 //
 //void HN_func::write(std::ofstream stream, int n) const
 //{
@@ -293,13 +289,13 @@ bool HN_func::isSet(int harm, int idx) const
 //        _h[i].write(stream);
 //}
 //
-//void HN_func::read(std::ifstream stream, int n)
-//{
-//    const auto m = std::min(_h.size(), (size_t)n);
-//
-//    for (int i = 0; i < m; ++i)
-//        _h[i].read(stream);
-//}
+void HN_func::read(std::istream& stream, int n)
+{
+    const auto m = std::min(_h.size(), (size_t)n);
+
+    for (int i = 0; i < m; ++i)
+        _h[i].read(stream);
+}
 
 Addsynth::Addsynth()
 {
@@ -368,53 +364,51 @@ void Addsynth::reset()
 //    return var{obj};
 //}
 //
-//void Addsynth::fromVar(const std::map<std::string, std::any>& v)
-//{
-//    if (const auto* obj = v.getDynamicObject()) {
-//        int version = obj->getProperty("version");
-//
-//        int nHarm = obj->getProperty("n_harm");
-//
-//        if (nHarm == 0)
-//            nHarm = deprecated::N_HARM;
-//
-//        _noteMin = obj->getProperty("note_min");
-//        _noteMax = obj->getProperty("note_max");
-//
-//        if (_noteMax == deprecated::NOTE_MAX)
-//            _noteMax = NOTE_MAX;
-//
-//        _fn = obj->getProperty("fn");
-//        _fd = obj->getProperty("fd");
-//
-//        _stopName = obj->getProperty("name");
-//        _copyright = obj->getProperty("copyright");
-//        _mnemonic = obj->getProperty("mnemonic");
-//        _comments = obj->getProperty("comments");
-//
-//        _n_vol.fromVar(obj->getProperty("n_vol"));
-//        _n_off.fromVar(obj->getProperty("n_off"));
-//        _n_ran.fromVar(obj->getProperty("n_ran"));
-//
-//        if (version >= defaultVersion) {
-//            _n_ins.fromVar(obj->getProperty("n_ins"));
-//            _n_att.fromVar(obj->getProperty("n_att"));
-//            _n_atd.fromVar(obj->getProperty("n_atd"));
-//            _n_dct.fromVar(obj->getProperty("n_dct"));
-//            _n_dcd.fromVar(obj->getProperty("n_dcd"));
-//        }
-//
-//        _h_lev.reset(-100.0f);
-//        _h_ran.reset(0.0f);
-//        _h_att.reset(0.050f);
-//        _h_atp.reset(0.0f);
-//
-//        _h_lev.fromVar(obj->getProperty("h_lev"));
-//        _h_ran.fromVar(obj->getProperty("h_ran"));
-//        _h_att.fromVar(obj->getProperty("h_att"));
-//        _h_atp.fromVar(obj->getProperty("h_atp"));
-//    }
-//}
+void Addsynth::fromJson(const nlohmann::json& v)
+{
+    int version = v["version"];
+
+    int nHarm = v["n_harm"];
+
+    if (nHarm == 0)
+        nHarm = deprecated::N_HARM;
+
+    _noteMin = v["note_min"];
+    _noteMax = v["note_max"];
+
+    if (_noteMax == deprecated::NOTE_MAX)
+        _noteMax = NOTE_MAX;
+
+    _fn = v["fn"];
+    _fd = v["fd"];
+
+    _stopName = v["name"];
+    _copyright = v["copyright"];
+    _mnemonic = v["mnemonic"];
+    _comments = v["comments"];
+
+    _n_vol.fromJson(v["n_vol"]);
+    _n_off.fromJson(v["n_off"]);
+    _n_ran.fromJson(v["n_ran"]);
+
+    if (version >= defaultVersion) {
+        _n_ins.fromJson(v["n_ins"]);
+        _n_att.fromJson(v["n_att"]);
+        _n_atd.fromJson(v["n_atd"]);
+        _n_dct.fromJson(v["n_dct"]);
+        _n_dcd.fromJson(v["n_dcd"]);
+    }
+
+    _h_lev.reset(-100.0f);
+    _h_ran.reset(0.0f);
+    _h_att.reset(0.050f);
+    _h_atp.reset(0.0f);
+
+    _h_lev.fromJson(v["h_lev"]);
+    _h_ran.fromJson(v["h_ran"]);
+    _h_att.fromJson(v["h_att"]);
+    _h_atp.fromJson(v["h_atp"]);
+}
 //
 //void Addsynth::write(std::ofstream stream) const
 //{
@@ -470,85 +464,72 @@ void Addsynth::reset()
 //    return Result::ok();
 //}
 //
-//std::expected Addsynth::read(std::ifstream stream)
-//{
-//    char header[header_length] = {0};
-//
-//    auto n = stream.read(header, header_length);
-//
-//    if (n != header_length)
-//        return Result::fail("Failed to read the header");
-//
-//    if (strncmp(header, "AEOLUS", 6) != 0)
-//        return Result::fail("Invalid header signature");
-//
-//    int version = header[7];
-//    int nHarm = header[26];
-//
-//    if (nHarm == 0)
-//        nHarm = deprecated::N_HARM;
-//
-//    _noteMin = header[28];
-//    _noteMax = header[29];
-//
-//    if (_noteMax == deprecated::NOTE_MAX)
-//        _noteMax = NOTE_MAX;
-//
-//    _fn = header[30];
-//    _fd = header[31];
-//
-//    auto res = readString<stopName_length>(_stopName, stream);
-//
-//    if (res.failed())
-//        return Result::fail("Failed to read the stop name: " + res.getErrorMessage());
-//
-//    res = readString<copyright_length>(_copyright, stream);
-//
-//    if (res.failed())
-//        return Result::fail("Failed to read the copyright: " + res.getErrorMessage());
-//
-//    res = readString<mnemonic_length>(_mnemonic, stream);
-//
-//    if (res.failed())
-//        return Result::fail("Failed to read the mnemonic: " + res.getErrorMessage());
-//
-//    res = readString<comments_length>(_comments, stream);
-//
-//    if (res.failed())
-//        return Result::fail("Failed to read the comments: " + res.getErrorMessage());
-//
-//    {
-//        String reserved;
-//        res = readString<reserved_length>(reserved, stream);
-//
-//        if (res.failed())
-//            return Result::fail("Failed to read reserved field: " + res.getErrorMessage());
-//    }
-//
-//    _n_vol.read(stream);
-//    _n_off.read(stream);
-//    _n_ran.read(stream);
-//
-//    if (version >= defaultVersion) {
-//        _n_ins.read(stream);
-//        _n_att.read(stream);
-//        _n_atd.read(stream);
-//        _n_dct.read(stream);
-//        _n_dcd.read(stream);
-//    }
-//
-//    _h_lev.reset(-100.0f);
-//    _h_ran.reset(0.0f);
-//    _h_att.reset(0.050f);
-//    _h_atp.reset(0.0f);
-//
-//    _h_lev.read(stream, nHarm);
-//    _h_ran.read(stream, nHarm);
-//    _h_att.read(stream, nHarm);
-//    _h_atp.read(stream, nHarm);
-//
-//    return Result::ok();
-//}
+void Addsynth::fromStream(std::istream& stream)
+{
+    char header[header_length] = {0};
+
+    stream.read(header, header_length);
+
+    if (strncmp(header, "AEOLUS", 6) != 0)
+        throw std::runtime_error("Invalid header signature");
+
+    int version = header[7];
+    int nHarm = header[26];
+
+    if (nHarm == 0)
+        nHarm = deprecated::N_HARM;
+
+    _noteMin = header[28];
+    _noteMax = header[29];
+
+    if (_noteMax == deprecated::NOTE_MAX)
+        _noteMax = NOTE_MAX;
+
+    _fn = header[30];
+    _fd = header[31];
+
+    std::string reserved;
+
+    _stopName.reserve(stopName_length);
+    _copyright.reserve(copyright_length);
+    _mnemonic.reserve(mnemonic_length);
+    _comments.reserve(comments_length);
+    reserved.reserve(comments_length);
+
+    stream.read(_stopName.data(), stopName_length);
+    stream.read(_copyright.data(), copyright_length);
+    stream.read(_mnemonic.data(), mnemonic_length);
+    stream.read(_comments.data(), comments_length);
+    stream.read(reserved.data(), reserved_length);
+
+    _stopName.shrink_to_fit();
+    _copyright.shrink_to_fit();
+    _mnemonic.shrink_to_fit();
+    _comments.shrink_to_fit();
+    reserved.shrink_to_fit();
+
+    _n_vol.read(stream);
+    _n_off.read(stream);
+    _n_ran.read(stream);
+
+    if (version >= defaultVersion) {
+        _n_ins.read(stream);
+        _n_att.read(stream);
+        _n_atd.read(stream);
+        _n_dct.read(stream);
+        _n_dcd.read(stream);
+    }
+
+    _h_lev.reset(-100.0f);
+    _h_ran.reset(0.0f);
+    _h_att.reset(0.050f);
+    _h_atp.reset(0.0f);
+
+    _h_lev.read(stream, nHarm);
+    _h_ran.read(stream, nHarm);
+    _h_att.read(stream, nHarm);
+    _h_atp.read(stream, nHarm);
+}
 //
 //Result Addsynth::readFromResource(const std::string& name)
 //{
@@ -588,11 +569,8 @@ void Addsynth::reset()
 
 //==============================================================================
 
-Model::Model(std::vector<Addsynth> synths)
-    : _synths()
-    , _nameToSynthMap()
-{
-    _synths =synths;
+void Model::addSynths(std::vector<std::shared_ptr<Addsynth>> synths) {
+    _synths = synths;
 }
 
 std::vector<std::string> Model::getStopNames() const
@@ -600,22 +578,22 @@ std::vector<std::string> Model::getStopNames() const
     std::vector<std::string> stops;
 
     for (const auto synth : _synths) {
-        stops.push_back(synth.getStopName());
+        stops.push_back(synth->getStopName());
     }
 
     return stops;
 }
 
-Addsynth* Model::getStopByName(const std::string& name)
-{
-    auto it = _nameToSynthMap.find(name);
-
-    if (it == _nameToSynthMap.end())
-        return nullptr;
-
-    return it->second;
-}
-
+//Addsynth* Model::getStopByName(const std::string& name)
+//{
+//    auto it = _nameToSynthMap.find(name);
+//
+//    if (it == _nameToSynthMap.end())
+//        return nullptr;
+//
+//    return it->second;
+//}
+//
 //void Model::loadExternalPipes()
 //{
 //    File configFile{ aeolus::getCustomOrganConfigFile() };
@@ -684,20 +662,19 @@ Addsynth* Model::getStopByName(const std::string& name)
 //        }
 //    }
 //}
-
-void Model::addSynth(std::unique_ptr<Addsynth>&& synthToAdd)
-{
-    std::unique_ptr<Addsynth> synth{ std::move(synthToAdd) };
-    const std::string stopName{ synth->getStopName() };
-
-    if (_nameToSynthMap.find(stopName) == _nameToSynthMap.end()) {
-        auto* ptr = synth.get();
-        ptr->setStopName(stopName);
-
-        _synths.push_back(*synth.release());
-        _nameToSynthMap[stopName] = ptr;
-    } else {
-        // Pipe with this name already exists - it won't be added again
-//        DBG("Pipe " + stopName + " duplicate found");
-    }
-}
+//
+//void Model::addSynth(std::unique_ptr<Addsynth>&& synthToAdd)
+//{
+//    std::unique_ptr<Addsynth> synth{ std::move(synthToAdd) };
+//    const std::string stopName{ synth->getStopName() };
+//
+//    if (_nameToSynthMap.find(stopName) == _nameToSynthMap.end()) {
+//        synth->setStopName(stopName);
+//
+//        _synths.push_back(std::move(synth.release()));
+//        _nameToSynthMap[stopName] = ptr;
+//    } else {
+//        // Pipe with this name already exists - it won't be added again
+////        DBG("Pipe " + stopName + " duplicate found");
+//    }
+//}

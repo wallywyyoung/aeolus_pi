@@ -21,11 +21,13 @@
 
 #include <string>
 #include <vector>
+#include "AudioBuffer.h"
+
 struct IR
 {
     std::string name;
     int channelSamples;
-    std::vector<std::vector<float>> waveform;
+    AudioBuffer waveform;
 
     void clear() {
         name.clear();

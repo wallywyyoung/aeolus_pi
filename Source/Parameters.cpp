@@ -23,8 +23,6 @@
 
 #include "Parameters.h"
 
-
-
 Parameters::Parameters(AeolusAudioProcessor& proc) : processor(proc) {
     processor.addParameter(reverbWet = new AudioParameterFloat(ParameterID{"reverb_wet", 1}, "Reverb", 0.0f, 1.0f, 0.25f));
     processor.addParameter(volume = new AudioParameterFloat(ParameterID{"volume", 1}, "Volume", 0.0f, 1.0f, 0.5f));
@@ -41,48 +39,3 @@ Parameters::Parameters(AeolusAudioProcessor& proc) : processor(proc) {
         division->setParamGain(ptr);
     }
 }
-
-//var Parameters::toVar() const
-//{
-//    Array<var> params;
-//
-//    for (auto* param : processor.getParameters()) {
-//        if (auto* p = dynamic_cast<AudioProcessorParameterWithID*>(param))
-//        {
-//            const auto id = p->paramID;
-//            const auto value = p->getValue();
-//
-//            auto* obj = new DynamicObject();
-//            obj->setProperty("id", id);
-//            obj->setProperty("value", value);
-//
-//            params.add(var{obj});
-//        }
-//    }
-//
-//    return var{params};
-//}
-//
-//void Parameters::fromVar(const var& v)
-//{
-//    if (const auto* arr = v.getArray()) {
-//
-//        const Array<AudioProcessorParameter*>& params = processor.getParameters();
-//
-//        for (int i = 0; i < arr->size(); ++i) {
-//            if (const auto* obj = arr->getUnchecked(i).getDynamicObject()) {
-//                const String id = obj->getProperty("id");
-//                const float value = obj->getProperty("value");
-//
-//                for (auto* p : params) {
-//                    if (auto* paramWithID = dynamic_cast<AudioProcessorParameterWithID*>(p)) {
-//                        if (paramWithID->paramID == id) {
-//                            p->setValue(value);
-//                            break;
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}

@@ -18,6 +18,8 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/engine.h"
+#include "IOManager.h"
+#include "EngineGlobal.h"
 #include <any>
 
 
@@ -59,11 +61,8 @@ Engine::Engine()
 
 void Engine::prepareToPlay(float sampleRate, int frameSize)
 {
-    ignoreUnused(frameSize);
-
     // Make sure the stops wavetable is updated.
-    auto* g = EngineGlobal::getInstance();
-    g->updateStops(SAMPLE_RATE_F);
+    EngineGlobal::getInstance().updateStops(SAMPLE_RATE_F);
 
     // Select the first IR for reverb by default
     setReverbIR(_selectedIR);
@@ -77,15 +76,14 @@ void Engine::prepareToPlay(float sampleRate, int frameSize)
 
 void Engine::setReverbIR(int num)
 {
-    auto* g = EngineGlobal::getInstance();
-    const auto& irs = g->getIRs();
+    const auto& irs = EngineGlobal::getInstance().getIRs();
 
-    if (num >= 0 && num < irs.size()) {
-        const auto& ir = irs[num];
+    if (num >= 0 && num < irs.irs.size()) {
+        const auto& ir = irs.irs[num];
         _convolver.setLength(int(ir.waveform.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
         _convolver.prepareToPlay(SAMPLE_RATE_F, SUB_FRAME_LENGTH); // these parameters are irrelevant
         _convolver.setZeroDelay(ir.zeroDelay);
-        _convolver.setIR(ir.waveform);
+        _convolver.setIR(ir);
 
         _reverbTailCounter = _convolver.length();
 
@@ -166,7 +164,7 @@ void Engine::process(float* outL, float* outR, int numFrames, bool isNonRealtime
     if (wasAudioGenerated)
         _reverbTailCounter = _convolver.length();
     else
-        _reverbTailCounter = jmax(0, _reverbTailCounter - origNumFrames);
+        _reverbTailCounter = std::max(0, _reverbTailCounter - origNumFrames);
 
     if (_reverbTailCounter > 0 && _convolver.isAudible()) {
         _convolver.setNonRealtime(isNonRealtime);
@@ -179,9 +177,8 @@ void Engine::process(float* outL, float* outR, int numFrames, bool isNonRealtime
     _volumeLevel.right.process(origOutR, origNumFrames);
 }
 
-void Engine::process(std::vector<float>& out, bool isNonRealtime)
+void Engine::process(AudioBuffer& out, bool isNonRealtime)
 {
-    ignoreUnused(isNonRealtime);
 
     const int numChannels = out.getNumChannels();
     int numFrames = out.getNumSamples();
@@ -345,106 +342,6 @@ Division* Engine::getDivisionByName(const std::string& name)
     return nullptr;
 }
 
-//std::map<std::string, std::any> Engine::getPersistentState() const
-//{
-//    auto obj = std::map<std::string, std::any>();
-//
-//    // Save control channel
-//    obj.emplace("midi_ctrl_channels_mask", getMIDIControlChannelsMask());
-//    obj.emplace("midi_swell_channels_mask", getMIDISwellChannelsMask());
-//
-//    // Save the IR.
-//    int irNum = _selectedIR;
-//    obj.emplace("ir", irNum);
-//
-//    // Save divisions.
-//    std::vector<std::map<std::string, std::any>> divisions;
-//
-//    for (auto* division : _divisions) {
-//        divisions.emplace(division->getPersistentState());
-//    }
-//
-//    obj.emplace("divisions", divisions);
-//
-//    obj.emplace("sequencer", _sequencer->getPersistentState());
-//
-//    return obj;
-//}
-//
-//void Engine::setPersistentState(const var& state)
-//{
-//    if (const auto* obj = state.getDynamicObject()) {
-//        // Restore control channels
-//
-//        if (const auto& v = obj->getProperty("midi_ctrl_channel"); !v.isVoid()) {
-//            int ch = (int)v;
-//            if (ch == 0)
-//                setMIDIControlChannelsMask((1 << 16) - 1);
-//            else
-//                setMIDIControlChannelsMask(1 << (ch - 1));
-//        } else {
-//            setMIDIControlChannelsMask(obj->getProperty("midi_ctrl_channels_mask"));
-//        }
-//
-//        if (const auto& v = obj->getProperty("midi_swell_channel"); !v.isVoid()) {
-//            int ch = (int)v;
-//            if (ch == 0)
-//                setMIDISwellChannelsMask((1 << 16) - 1);
-//            else
-//                setMIDISwellChannelsMask(1 << (ch - 1));
-//        } else {
-//            setMIDISwellChannelsMask(obj->getProperty("midi_swell_channels_mask"));
-//        }
-//
-//        // Restore the IR
-//        int irNum = obj->getProperty("ir");
-//
-//        if (MessageManager::getInstance()->isThisTheMessageThread())
-//            postReverbIR(irNum);
-//        else
-//            setReverbIR(irNum);
-//
-//        postReverbIR(irNum);
-//
-//        // Restore the sequencer
-//        _sequencer->setPersistentState(obj->getProperty("sequencer"));
-//
-//        // Restore the divisions after the sequencer (in case we are restoring
-//        // from a state that did not have a sequencer before).
-//        if (const auto* divisions = obj->getProperty("divisions").getArray()) {
-//
-//            if (divisions->size() != _divisions.size()) {
-////                DBG("Saved state is invalid and will be ignored");
-//                return;
-//            }
-//
-//            for (int divIdx = 0; divIdx < _divisions.size(); ++divIdx) {
-//                auto* division = _divisions.getUnchecked(divIdx);
-//                division->setPersistentState(divisions->getReference(divIdx));
-//            }
-//        }
-//
-//    }
-//}
-//
-//// @internal Helper to populate key switches from a single number or a list
-//static void populateKeySwitchesVector(std::vector<int>& switches, const var& v) {
-//    if (v.isVoid()) {
-//        return;
-//    }
-//
-//    switches.clear();
-//
-//    if (v.isInt()) {
-//        switches.push_back((int)v);
-//    } else if (v.isArray()) {
-//        if (auto* a = v.getArray()) {
-//            for (const auto& key : *a)
-//                switches.push_back((int)key);
-//        }
-//    }
-//}
-
 void Engine::clearDivisionsTriggerFlag() {
     for (auto& division : _divisions) {
         division.clearTriggerFlag();
@@ -469,11 +366,11 @@ bool Engine::processSubFrame() {
 
         _divisionFrameBuffer.clear();
 
-        const bool hasVoices = division.process(_divisionFrameBuffer, _voiceFrameBuffer);
+        const bool hasVoices = division->process(_divisionFrameBuffer, _voiceFrameBuffer);
         wasAudioGenerated |= hasVoices;
 
         if (!hasVoices) {
-            division.modulate(_divisionFrameBuffer, _tremulantBuffer);
+            division->modulate(_divisionFrameBuffer, _tremulantBuffer);
 
             for (int ch = 0; ch < _subFrameBuffer.getNumChannels(); ++ch) {
                 _subFrameBuffer.addFrom(ch, 0, _divisionFrameBuffer, ch, 0, SUB_FRAME_LENGTH);
@@ -535,7 +432,7 @@ void Engine::generateTremulant()
     }
 }
 
-void Engine::applyVolume(std::vector<float>& out)
+void Engine::applyVolume(AudioBuffer& out)
 {
     if (_params[VOLUME].isSmoothing()) {
         for (int i = 0; i < out.getNumSamples(); ++i) {
@@ -621,7 +518,7 @@ void Engine::processStopControlMessage()
     if (!isPositiveAndBelow(_stopControlGroup, _divisions.size()))
         return;
 
-    auto* division{ _divisions.getUnchecked(_stopControlGroup) };
+    auto division{ _divisions[_stopControlGroup] };
 
     const auto mode{ *_stopControlMode };
 
@@ -655,6 +552,58 @@ bool Engine::isKeySwitchBackward(int key) const
     return std::find(_sequencerStepBackwardKeySwitches.begin(),
                      _sequencerStepBackwardKeySwitches.end(),
                      key) != _sequencerStepBackwardKeySwitches.end();
+}
+
+void Engine::populateDivisions() {
+    const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
+
+    if (!exists(configFile))
+        return;
+
+    std::ifstream stream(configFile);
+    auto config = nlohmann::json::parse(stream);
+
+    for (auto divisionDef : config["divisions"]) {
+        auto division = std::make_shared<aeolus::Division>(*this);
+        division->initFromJson(divisionDef);
+        _divisions.push_back(division);
+    }
+
+    if (auto sequencer = config["sequencer"]) {
+        if (sequencer.contains("backward_key")) {
+            populateKeySwitchesVector(_sequencerStepBackwardKeySwitches, sequencer["backward_key"]);
+        }
+
+        if (sequencer.contains("forward_key")) {
+            populateKeySwitchesVector(_sequencerStepForwardKeySwitches, sequencer["forward_key"]);
+        }
+    }
+
+    // Remove all the links if any.
+    for (auto division : _divisions) {
+        division->clearLinkedDivisions();
+    }
+
+    // Update division links after they've been loaded.
+    for (auto division : _divisions) {
+        division->populateLinkedDivisions();
+    }
+
+    // @todo Do we want the divisions to be reordered by the couplings?
+}
+
+void Engine::populateKeySwitchesVector(std::vector<int>& switches, const nlohmann::json& v) {
+    if (v.is_null())
+        return;
+
+    switches.clear();
+
+    if (v.is_number_integer()) {
+        switches.push_back((int)v);
+    } else if (v.is_array()) {
+        for (const auto& key : v)
+            switches.push_back(key);
+    }
 }
 
 AEOLUS_NAMESPACE_END

@@ -60,7 +60,7 @@ public:
     /**
      * Calculate a MIDI note frequency (Hz) given the tuning A frequency.
      */
-    float getFrequencyForMidoNote(int midiNote, float tuningFrequency = 440.0f) const;
+    float getFrequencyForMidiNote(int midiNote, float tuningFrequency = 440.0f) const;
 
     static std::string getNameForType(Type type);
 

@@ -1,22 +1,20 @@
 //
 // Created by Wally Young on 6/6/25.
 //
+#pragma once
 
-#ifndef AEOLUS_PI_IOMANAGER_H
-#define AEOLUS_PI_IOMANAGER_H
+AEOLUS_NAMESPACE_BEGIN
 
 #include "aeolus/IR.h"
 
 class IOManager {
+public:
     void loadOrganDefinition();
     IRs loadIRs();
-    void loadExternalPipes();
-    void loadEmbeddedPipes();
-    void populateDivisions();
-    void loadDivisionsFromConfig(std::ifstream& stream);
+    std::vector<aeolus::Addsynth> loadPipes();
 private:
+    std::vector<std::byte> readBinaryFile(std::string path);
     void readIRWav(IR ir, std::string filePath);
 };
 
-
-#endif //AEOLUS_PI_IOMANAGER_H
+AEOLUS_NAMESPACE_END

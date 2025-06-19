@@ -38,7 +38,7 @@ Division::Division(Engine& engine, const std::string& name)
     , _tremulantLevel{0.0f}
     , _tremulantMaxLevel{TREMULANT_TARGET_LEVEL}
     , _tremulantTargetLevel{0.0f}
-    , _paramGain{nullptr}
+//    , _paramGain{nullptr}
     , _params{Division::NUM_PARAMS}
     , _swellFilterSpec{}
     , _swellFilterStateL{}
@@ -62,36 +62,37 @@ Division::Division(Engine& engine, const std::string& name)
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateR);
 }
 
-//void Division::initFromVar(const var& v)
-//{
-//    if (const auto* obj = v.getDynamicObject()) {
-//        _name = obj->getProperty("name");
-//        _mnemonic = obj->getProperty("mnemonic");
-//
-//        if (const auto* link = obj->getProperty("link").getArray()) {
-//            for (const auto& item : *link)
-//                _linkedDivisionNames.add(item.toString());
-//        }
-//
-//        _hasSwell = obj->getProperty("swell");
-//        _hasTremulant = obj->getProperty("tremulant");
-//
-//        _tremulantMaxLevel = 0.0f;
-//
-//        if (_hasTremulant)
-//            _tremulantMaxLevel = obj->getProperty("tremulant_level");
-//
-//        if (const auto* arr = obj->getProperty("stops").getArray()) {
-//            for (int i = 0; i < arr->size(); ++i) {
-//                Stop stop{};
-//                stop.initFromVar(arr->getUnchecked(i));
-//
-//                if (!stop.getZones().empty())
-//                    _stops.push_back(stop);
-//            }
-//        }
-//    }
-//}
+void Division::initFromJson(const nlohmann::json& v)
+{
+        _name = v["name"];
+        _mnemonic = v["mnemonic"];
+
+        const auto link = v["link"];
+
+        if (link.is_array()) {
+            for (const auto& item : link)
+                _linkedDivisionNames.push_back(item);
+        }
+
+        _hasSwell = v["swell"];
+        _hasTremulant = v["tremulant"];
+
+        _tremulantMaxLevel = 0.0f;
+
+        if (_hasTremulant)
+            _tremulantMaxLevel = v["tremulant_level"];
+
+        const auto arr = v["stops"];
+        if (arr.is_array()) {
+            for (int i = 0; i < arr.size(); ++i) {
+                Stop stop{};
+                stop.initFromJson(arr[i]);
+
+                if (!stop.getZones().empty())
+                    _stops.push_back(stop);
+            }
+        }
+    }
 //
 //var Division::getPersistentState() const
 //{
@@ -190,7 +191,7 @@ void Division::clearLinkedDivisions()
 void Division::populateLinkedDivisions()
 {
     for (const auto& name : _linkedDivisionNames) {
-        if (auto* division = _engine.getDivisionByName(name)) {
+        if (auto division = _engine.getDivisionByName(name)) {
             Link link{ division, false };
             _linkedDivisions.push_back(link);
             division->_linkedFromDivisions.push_back(this);
@@ -432,7 +433,8 @@ void Division::handleControlMessage(const MidiMessage& msg)
 
     if (msg.getChannel() == 0 || (swellCh & (msg.getChannel() - 1)) != 0) {
         if (_hasSwell && cc == aeolus::CC_VOLUME) {
-            *_paramGain = value;
+//            *_paramGain = value;
+            _params[Division::GAIN].setValue(value);
         }
     }
 
@@ -500,7 +502,7 @@ void Division::modulate(AudioBuffer& targetBuffer, const AudioBuffer& tremulantB
 
     // Update gain smoothly
     auto& paramGain = _params[Division::GAIN];
-    paramGain.setValue(_paramGain->get());
+//    paramGain.setValue(_paramGain->get());
 
 #if AEOLUS_MULTIBUS_OUTPUT
 
@@ -639,7 +641,7 @@ void Division::updateAggregatedKeysState()
 
     for (const auto* division : _linkedFromDivisions) {
         for (const auto& link : division->_linkedDivisions) {
-            if (link.division == this && link.enabled) {
+            if (link.division.get() == this && link.enabled) {
                 _aggregatedKeysState |= division->_aggregatedKeysState;
                 break;
             }

@@ -23,6 +23,8 @@
 #include "aeolus/rankwave.h"
 #include "aeolus/utilities/Range.h"
 
+#include <nlohmann/json.hpp>
+
 AEOLUS_NAMESPACE_BEGIN
 
 /**
@@ -56,7 +58,7 @@ public:
 
     Stop();
 
-//    void initFromVar(const std::map<std::string, std::any>& v);
+    void initFromJson(const nlohmann::json& v);
 
     Type getType() const noexcept { return _type; }
     void setType(Type t) noexcept { _type = t; }

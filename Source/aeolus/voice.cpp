@@ -65,7 +65,7 @@ void Voice::trigger(const Pipewave::State& state)
 
     // Wider spread for low-pitched pipes
     const auto& model = _state.pipewave->getModel();
-    const float width = 0.15f * static_cast<float>(model.getFd()) / static_cast<float>(model.getFn());
+    const float width = 0.15f * static_cast<float>(model->getFd()) / static_cast<float>(model->getFn());
 
     float x = width * k * (float)abs(note - 65);
 

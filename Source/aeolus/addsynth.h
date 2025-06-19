@@ -29,6 +29,8 @@
 #include <any>
 #include <memory>
 
+#include <nlohmann/json.hpp>
+
 AEOLUS_NAMESPACE_BEGIN
 
 /**
@@ -51,10 +53,8 @@ public:
     float operator[](int note) const;   // vi(n)
 
 //    std::map<std::string, std::any> toVar() const;
-//    void fromVar(const std::map<std::string, std::any>& v);
-
-//    void write(std::ofstream& stream) const;
-//    void read(std::ifstream& stream);
+    void fromJson(const nlohmann::json& v);
+    void read(std::istream& stream);
 
 private:
     int _b;
@@ -84,10 +84,10 @@ public:
     const N_func& operator[](int harm) const { assert(isPositiveAndBelow(harm, _h.size())); return _h[harm]; }
 
 //    std::map<std::string, std::any> toVar(int n = N_HARM) const;
-//    void fromVar(const std::map<std::string, std::any>& v);
+    void fromJson(const nlohmann::json& v);
 
 //    void write(std::ofstream& stream, int n = N_HARM) const;
-//    void read(std::ifstream& stream, int n = N_HARM);
+    void read(std::istream& stream, int n = N_HARM);
 
 private:
     std::array<N_func, N_HARM> _h;
@@ -112,10 +112,10 @@ public:
     int getNoteMax() const noexcept { return _noteMax; }
 
 //    std::map<std::string, std::any> toVar() const;
-//    void fromVar(const std::map<std::string, std::any>& v);
+    void fromJson(const nlohmann::json& v);
 
 //    void write(std::ofstream& stream) const;
-//    std::expected read(std::ifstream& stream);
+    void fromStream(std::istream& stream);
 
 //    std::expected readFromResource(const std::string& name);
 //    std::expected readFromFile(const juce::File& file);
@@ -187,20 +187,28 @@ private:
 class Model
 {
 public:
-    Model(std::vector<Addsynth> synths);
+    static Model& getInstance() {
+        static Model instance;
+        return instance;
+    }
+    Model(const Model&) = delete;
+    Model& operator=(const Model&) = delete;
+    Model(Model&&) = delete;
+    Model& operator=(Model&&) = delete;
 
-    std::vector<std::string> getStopNames() const;
-    Addsynth* getStopByName(const std::string& name);
+    void addSynths(std::vector<std::shared_ptr<Addsynth>> synths);
 
-    int getStopsCount() const { return _synths.size(); }
-    Addsynth* operator[](int idx) { return &_synths[idx]; }
-    const Addsynth* operator[](int idx) const { return &_synths[idx]; }
+    [[nodiscard]] std::vector<std::string> getStopNames() const;
+//    Addsynth* getStopByName(const std::string& name);
+
+    [[nodiscard]] int getStopsCount() const { return _synths.size(); }
+    std::shared_ptr<Addsynth> operator[](int idx) { return _synths[idx]; }
+    std::shared_ptr<Addsynth> operator[](int idx) const { return _synths[idx]; }
 
 private:
-    void addSynth(std::unique_ptr<Addsynth>&& synth);
+    Model() = default;
 
-    std::vector<Addsynth> _synths;
-    std::map<std::string, Addsynth*> _nameToSynthMap;
+    std::vector<std::shared_ptr<Addsynth>> _synths{};
 };
 
 AEOLUS_NAMESPACE_END

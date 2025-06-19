@@ -22,9 +22,6 @@
 #include "aeolus/globals.h"
 #include "AeolusAudioProcessor.h"
 
-
-
-//==============================================================================
 AeolusAudioProcessor::AeolusAudioProcessor() :
     _engine{}
     , _parameters(*this)
@@ -33,7 +30,7 @@ AeolusAudioProcessor::AeolusAudioProcessor() :
 {
     _engine.getMidiKeyboardState().addListener(this);
 
-    aeolus::EngineGlobal::getInstance()->registerProcessorProxy(this);
+    aeolus::EngineGlobal::getInstance().registerProcessorProxy(this);
 }
 
 AeolusAudioProcessor::~AeolusAudioProcessor()
@@ -41,14 +38,14 @@ AeolusAudioProcessor::~AeolusAudioProcessor()
     // If we don't do this there is a leaked AccessibilityHandler instance detected.
     _engine.getMidiKeyboardState().removeListener(this);
 
-    aeolus::EngineGlobal::getInstance()->unregisterProcessorProxy(this);
+    aeolus::EngineGlobal::getInstance().unregisterProcessorProxy(this);
 }
 
 int AeolusAudioProcessor::getNumPrograms()
 {
     // NB: some hosts don't cope very well if you tell them there are 0 programs,
     // so this should be at least 1, even if you're not really implementing programs.
-    return jmax(1, _engine.getSequencer()->getStepsCount());
+    return std::max(1, _engine.getSequencer()->getStepsCount());
 }
 
 int AeolusAudioProcessor::getCurrentProgram()
@@ -71,7 +68,6 @@ void AeolusAudioProcessor::changeProgramName(int /* index */, const std::string&
 {
 }
 
-//==============================================================================
 void AeolusAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     _engine.prepareToPlay((float)sampleRate, samplesPerBlock);
@@ -90,7 +86,6 @@ bool AeolusAudioProcessor::canAddBus(bool isInput) const
 #if AEOLUS_MULTIBUS_OUTPUT
     return !isInput;
 #else
-    ignoreUnused(isInput);
     return false;
 #endif
 }
@@ -101,7 +96,6 @@ bool AeolusAudioProcessor::canRemoveBus(bool isInput) const
     const auto nOutputs = getBusCount(false);
     return !isInput && nOutputs > 1;
 #else
-    ignoreUnused(isInput);
     return false;
 #endif
 }
@@ -129,7 +123,6 @@ bool AeolusAudioProcessor::canApplyBusCountChange(bool isInput, bool isAdding, B
 
     return true;
 #else
-    ignoreUnused(isInput, isAdding, outProperties);
     return false;
 #endif
 }
@@ -174,7 +167,6 @@ void AeolusAudioProcessor::processBlock(AudioBuffer& buffer, MidiBuffer& midiMes
 
     auto timestampStart = high_resolution_clock::now();
 
-    ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
@@ -193,7 +185,7 @@ void AeolusAudioProcessor::processBlock(AudioBuffer& buffer, MidiBuffer& midiMes
 #if AEOLUS_MULTIBUS_OUTPUT
 
     _engine.setVolume(_parameters.volume->get());
-    _engine.process(buffer, isNonRealtime());
+    _engine.process(buffer);
 
 #else
 
@@ -203,9 +195,9 @@ void AeolusAudioProcessor::processBlock(AudioBuffer& buffer, MidiBuffer& midiMes
     if (totalNumOutputChannels > 1)
         outR = buffer.getWritePointer(1);
 
-    _engine.setReverbWet(_parameters.reverbWet->get());
-    _engine.setVolume(_parameters.volume->get());
-    _engine.process(outL, outR, buffer.getNumSamples(), isNonRealtime());
+    _engine.setReverbWet(*_parameters.reverbWet);
+    _engine.setVolume(*_parameters.volume);
+    _engine.process(outL, outR, buffer.getNumSamples());
 
 #endif // AEOLUS_MULTIBUS_OUTPUT
 
@@ -215,7 +207,7 @@ void AeolusAudioProcessor::processBlock(AudioBuffer& buffer, MidiBuffer& midiMes
     float realTime_us = 1e6f * (float) buffer.getNumSamples() / _engine.getSampleRate();
     float load = duration_us / realTime_us;
 
-    _processLoad = jmin(1.0f, 0.99f * _processLoad + 0.01f * load);
+    _processLoad = std::min(1.0f, 0.99f * _processLoad + 0.01f * load);
 
     if (_panicRequest) {
         _engine.allNotesOff();
@@ -223,7 +215,7 @@ void AeolusAudioProcessor::processBlock(AudioBuffer& buffer, MidiBuffer& midiMes
     }
 }
 
-void AeolusAudioProcessor::processMidi(juce::MidiBuffer& midiMessages)
+void AeolusAudioProcessor::processMidi(MidiBuffer& midiMessages)
 {
     if (midiMessages.getNumEvents() == 0)
         return;
@@ -259,35 +251,8 @@ void AeolusAudioProcessor::processMidi(juce::MidiBuffer& midiMessages)
     }
 }
 
-void AeolusAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
-{
-    auto state = _engine.getPersistentState();
-
-    if (auto* obj = state.getDynamicObject())
-        obj->setProperty("parameters", _parameters.toVar());
-
-    Memorystd::ofstream stream(destData, false);
-
-    JSON::writeToStream(stream, state);
-}
-
-void AeolusAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
-{
-    MemoryInputStream stream(data, sizeInBytes, false);
-
-    const auto state = JSON::parse(stream);
-
-    if (const auto* obj = state.getDynamicObject()) {
-        _parameters.fromVar(obj->getProperty("parameters"));
-    }
-
-    _engine.setPersistentState(state);
-}
-
 void AeolusAudioProcessor::handleNoteOn(MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float /* velocity */)
 {
-    ignoreUnused(source);
-
     if (MessageManager::getInstance()->isThisTheMessageThread()) {
         _engine.postNoteEvent(true, midiNoteNumber, midiChannel);
     } else {
@@ -297,8 +262,6 @@ void AeolusAudioProcessor::handleNoteOn(MidiKeyboardState* source, int midiChann
 
 void AeolusAudioProcessor::handleNoteOff(MidiKeyboardState* source, int midiChannel, int midiNoteNumber, float /* velocity */)
 {
-    ignoreUnused(source);
-
     if (MessageManager::getInstance()->isThisTheMessageThread()) {
         _engine.postNoteEvent(false, midiNoteNumber, midiChannel);
     } else {

@@ -32,6 +32,7 @@
 #include <atomic>
 #include <vector>
 #include <bitset>
+#include <nlohmann/json.hpp>
 
 AEOLUS_NAMESPACE_BEGIN
 
@@ -57,7 +58,7 @@ public:
     /// Link with another division.
     struct Link
     {
-        Division* division;
+        std::shared_ptr<Division> division;
         bool enabled = false;
     };
 
@@ -77,7 +78,7 @@ public:
      *
      * This will configure the division from an organ configuration data.
      */
-//    void initFromVar(const std::map<std::string, std::any>& v);
+    void initFromJson(const nlohmann::json& v);
 
 //    std::map<std::string, std::any> getPersistentState() const;
 //    void setPersistentState(const std::map<std::string, std::any>& v);
@@ -110,8 +111,8 @@ public:
     Stop& addRankwave(Rankwave* ptr, bool ena = false, const std::string& name = std::string());
     Stop& addRankwaves(const std::vector<Rankwave*> rw, bool ena = false, const std::string& name = std::string());
 
-    float* getParamGain() noexcept { return _paramGain; }
-    void setParamGain(float* param) noexcept { _paramGain = param; }
+//    float* getParamGain() noexcept { return _paramGain; }
+//    void setParamGain(float* param) noexcept { _paramGain = param; }
 
     AudioParameterPool& parameters() noexcept { return _params; }
 

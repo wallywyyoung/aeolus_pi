@@ -87,7 +87,7 @@ struct Convolver::Impl
         , convL{}
         , convR{}
         , input(2, ConvHead::Lenght)
-        , ir()//(2, ConvHead::Lenght)
+        , ir("",ConvHead::Lenght,AudioBuffer(2,ConvHead::Lenght))
         , irSamplesRead{0}
         , inputSize{0}
         , framesProcessed{0}
@@ -117,8 +117,8 @@ struct Convolver::Impl
         convL.resize(numBlocks);
         convR.resize(numBlocks);
 
-        headL.init(ir.waveform[0].data(), ir.waveform[0].data(), Convolver::BlockSize);
-        headR.init(ir.waveform[1].data(), ir.waveform[1].data(), Convolver::BlockSize);
+        headL.init(ir.waveform.getReadPointer(0), ir.waveform.getReadPointer(0), Convolver::BlockSize);
+        headR.init(ir.waveform.getReadPointer(1), ir.waveform.getReadPointer(1), Convolver::BlockSize);
 
         updateRealtime (false);
 
@@ -164,17 +164,17 @@ struct Convolver::Impl
             || params[WET].value() > 0.0f;
     }
 
-    void setIR(const IR& ir)
+    void setIR(const IR& newIr)
     {
-        this->ir = ir;
+        ir = newIr;
 
         // Reset the convolver to the initial state
         irSamplesRead = 0;
         framesProcessed = 0;
         input.clear();
 
-        headL.init(this->ir.waveform[0].data(), this->ir.waveform[0].data(), Convolver::BlockSize);
-        headR.init(this->ir.waveform[1].data(), this->ir.waveform[1].data(), Convolver::BlockSize);
+        headL.init(this->ir.waveform.getReadPointer(0), ir.waveform.getReadPointer(0), Convolver::BlockSize);
+        headR.init(this->ir.waveform.getReadPointer(1), ir.waveform.getReadPointer(1), Convolver::BlockSize);
 
         headL.reset();
         headR.reset();
@@ -183,8 +183,8 @@ struct Convolver::Impl
         convR.reset();
 
         int i = zeroDelay ? Convolver::BlockSize : 0;
-        const float* irL = ir.waveform[0].data();
-        const float* irR = ir.waveform[1].data();
+        const float* irL = ir.waveform.getReadPointer(0);
+        const float* irR = ir.waveform.getReadPointer(1);
 
         while (i < std::min((int)inputSize, ir.channelSamples)) {
             convL.feedIr(irL[i]);
