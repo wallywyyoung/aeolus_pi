@@ -24,13 +24,13 @@
 
 AEOLUS_NAMESPACE_BEGIN
 
-Rankwave::Rankwave(std::shared_ptr<Addsynth> model)
-    : _model(model)
-    , _noteMin(model->getNoteMin())
-    , _noteMax(model->getNoteMax())
-    , _pipes{2}
-{
+Rankwave::Rankwave(Addsynth model, const Scale& scale, float tuningFreq) : model(std::make_shared<Addsynth>(model)), _noteMin(model.getNoteMin()), _noteMax(model.getNoteMax()), _pipes{2} {
     assert(_noteMax - _noteMin + 1 > 0);
+    createPipes(scale, tuningFreq);
+}
+
+Rankwave::Rankwave(const Rankwave& other) : model(other.model), _noteMin(other._noteMin), _noteMax(other._noteMax), _pipes{2} {
+
 }
 
 void Rankwave::createPipes(const Scale& scale, float tuningFrequency) {
@@ -39,14 +39,14 @@ void Rankwave::createPipes(const Scale& scale, float tuningFrequency) {
 
     _pipeSetIndex = 0;
 
-    const auto fn = _model->getFn();
-    const auto fd = _model->getFd();
+    const auto fn = model->getFn();
+    const auto fd = model->getFd();
     const auto& s = scale.getTable();
     float fbase = tuningFrequency * static_cast<float>(fn) / static_cast<float>(fd);
 
     for (int i = _noteMin; i <= _noteMax; ++i) {
         for (size_t j = 0; j < _pipes.size(); ++j) {
-            auto pipe = Pipewave(_model, i - _noteMin, scale.getFrequencyForMidiNote(i, fbase));
+            auto pipe = Pipewave(model, i - _noteMin, scale.getFrequencyForMidiNote(i, fbase));
             _pipes[j].push_back(std::move(pipe));
         }
     }
@@ -54,7 +54,7 @@ void Rankwave::createPipes(const Scale& scale, float tuningFrequency) {
 
 void Rankwave::retunePipes(const Scale& scale, float tuningFrequency)
 {
-    const float fnd = (float)_model->getFn() / (float)_model->getFd();
+    const float fnd = (float)model->getFn() / (float)model->getFd();
 
     int pipeSetIndex{ _pipeSetIndex.load() };
     int nextPipeSetIndex{ (pipeSetIndex + 1) % (int)_pipes.size() };

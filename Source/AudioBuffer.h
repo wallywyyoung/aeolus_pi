@@ -8,18 +8,25 @@
 #include <vector>
 
 class AudioBuffer {
-//    const int sampleRate;
-    const int bufferSize;
-    const int channels;
+    int channels;
+    int bufferSize;
 
     std::vector<std::vector<float>> audioBuffer;
+protected:
+    AudioBuffer() : channels{0}, bufferSize{0} { }
 
 public:
-//    AudioBuffer(int sampleRate, int bufferSize, int channels);
-
     void setBuffer(std::vector<std::vector<float>> &newBuffer){
         audioBuffer = newBuffer;
     }
+
+    void setBufferSize(size_t size) {
+        bufferSize = size;
+    }
+
+    void zero();
+
+    void applyGain(const float& gain);
 
     float* getWritePointer(int channel);
     [[nodiscard]] float* getReadPointer(int channel, int offset = 0) const;

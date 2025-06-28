@@ -5,13 +5,6 @@
 #include "AudioBuffer.h"
 #include <algorithm>
 
-//AudioBuffer::AudioBuffer(int sampleRate, int bufferSize, int channels) : sampleRate(sampleRate), bufferSize(bufferSize), channels(channels) {
-//    audioBuffer.reserve(channels);
-//    for (auto& channel : audioBuffer) {
-//        channel.reserve(bufferSize * sampleRate);
-//    }
-//}
-
 float* AudioBuffer::getWritePointer(int channel) {
     return audioBuffer[channel].data();
 }
@@ -23,6 +16,18 @@ float* AudioBuffer::getReadPointer(int channel, int offset) const {
 void AudioBuffer::clear() {
     for (auto& channel : audioBuffer) {
         channel.assign(channel.size(), 0);
+    }
+}
+
+void AudioBuffer::zero() {
+    for (auto& channel : audioBuffer) {
+        channel.assign(channel.size(), 0.0f);
+    }
+}
+
+void AudioBuffer::applyGain(const float& gain) {
+    for (auto& channel : audioBuffer) {
+        std::transform(channel.begin(), channel.end(), channel.begin(), [&](float element) { return element * gain; });
     }
 }
 

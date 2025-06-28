@@ -32,12 +32,10 @@ Stop::Stop()
 {
 }
 
-std::vector<Rankwave*> getRankwavesFromPipeVar(const nlohmann::json& v)
-{
-    std::vector<Rankwave*> rankwaves;
-
+std::vector<std::shared_ptr<Rankwave>> getRankwavesFromPipeVar(const nlohmann::json& v) {
+    std::vector<std::shared_ptr<Rankwave>> rankwaves;
     auto addRankwave = [&](const std::string& name) {
-        if (auto* rankwave = aeolus::EngineGlobal::getInstance().getStopByName(name)) {
+        if (auto rankwave = aeolus::EngineGlobal::getInstance().getStopByName(name)) {
             rankwaves.push_back(rankwave);
         } else {
             throw std::runtime_error("Stop pipe " + name + " cannot be found.");
@@ -92,7 +90,7 @@ void Stop::initFromJson(const nlohmann::json& v) {
         }
     }
 
-void Stop::addZone(Rankwave* ptr)
+void Stop::addZone(std::shared_ptr<Rankwave> ptr)
 {
     assert(ptr != nullptr);
 
@@ -103,7 +101,7 @@ void Stop::addZone(Rankwave* ptr)
     _zones.push_back(zone);
 }
 
-void Stop::addZone(const std::vector<Rankwave*> rw)
+void Stop::addZone(const std::vector<std::shared_ptr<Rankwave>> rw)
 {
     if (rw.empty()) {
         return;
@@ -112,7 +110,7 @@ void Stop::addZone(const std::vector<Rankwave*> rw)
     Zone zone{};
     zone.keyRange = Range(rw[0]->getNoteMin(), rw[0]->getNoteMax() + 1);
 
-    for (auto* ptr : rw) {
+    for (auto ptr : rw) {
         Range range(ptr->getNoteMin(), ptr->getNoteMax() + 1);
         zone.keyRange = zone.keyRange.getUnionWith(range);
         zone.rankwaves.push_back(ptr);

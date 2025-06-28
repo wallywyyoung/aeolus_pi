@@ -43,7 +43,6 @@ public:
     void setValue(float v, bool force = false);
     void setSmoothing(float s) noexcept;
     void setRange(float min, float max);
-
     AudioParameter& operator = (float v);
 
     float value() const noexcept { return _currentValue; }

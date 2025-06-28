@@ -18,7 +18,7 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/worker.h"
-#include "aeolus/ringbuffer.h"
+#include "ObjectBuffer.h"
 #include "aeolus/sema.h"
 
 #include <atomic>
@@ -30,14 +30,14 @@ AEOLUS_NAMESPACE_BEGIN
 
 struct Worker::Impl
 {
-    RingBuffer<Worker::Job*, DefaultCapacity> jobsQueue;
+    ObjectBuffer<Worker::Job*> jobsQueue;
 
     Semaphore sema;
     std::atomic_bool running;
     std::unique_ptr<std::thread> thread;
 
     Impl()
-        : jobsQueue()
+        : jobsQueue(DefaultCapacity)
         , sema(0)
         , running(false)
         , thread(nullptr)
@@ -56,7 +56,7 @@ struct Worker::Impl
 
             wait();
 
-            if (running && jobsQueue.receive (job)) {
+            if (running && jobsQueue.pop(job)) {
                 assert(job != nullptr);
                 job->run();
             }
@@ -67,7 +67,7 @@ struct Worker::Impl
     {
         assert(job != nullptr);
 
-        const auto ok = jobsQueue.send (job);
+        const auto ok = jobsQueue.push(job);
         wakeUp();
 
         return ok;
@@ -94,10 +94,10 @@ struct Worker::Impl
         }
     }
 
-    bool hasPendingJobs() noexcept
-    {
-        return jobsQueue.count() > 0;
-    }
+//    bool hasPendingJobs() noexcept
+//    {
+//        return jobsQueue.count() > 0;
+//    }
 
     bool isRunning() const noexcept
     {
@@ -108,7 +108,7 @@ struct Worker::Impl
     {
         Worker::Job* job;
 
-        while (jobsQueue.receive (job)) {
+        while (jobsQueue.pop(job)) {
             // Do nothing.
         }
     }
@@ -148,10 +148,10 @@ bool Worker::addJob(Job* job)
     return d->addJob (job);
 }
 
-bool Worker::hasPendingJobs() noexcept
-{
-    return d->hasPendingJobs();
-}
+//bool Worker::hasPendingJobs() noexcept
+//{
+//    return d->hasPendingJobs();
+//}
 
 bool Worker::isRunning() const noexcept
 {

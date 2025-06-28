@@ -60,6 +60,7 @@ AEOLUS_NAMESPACE_BEGIN
 constexpr static int SAMPLE_RATE = 44100;
 constexpr static float SAMPLE_RATE_F = (float) SAMPLE_RATE;
 constexpr static float SAMPLE_RATE_R = 1.0f / SAMPLE_RATE_F;
+constexpr static size_t BPS_RATE = SAMPLE_RATE * 2 /* 16-bit */ * N_OUTPUT_CHANNELS;
 
 /// Global volume gain.
 constexpr static float VOLUME_GAIN = 4.0f;

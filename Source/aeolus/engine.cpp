@@ -25,12 +25,6 @@
 
 AEOLUS_NAMESPACE_BEGIN
 
-namespace settings {
-    const static char* tuningFrequency = "tuningFrequency";
-    const static char* tuningTemperament = "tuningTemperament";
-    const static char* mtsEnabled = "mtsEnabled";
-}
-
 Engine::Engine()
     : _sampleRate{SAMPLE_RATE_F}
     , _voicePool(*this)
@@ -50,8 +44,6 @@ Engine::Engine()
     , _interpolator{1.0f, N_OUTPUT_CHANNELS}
     , _midiKeyboardState{}
 //    , _volumeLevel{}
-    , _midiControlChannelsMask{ (1 << 16) - 1 }
-    , _midiSwellChannelsMask{ (1 << 16) - 1 }
 {
     populateDivisions();
 
@@ -80,7 +72,7 @@ void Engine::setReverbIR(int num)
 
     if (num >= 0 && num < irs.irs.size()) {
         const auto& ir = irs.irs[num];
-        _convolver.setLength(int(ir.waveform.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
+        _convolver.setLength(int(ir.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
         _convolver.prepareToPlay(SAMPLE_RATE_F, SUB_FRAME_LENGTH); // these parameters are irrelevant
         _convolver.setZeroDelay(ir.zeroDelay);
         _convolver.setIR(ir);
@@ -96,8 +88,7 @@ void Engine::postReverbIR(int num)
     // Anticipate the IR change that will happen later.
     // This is required for the UI to be updated correctly.
     _selectedIR = num;
-
-    _irSwitchEvents.send({num});
+    _irSwitchEvents.push(Engine::IRSwithEvent(num));
 }
 
 float Engine::getReverbLengthInSeconds() const
@@ -173,8 +164,8 @@ void Engine::process(float* outL, float* outR, int numFrames, bool isNonRealtime
 
     applyVolume(origOutL, origOutR, origNumFrames);
 
-    _volumeLevel.left.process(origOutL, origNumFrames);
-    _volumeLevel.right.process(origOutR, origNumFrames);
+//    _volumeLevel.left.process(origOutL, origNumFrames);
+//    _volumeLevel.right.process(origOutR, origNumFrames);
 }
 
 void Engine::process(AudioBuffer& out, bool isNonRealtime)
@@ -226,76 +217,39 @@ void Engine::process(AudioBuffer& out, bool isNonRealtime)
     // Global volume across all the buses
     applyVolume(out);
 
-    _volumeLevel.left.process(out);
-    _volumeLevel.right = _volumeLevel.left;
+//    _volumeLevel.left.process(out);
+//    _volumeLevel.right = _volumeLevel.left;
 }
 
-void Engine::processMIDIMessage(const MidiMessage& message)
-{
-    // Process global CCs
-    if (midi::matchChannelToMask(getMIDIControlChannelsMask(), message.getChannel())) {
-        processControlMIDIMessage(message);
-    }
-
-    if (message.isController()) {
-        // Process divisions CCs
-        for (auto &division : _divisions)
-            division.handleControlMessage(message);
-    } else if (message.isNoteOnOrOff()) {
-        // Notes on/off
-        _midiKeyboardState.processNextMidiEvent(message);
-        return;
-    }
-}
-
-void Engine::noteOn(int note, int midiChannel)
-{
+void Engine::handleSequencerSwitch(const int& note) {
     clearDivisionsTriggerFlag();
-
-    bool handled{ false };
-
-    // Handle key switches
-    // @note If a key switch falls within the playable range we need to make
-    //       sure we don't process corresponding note-on event, otherwise
-    //       navigating the sequencer will create a spurious sounds.
-    if (midi::matchChannelToMask(getMIDIControlChannelsMask(), midiChannel)) {
-        if (isKeySwitchBackward(note)) {
-            _sequencer->stepBackward();
-            handled = true;
-        } else if (isKeySwitchForward(note)) {
-            _sequencer->stepForward();
-            handled = true;
-        }
-    }
-
-    // Handle keys
-    if (!handled) {
-
-        // Ignore note-on event if filtered by MTS.
-        auto* g = aeolus::EngineGlobal::getInstance();
-
-        if (!g->shouldMTSFilterNote(note, midiChannel)) {
-            for (auto &division : _divisions)
-                division.noteOn(note, midiChannel);
-        }
+    if (isKeySwitchBackward(note)) {
+        _sequencer->stepBackward();
+    } else if (isKeySwitchForward(note)) {
+        _sequencer->stepForward();
     }
 }
 
-void Engine::noteOff(int note, int midiChannel)
-{
+void Engine::handleNoteOn(const int &channel, const int &note) {
     clearDivisionsTriggerFlag();
+    // Ignore note-on event if filtered by MTS.
+    if (aeolus::EngineGlobal::getInstance().shouldMTSFilterNote(note, channel)) {
+        for (auto &division: _divisions)
+            division->noteOn(note, channel);
+    }
+}
 
+void Engine::handleNoteOff(const int &channel, const int &note) {
+    clearDivisionsTriggerFlag();
     for (auto &division : _divisions) {
-        division.noteOff(note, midiChannel);
+        division->noteOff(note, channel);
     }
 }
 
-void Engine::allNotesOff()
+void Engine::handleAllNotesOff()
 {
     for (auto &division : _divisions)
-        division.allNotesOff();
-
-    _midiKeyboardState.allNotesOff(0);
+        division->allNotesOff();
 }
 
 Range Engine::getMidiKeyboardRange() const
@@ -305,7 +259,7 @@ Range Engine::getMidiKeyboardRange() const
 
     for (auto &division : _divisions) {
         int min, max;
-        division.getAvailableRange(min, max);
+        division->getAvailableRange(min, max);
 
         if (min >= 0 && max >= 0) {
             if (minNote < 0 || minNote > min)
@@ -332,11 +286,11 @@ std::set<int> Engine::getKeySwitches() const
     return keySwitches;
 }
 
-Division* Engine::getDivisionByName(const std::string& name)
+std::shared_ptr<Division> Engine::getDivisionByName(const std::string& name)
 {
     for (auto &division : _divisions) {
-        if (division.getName() == name)
-            return &division;
+        if (division->getName() == name)
+            return division;
     }
 
     return nullptr;
@@ -344,12 +298,8 @@ Division* Engine::getDivisionByName(const std::string& name)
 
 void Engine::clearDivisionsTriggerFlag() {
     for (auto& division : _divisions) {
-        division.clearTriggerFlag();
+        division->clearTriggerFlag();
     }
-}
-
-void Engine::postNoteEvent(bool onOff, int note, int midiChannel) {
-    _pendingNoteEvents.send({onOff, note, midiChannel});
 }
 
 bool Engine::processSubFrame() {
@@ -391,24 +341,12 @@ bool Engine::processSubFrame() {
     return wasAudioGenerated;
 }
 
-void Engine::processPendingNoteEvents()
-{
-    NoteEvent event;
-
-    while (_pendingNoteEvents.receive(event)) {
-        if (event.on)
-            noteOn(event.note, event.midiChannel);
-        else
-            noteOff(event.note, event.midiChannel);
-    }
-}
-
 void Engine::processPendingIRSwitchEvents()
 {
     IRSwithEvent event;
     bool received = false;
 
-    while (_irSwitchEvents.receive(event)) {
+    while (_irSwitchEvents.pop(event)) {
         received = true;
     }
 
@@ -465,20 +403,18 @@ void Engine::applyVolume(float* outL, float* outR, int numFrames)
     }
 }
 
-void Engine::processControlMIDIMessage(const MidiMessage& message)
-{
-    if (message.isProgramChange()) {
-        int step = message.getProgramChangeNumber();
 
-        if (step >= 0 && step < _sequencer->getStepsCount())
-            _sequencer->setStep(step);
-    } else if (message.isController() && message.getControllerNumber() == CC_STOP_BUTTONS) {
-        const auto value{ message.getControllerValue() };
+void Engine::handlePC(const int& pc) {
+    if (pc >= 0 && pc < _sequencer->getStepsCount())
+        _sequencer->setStep(pc);
+}
 
+
+void Engine::handleCC(const int& channel, const int& cc, const int& value) {
+    if (cc == CC_STOP_BUTTONS) {
         if ((value & 0xC8) == 0x40) {
             // 01mm0ggg
             StopControlMode mode { StopControlMode::Disabled };
-
             const int modeValue{ (value >> 4) & 0x03 };
             switch (modeValue) {
                 case 0: mode = StopControlMode::Disabled; break;
@@ -487,21 +423,17 @@ void Engine::processControlMIDIMessage(const MidiMessage& message)
                 case 3: mode = StopControlMode::Toggle; break;
                 default: break;
             }
-
             _stopControlMode = mode;
             _stopControlGroup = value & 0x07;
-
             if (_stopControlMode == StopControlMode::Disabled) {
                 // Disable message does not require a 2nd part and can be processed immeditely.
                 processStopControlMessage();
-
                 _stopControlMode.reset();
             }
         } else if ((value & 0xE0) == 0) {
             // 000bbbbb
             if (_stopControlMode.has_value()) {
                 _stopControlButton = value & 0x1F;
-
                 processStopControlMessage();
             }
         } else {
@@ -542,16 +474,12 @@ void Engine::processStopControlMessage()
 
 bool Engine::isKeySwitchForward(int key) const
 {
-    return std::find(_sequencerStepForwardKeySwitches.begin(),
-                     _sequencerStepForwardKeySwitches.end(),
-                     key) != _sequencerStepForwardKeySwitches.end();
+    return std::find(_sequencerStepForwardKeySwitches.begin(), _sequencerStepForwardKeySwitches.end(), key) != _sequencerStepForwardKeySwitches.end();
 }
 
 bool Engine::isKeySwitchBackward(int key) const
 {
-    return std::find(_sequencerStepBackwardKeySwitches.begin(),
-                     _sequencerStepBackwardKeySwitches.end(),
-                     key) != _sequencerStepBackwardKeySwitches.end();
+    return std::find(_sequencerStepBackwardKeySwitches.begin(), _sequencerStepBackwardKeySwitches.end(), key) != _sequencerStepBackwardKeySwitches.end();
 }
 
 void Engine::populateDivisions() {

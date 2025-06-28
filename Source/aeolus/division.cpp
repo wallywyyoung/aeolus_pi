@@ -20,6 +20,7 @@
 #include "globals.h"
 #include "division.h"
 #include "engine.h"
+#include "EngineGlobal.h"
 
 
 
@@ -246,7 +247,7 @@ void Division::clear()
     _stops.clear();
 }
 
-Stop& Division::addRankwave(Rankwave* ptr, bool ena, const std::string& name)
+Stop& Division::addRankwave(std::shared_ptr<Rankwave> ptr, bool ena, const std::string& name)
 {
     assert(ptr != nullptr);
 
@@ -259,7 +260,7 @@ Stop& Division::addRankwave(Rankwave* ptr, bool ena, const std::string& name)
     return _stops.back();
 }
 
-Stop& Division::addRankwaves(const std::vector<Rankwave*> rw, bool ena, const std::string& name)
+Stop& Division::addRankwaves(const std::vector<std::shared_ptr<Rankwave>> rw, bool ena, const std::string& name)
 {
     assert(!rw.empty());
     Stop ref{};
@@ -428,7 +429,7 @@ void Division::handleControlMessage(const MidiMessage& msg)
     if (cc != aeolus::CC_MODULATION && cc != aeolus::CC_VOLUME && cc != aeolus::CC_ALL_NOTES_OFF)
         return;
 
-    const int swellCh{ _engine.getMIDISwellChannelsMask() };
+    const int swellCh{ EngineGlobal::getInstance().getMIDISwellChannelsMask() };
     const float value{ float(msg.getControllerValue()) / 127.0f };
 
     if (msg.getChannel() == 0 || (swellCh & (msg.getChannel() - 1)) != 0) {
@@ -665,7 +666,7 @@ bool Division::triggerVoicesForStop(int stopIndex, int note)
 
     for (const auto& zone : stop.getZones()) {
         if (zone.isForKey(note)) {
-            for (auto* rw : zone.rankwaves) {
+            for (auto rw : zone.rankwaves) {
                 auto state = rw->trigger(note);
 
                 // Rankwave may be in the middle of construction, in this case

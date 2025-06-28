@@ -4,7 +4,7 @@
 
 #include "IOManager.h"
 #include "aeolus/dsp/convolver.h"
-#include "aeolus/addsynth.h"
+#include "aeolus/Addsynth.h"
 #include "aeolus/division.h"
 #include "aeolus/EngineGlobal.h"
 #include <nlohmann/json.hpp>
@@ -22,14 +22,12 @@ IRs IOManager::loadIRs() {
     IR ir;
     for (auto jsonIr: jsonIRs["irs"]){
         audioFile.load(jsonIr["fileName"]);
-        ir.waveform.setBuffer(audioFile.samples);
-        ir.channelSamples = audioFile.getNumSamplesPerChannel();
-        auto startOffset = static_cast<int>(jsonIr["startOffset"]);
+        ir.setBufferSize(audioFile.getNumSamplesPerChannel());
+        ir.setBuffer(audioFile.samples);
+        ir.zeroDelay = jsonIr["zeroDelay"];
+        auto startOffset = ir.zeroDelay? 0 : static_cast<int>(jsonIr["startOffset"]);
         auto gain = static_cast<float>(jsonIr["gain"]);
-        for (auto channel : ir.waveform) {
-            channel.erase(channel.begin(), channel.begin() + startOffset);
-            std::transform(channel.begin(), channel.end(), channel.begin(), [&](float element) { return element * gain; });
-        }
+        ir.applyGain(gain);
         irs.irs.push_back(ir);
         irs.longestIRLength = std::max(irs.longestIRLength, audioFile.getNumSamplesPerChannel());
     }
@@ -82,32 +80,26 @@ std::vector<std::byte> IOManager::readBinaryFile(std::string path) {
     return binary;
 }
 
-std::vector<aeolus::Addsynth> IOManager::loadPipes()
-{
-    constexpr const char* directory = "./Resources/stops/";
-    constexpr const char* binaryExtension = ".ae0";
-    constexpr const char* jsonExtension = ".json";
+std::vector<aeolus::Addsynth> IOManager::loadPipes() {
     std::vector<aeolus::Addsynth> synths;
-
-    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+    for (const auto& entry : std::filesystem::directory_iterator(DIRECTORY)) {
         if (!std::filesystem::is_regular_file(entry)) {
             continue;
         }
         auto extension = entry.path().extension().string();
         auto synth = aeolus::Addsynth();
-        if (extension.compare(binaryExtension)) {
-            auto binary = readBinaryFile(entry.path());
+        if (extension == BINARY_EXTENSION) {
+            auto binary = IOManager::readBinaryFile(entry.path());
             std::string binaryString(reinterpret_cast<const char*>(binary.data()), binary.size());
             std::istringstream stream(binaryString);
             synth.fromStream(stream);
             synths.push_back(synth);
-        } else if (extension.compare(jsonExtension)) {
+        } else if (extension == JSON_EXTENSION) {
             std::ifstream stream(entry.path());
             auto json = nlohmann::json::parse(stream);
             synth.fromJson(json);
             synths.push_back(synth);
         }
     }
-
     return synths;
 }

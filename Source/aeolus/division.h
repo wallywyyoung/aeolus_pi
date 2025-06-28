@@ -108,11 +108,11 @@ public:
 
 
     void clear();
-    Stop& addRankwave(Rankwave* ptr, bool ena = false, const std::string& name = std::string());
-    Stop& addRankwaves(const std::vector<Rankwave*> rw, bool ena = false, const std::string& name = std::string());
+    Stop& addRankwave(std::shared_ptr<Rankwave> ptr, bool ena = false, const std::string& name = std::string());
+    Stop& addRankwaves(const std::vector<std::shared_ptr<Rankwave>> rw, bool ena = false, const std::string& name = std::string());
 
 //    float* getParamGain() noexcept { return _paramGain; }
-//    void setParamGain(float* param) noexcept { _paramGain = param; }
+    void setParamGain(std::shared_ptr<aeolus::AudioParameter> param) noexcept { _paramGain = param; }
 
     AudioParameterPool& parameters() noexcept { return _params; }
 
@@ -203,7 +203,7 @@ private:
     std::atomic<float> _tremulantTargetLevel;
 
     /// Stored gain parameter for easy access from the devision control UI component
-    float* _paramGain;
+    std::shared_ptr<aeolus::AudioParameter> _paramGain;
     AudioParameterPool _params;
 
     /// Swell low-pass filter.

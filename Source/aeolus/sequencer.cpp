@@ -201,7 +201,7 @@ void Sequencer::initFromEngine()
         step.divisions.resize(numDivisions);
 
         for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
-            auto* division = _engine.getDivisionByIndex(divIdx);
+            auto division = _engine.getDivisionByIndex(divIdx);
             step.divisions[divIdx].stops.resize(division->getStopsCount());
             step.divisions[divIdx].links.resize(division->getLinksCount());
         }
@@ -214,7 +214,7 @@ void Sequencer::captureState(OrganState& organState)
     assert(organState.divisions.size() == numDivisions);
 
     for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
-        auto* const division = _engine.getDivisionByIndex(divIdx);
+        auto const division = _engine.getDivisionByIndex(divIdx);
         auto& divisionState = organState.divisions[divIdx];
 
         const auto numStops = division->getStopsCount();
@@ -240,7 +240,7 @@ void Sequencer::recallState(const OrganState& organState)
     assert(organState.divisions.size() == numDivisions);
 
     for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
-        auto* const division = _engine.getDivisionByIndex(divIdx);
+        auto const division = _engine.getDivisionByIndex(divIdx);
 
         assert(organState.divisions[divIdx].stops.size() == division->getStopsCount());
 

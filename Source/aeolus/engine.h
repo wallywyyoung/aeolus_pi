@@ -20,10 +20,10 @@
 #pragma once
 
 #include "aeolus/globals.h"
-#include "aeolus/ringbuffer.h"
+#include "../ObjectBuffer.h"
 #include "aeolus/scale.h"
 #include "aeolus/voice.h"
-#include "aeolus/addsynth.h"
+#include "aeolus/Addsynth.h"
 #include "aeolus/rankwave.h"
 #include "aeolus/division.h"
 #include "aeolus/sequencer.h"
@@ -32,8 +32,9 @@
 #include "aeolus/dsp/convolver.h"
 #include "aeolus/dsp/interpolator.h"
 #include "aeolus/MidiMessage.h"
-#include "aeolus/MidiKeyboardState.h"
+#include "aeolus/MidiManager.h"
 #include "AudioBuffer.h"
+#include "MidiManager.h"
 
 #include <optional>
 #include <vector>
@@ -41,15 +42,12 @@
 #include <set>
 
 AEOLUS_NAMESPACE_BEGIN
-
-class Engine;
-
 /**
  * @brief Organ engine.
  * This class defines the top-level organ engine that performs MIDI events processing
  * and audio generation.
  */
-class Engine
+class Engine : public MidiManager::MidiListener
 {
 public:
     struct NoteEvent
@@ -108,7 +106,6 @@ public:
      * This to be called on the main (UI) thread.
      */
     void postReverbIR(int num);
-
     /**
      * Returns currently set reverb IR number.
      */
@@ -137,26 +134,6 @@ public:
 //    Level& getVolumeLevel() noexcept { return _volumeLevel; }
 
     /**
-     * Returns currently set MIDI control channel.
-     */
-    int getMIDIControlChannelsMask() const noexcept { return _midiControlChannelsMask; }
-
-    /**
-     * Assign MIDI channel to be used to control the organ stops and sequencer.
-     */
-    void setMIDIControlChannelsMask(int mask) noexcept { _midiControlChannelsMask = mask; }
-
-    /**
-    * Returns currently set MIDI control channel.
-    */
-    int getMIDISwellChannelsMask() const noexcept { return _midiSwellChannelsMask; }
-
-    /**
-    * Assign MIDI channel to be used to control the organ stops and sequencer.
-    */
-    void setMIDISwellChannelsMask(int mask) noexcept { _midiSwellChannelsMask = mask; }
-
-    /**
      * Generate audio.
      */
     void process(float* outL, float* outR, int numFrames, bool isNonRealtime = false);
@@ -167,24 +144,16 @@ public:
     /**
      * Process incoming MIDI messages.
      */
-    void processMIDIMessage(const MidiMessage& message);
+    void processMIDIMessage(MidiMessage message);
 
-    /**
-     * Handle note-on events.
-     */
-    void noteOn(int note, int midiChannel);
+    void handleSequencerSwitch(const int& note) override;
+    void handleNoteOn(const int &channel, const int &note) override;
+    void handleNoteOff(const int &channel, const int &note) override;
+    void handleAllNotesOff() override;
+    void handlePC(const int& pc) override;
+    void handleCC(const int& channel, const int& cc, const int& value) override;
 
-    /**
-     * Handle note-off events.
-     */
-    void noteOff(int note, int midiChannel);
-
-    /**
-     * Release all the active voices immediately.
-     */
-    void allNotesOff();
-
-    MidiKeyboardState& getMidiKeyboardState() noexcept { return _midiKeyboardState; }
+    MidiManager& getMidiKeyboardState() noexcept { return _midiKeyboardState; }
 
     Range getMidiKeyboardRange() const;
 
@@ -230,8 +199,6 @@ private:
 
     float _sampleRate;
 
-    RingBuffer<NoteEvent, 1024> _pendingNoteEvents;
-
     VoicePool _voicePool;           ///< All the voices.
 
     AudioParameterPool _params;     ///< Internal parameters.
@@ -259,17 +226,16 @@ private:
 
     dsp::Convolver _convolver;
     std::atomic<int> _selectedIR;
-    RingBuffer<IRSwithEvent, 1024> _irSwitchEvents;
+    ObjectBuffer<IRSwithEvent> _irSwitchEvents;
     int _reverbTailCounter;
 
     dsp::Interpolator _interpolator;
 
-    MidiKeyboardState _midiKeyboardState;
+    MidiManager _midiKeyboardState;
 
 //    Level _volumeLevel;
 
-    std::atomic<int> _midiControlChannelsMask;
-    std::atomic<int> _midiSwellChannelsMask;
+
 };
 
 AEOLUS_NAMESPACE_END

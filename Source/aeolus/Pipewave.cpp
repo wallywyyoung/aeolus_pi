@@ -12,13 +12,7 @@
 AEOLUS_NAMESPACE_BEGIN
 
 
-Pipewave::Pipewave(std::shared_ptr<Addsynth> model, int note, float freq)
-        : _model(model)
-        , _note(note)
-        , _freq(freq)
-        , _needsToBeRebuilt(std::make_shared<std::atomic<bool>>(true))
-{
-}
+Pipewave::Pipewave(std::shared_ptr<Addsynth> model, int note, float freq) : _model(model), _note(note), _freq(freq) , _needsToBeRebuilt(std::make_shared<std::atomic<bool>>(true)) { }
 
 Pipewave::Pipewave(const Pipewave& other)
         : _model{ other._model }

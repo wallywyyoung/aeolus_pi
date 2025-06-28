@@ -97,7 +97,7 @@ float AudioParameter::nextValue()
 
 void AudioParameter::updateSmoothing()
 {
-    _smoothing = fabsf(_currentValue - _targetValue) > std::numeric_limits<float>::epsilon();
+    _smoothing = std::abs(_currentValue - _targetValue) > std::numeric_limits<float>::epsilon();
 
     if (!_smoothing)
         _currentValue = _targetValue;

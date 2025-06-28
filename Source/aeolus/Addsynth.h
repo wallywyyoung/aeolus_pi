@@ -21,6 +21,7 @@
 #pragma once
 
 #include "aeolus/globals.h"
+#include "HN_func.h"
 
 #include <cstdint>
 #include <array>
@@ -32,68 +33,6 @@
 #include <nlohmann/json.hpp>
 
 AEOLUS_NAMESPACE_BEGIN
-
-/**
- * @brief Interpolated per-note look-up table.
- *
- * This class stores a float parameter across the
- * N_NOTES points. Notes in between get interpolated linearly.
- */
-class N_func final
-{
-public:
-    N_func();
-    void reset(float v);
-    void setValue(int idx, float v);    // setv(i, v)
-    void clearValue(int idx);           // clrv(i)
-    float getValue(int idx) const;      // vs(i)
-    bool isSet(int idx) const;          // st(i)
-
-    /// Returns interpolated value for a note number (starting from 0).
-    float operator[](int note) const;   // vi(n)
-
-//    std::map<std::string, std::any> toVar() const;
-    void fromJson(const nlohmann::json& v);
-    void read(std::istream& stream);
-
-private:
-    int _b;
-    std::array<float, N_NOTES> _v;
-};
-
-//==============================================================================
-
-/**
- * @brief Interpolated per-note look-up table for harmonics.
- *
- * This class keeps a per-note LUT for each of the N_HARM harmonics.
- */
-class HN_func final
-{
-public:
-    HN_func();
-    void reset(float v);
-    void setValue(int idx, float v);            // setv(i, v)
-    void setValue(int harm, int idx, float v);  // setv(h, i, v)
-    void clearValue(int idx);                   // clrv(i)
-    void clearValue(int harm, int idx);         // clrv(h, i);
-    float getValue(int harm, int idx) const;    // vs(h, i);
-    bool isSet(int harm, int idx) const;        // st(h, i)
-
-    N_func& operator[](int harm) { assert(isPositiveAndBelow(harm, _h.size())); return _h[harm]; }
-    const N_func& operator[](int harm) const { assert(isPositiveAndBelow(harm, _h.size())); return _h[harm]; }
-
-//    std::map<std::string, std::any> toVar(int n = N_HARM) const;
-    void fromJson(const nlohmann::json& v);
-
-//    void write(std::ofstream& stream, int n = N_HARM) const;
-    void read(std::istream& stream, int n = N_HARM);
-
-private:
-    std::array<N_func, N_HARM> _h;
-};
-
-//==============================================================================
 
 class Addsynth final
 {
@@ -111,14 +50,9 @@ public:
     int getNoteMin() const noexcept { return _noteMin; }
     int getNoteMax() const noexcept { return _noteMax; }
 
-//    std::map<std::string, std::any> toVar() const;
     void fromJson(const nlohmann::json& v);
 
-//    void write(std::ofstream& stream) const;
     void fromStream(std::istream& stream);
-
-//    std::expected readFromResource(const std::string& name);
-//    std::expected readFromFile(const juce::File& file);
 
     float getNoteVolume(int n) const noexcept { return _n_vol[n]; }
     float getNoteAttack(int n) const noexcept { return _n_att[n]; }
@@ -174,41 +108,6 @@ private:
     HN_func _h_ran; ///< Harmonic level randomization.
     HN_func _h_att; ///< Harmonic attack time
     HN_func _h_atp; ///< Harmonic attack profile.
-};
-
-//==============================================================================
-
-/**
- * @brief A collection of all available stops.
- *
- * This class holds a collection of all available stops.
- * These stops models are shared among all the plugin instances.
- */
-class Model
-{
-public:
-    static Model& getInstance() {
-        static Model instance;
-        return instance;
-    }
-    Model(const Model&) = delete;
-    Model& operator=(const Model&) = delete;
-    Model(Model&&) = delete;
-    Model& operator=(Model&&) = delete;
-
-    void addSynths(std::vector<std::shared_ptr<Addsynth>> synths);
-
-    [[nodiscard]] std::vector<std::string> getStopNames() const;
-//    Addsynth* getStopByName(const std::string& name);
-
-    [[nodiscard]] int getStopsCount() const { return _synths.size(); }
-    std::shared_ptr<Addsynth> operator[](int idx) { return _synths[idx]; }
-    std::shared_ptr<Addsynth> operator[](int idx) const { return _synths[idx]; }
-
-private:
-    Model() = default;
-
-    std::vector<std::shared_ptr<Addsynth>> _synths{};
 };
 
 AEOLUS_NAMESPACE_END

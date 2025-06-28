@@ -3,18 +3,16 @@
 //
 #pragma once
 
-AEOLUS_NAMESPACE_BEGIN
-
 #include "aeolus/IR.h"
 
 class IOManager {
 public:
-    void loadOrganDefinition();
-    IRs loadIRs();
-    std::vector<aeolus::Addsynth> loadPipes();
+    static void loadOrganDefinition();
+    static IRs loadIRs();
+    static std::vector<aeolus::Addsynth> loadPipes();
 private:
-    std::vector<std::byte> readBinaryFile(std::string path);
-    void readIRWav(IR ir, std::string filePath);
+    const char* DIRECTORY = "./Resources/stops/";
+    const char* BINARY_EXTENSION = ".ae0";
+    const char* JSON_EXTENSION = ".json";
+    static std::vector<std::byte> readBinaryFile(std::string path);
 };
-
-AEOLUS_NAMESPACE_END

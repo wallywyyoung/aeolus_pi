@@ -23,16 +23,18 @@
 #include <vector>
 #include "AudioBuffer.h"
 
-struct IR
-{
+class IR : public AudioBuffer {
     std::string name;
-    int channelSamples;
-    AudioBuffer waveform;
+
+public:
+    IR() : name{}, AudioBuffer() { }
+    IR(std::string name, int channels, int bufferSize) : name(name), AudioBuffer(channels, bufferSize)  { }
+    IR(const IR& other) = default;
+    bool zeroDelay;
 
     void clear() {
         name.clear();
-        channelSamples = int();
-        waveform.clear();
+        AudioBuffer::clear();
     };
 };
 

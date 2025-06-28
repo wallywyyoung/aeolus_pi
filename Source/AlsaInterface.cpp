@@ -6,20 +6,39 @@
 #include <asoundlib.h>
 #include <stdexcept>
 #include <cassert>
+#include <vector>
+#include "aeolus/globals.h"
 
-AlsaInterface::AlsaInterface(int channels, unsigned int sampleRate, int bufferSize) {
+AlsaInterface::AlsaInterface() : midiBuffer() {
     initMidi();
-    initAudio(channels, sampleRate, bufferSize);
+    initAudio(aeolus::N_OUTPUT_CHANNELS, static_cast<unsigned int>(aeolus::SAMPLE_RATE), aeolus::BPS_RATE);
 }
 
-void AlsaInterface::poll() {
-    if (::poll(pfd,npfd, 100000) <= 0) {
-        return;
-    }
-    snd_seq_event_t* event;
-    do {
-        snd_seq_event_input(sequencer, &event);
-    } while (snd_seq_event_input_pending(sequencer, 0) > 0);
+void AlsaInterface::beginPollMidi() {
+    runningMidi = true;
+    std::thread thisThread([this]() {
+        auto transferBuffer = std::vector<MidiData>();
+        do {
+            if (::poll(pfd, npfd, 100000) <= 0) {
+                return;
+            }
+            snd_seq_event_t *event;
+            transferBuffer.clear();
+            do {
+                snd_seq_event_input(sequencer, &event);
+                auto data = MidiData(*event);
+                if (data.eventType == MidiData::IGNORE) {
+                    continue;
+                }
+                transferBuffer.push_back(data);
+            } while (snd_seq_event_input_pending(sequencer, 0) > 0);
+            midiBuffer.push(transferBuffer);
+        } while (runningMidi);
+    });
+}
+
+void AlsaInterface::endPollMidi() {
+    runningMidi = false;
 }
 
 AlsaInterface::~AlsaInterface() {
@@ -41,7 +60,7 @@ void AlsaInterface::initMidi() {
     snd_seq_poll_descriptors(sequencer,pfd, npfd, POLLIN);
 }
 
-void AlsaInterface::initAudio(int channels, unsigned int sampleRate, int bufferSize) {
+void AlsaInterface::initAudio(int channels, unsigned int sampleRate, size_t bufferSize) {
     snd_pcm_format_t format = SND_PCM_FORMAT_FLOAT;
     snd_pcm_hw_params_t* hwParams;
 
@@ -57,4 +76,31 @@ void AlsaInterface::initAudio(int channels, unsigned int sampleRate, int bufferS
     snd_pcm_hw_params_free(hwParams);
 
     assert(snd_pcm_prepare(playback));
+}
+
+void AlsaInterface::beginPlayback() {
+    runningAudio = true;
+    std::thread thisThread([this]() {
+        snd_pcm_sframes_t frames;
+        do {
+            if (snd_pcm_wait(playback, 1000) < 0) {
+                break;
+            }
+            if ((frames = snd_pcm_avail_update(playback)) < 0) {
+                if (frames == -EPIPE) {
+                    break;
+                } else {
+                    break;
+                }
+            }
+            char buffer[4096];
+            if (snd_pcm_writei(playback, buffer, frames) < 0) {
+                break;
+            }
+        } while (runningAudio);
+    });
+}
+
+void AlsaInterface::endPlayback() {
+    runningAudio = false;
 }

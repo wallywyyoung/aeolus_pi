@@ -87,7 +87,7 @@ struct Convolver::Impl
         , convL{}
         , convR{}
         , input(2, ConvHead::Lenght)
-        , ir("",ConvHead::Lenght,AudioBuffer(2,ConvHead::Lenght))
+        , ir("",2,ConvHead::Lenght)
         , irSamplesRead{0}
         , inputSize{0}
         , framesProcessed{0}
@@ -117,8 +117,8 @@ struct Convolver::Impl
         convL.resize(numBlocks);
         convR.resize(numBlocks);
 
-        headL.init(ir.waveform.getReadPointer(0), ir.waveform.getReadPointer(0), Convolver::BlockSize);
-        headR.init(ir.waveform.getReadPointer(1), ir.waveform.getReadPointer(1), Convolver::BlockSize);
+        headL.init(ir.getReadPointer(0), ir.getReadPointer(0), Convolver::BlockSize);
+        headR.init(ir.getReadPointer(1), ir.getReadPointer(1), Convolver::BlockSize);
 
         updateRealtime (false);
 
@@ -173,8 +173,8 @@ struct Convolver::Impl
         framesProcessed = 0;
         input.clear();
 
-        headL.init(this->ir.waveform.getReadPointer(0), ir.waveform.getReadPointer(0), Convolver::BlockSize);
-        headR.init(this->ir.waveform.getReadPointer(1), ir.waveform.getReadPointer(1), Convolver::BlockSize);
+        headL.init(this->ir.getReadPointer(0), ir.getReadPointer(0), Convolver::BlockSize);
+        headR.init(this->ir.getReadPointer(1), ir.getReadPointer(1), Convolver::BlockSize);
 
         headL.reset();
         headR.reset();
@@ -183,10 +183,10 @@ struct Convolver::Impl
         convR.reset();
 
         int i = zeroDelay ? Convolver::BlockSize : 0;
-        const float* irL = ir.waveform.getReadPointer(0);
-        const float* irR = ir.waveform.getReadPointer(1);
+        const float* irL = ir.getReadPointer(0);
+        const float* irR = ir.getReadPointer(1);
 
-        while (i < std::min((int)inputSize, ir.channelSamples)) {
+        while (i < std::min((int)inputSize, ir.getNumSamples())) {
             convL.feedIr(irL[i]);
             convR.feedIr(irR[i]);
             ++i;
@@ -215,8 +215,8 @@ struct Convolver::Impl
         if (state == FeedHeadIR)
         {
             // ir buffer is ready at this point
-            if (ir.channelSamples <= Convolver::BlockSize) {
-                irSamplesRead = ir.channelSamples;
+            if (ir.getNumSamples() <= Convolver::BlockSize) {
+                irSamplesRead = ir.getNumSamples();
                 state = Process;
             } else {
                 irSamplesRead = Convolver::BlockSize;
@@ -229,7 +229,7 @@ struct Convolver::Impl
 
             framesProcessed += numFrames;
 
-            if (framesProcessed >= inputSize || irSamplesRead >= ir.channelSamples) {
+            if (framesProcessed >= inputSize || irSamplesRead >= ir.getNumSamples()) {
                 // The entire IR has been read, switch to procesing without IR streaming
                 state = Process;
             }

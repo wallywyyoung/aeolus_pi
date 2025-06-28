@@ -4,7 +4,7 @@
 #pragma once
 
 #include "globals.h"
-#include "addsynth.h"
+#include "Addsynth.h"
 #include <atomic>
 
 AEOLUS_NAMESPACE_BEGIN

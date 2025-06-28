@@ -49,7 +49,7 @@ public:
     // Zone - a grouping pipes for a range of keys.
     struct Zone {
         Range keyRange;
-        std::vector<Rankwave*> rankwaves;
+        std::vector<std::shared_ptr<Rankwave>> rankwaves;
 
         bool isForKey(int key) const noexcept { return keyRange.contains(key); }
     };
@@ -81,12 +81,12 @@ public:
      * Add a zone that consists of a single rankwave (pipe)
      * that covers its entire range of keys.
      */
-    void addZone(Rankwave* ptr);
+    void addZone(std::shared_ptr<Rankwave> ptr);
 
     /**
      * Add a zone composed of multiple pipes.
      */
-    void addZone(const std::vector<Rankwave*> rw);
+    void addZone(const std::vector<std::shared_ptr<Rankwave>> rw);
 
     /**
      * Returns the range of keys this stop can be triggered by.

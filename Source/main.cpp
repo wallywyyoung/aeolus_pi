@@ -1,36 +1,40 @@
 
 #include "AlsaInterface.h"
-#include "AeolusAudioProcessor.h"
-#include "aeolus/addsynth.h"
 #include "aeolus/EngineGlobal.h"
-#include "IOManager.h"
-#include <arm_neon.h>
 
 // Using inline assembly for ARMv7/ARMv8 enabling of denormals
-void enable_ftz_daz() {
-    unsigned int fpscr;
-    asm volatile("vmrs %0, fpscr" : "=r" (fpscr)); // Read FPSCR
-    fpscr |= (1 << 24); // Set FZ bit (Flush-to-Zero)
-    fpscr |= (1 << 25); // Set DN bit (Default NaN, implies DAZ on some architectures)
-    asm volatile("vmsr fpscr, %0" : : "r" (fpscr)); // Write FPSCR
+// TODO: Check this is being done right.
+void enableFlushToZeroDenormalsAreZero(intptr_t& fpsr) {
+    intptr_t ftz = (1 << 24 /* FZ */);
+    intptr_t daz = (1 << 25 /* FZ */);
+    asm volatile("mrs %0, fpcr" : "=r"(fpsr));
+    asm volatile("msr fpcr, %0" : : "ri"(fpsr | ftz | daz));
+//    asm volatile("vmrs %0, fpscr" : "=r"(fpsr));
+//    asm volatile("vmsr fpscr, %0" : : "ri"(fpsr | ftz | daz));
+}
+
+void disableFlushToZeroDenormalsAreZero(intptr_t& fpsr) {
+    asm volatile("msr fpcr, %0" : : "ri"(fpsr));
+//    asm volatile("vmsr fpscr, %0" : : "ri"(fpsr));
 }
 
 int main (int argc, char* argv[]) {
-    enable_ftz_daz();
-    bool running = true;
+    intptr_t fpsr;
+    enableFlushToZeroDenormalsAreZero(fpsr);
+
     auto midiInterface = AlsaInterface();
-    auto aeolusAudioProcessor = AeolusAudioProcessor();
-    auto ioManager = aeolus::IOManager();
+    aeolus::EngineGlobal::getInstance();
 
-    aeolus::EngineGlobal::getInstance().addIRs(ioManager.loadIRs());
-    auto synths = ioManager.loadPipes();
-    aeolus::EngineGlobal::getInstance().addSynths(synths);
-    aeolus::Model::getInstance().addSynths(synths);
+    midiInterface.beginPollMidi();
+    midiInterface.beginPlayback();
 
+    bool running = true;
     do {
-        midiInterface.poll();
+        sleep(1);
     } while(running);
+
+    midiInterface.endPlayback();
+    midiInterface.endPollMidi();
+
+    disableFlushToZeroDenormalsAreZero(fpsr);
 }
-
-
-

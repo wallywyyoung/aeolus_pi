@@ -23,6 +23,10 @@
 #include "globals.h"
 #include "rankwave.h"
 #include "scale.h"
+#include "../MidiMessage.h"
+#include "../MidiManager.h"
+#include "engine.h"
+#include "Model.h"
 #include <unordered_map>
 
 AEOLUS_NAMESPACE_BEGIN
@@ -47,26 +51,26 @@ public:
     EngineGlobal(EngineGlobal&&) = delete;
     EngineGlobal& operator=(EngineGlobal&&) = delete;
 
-    void init(IRs newIrs);
-    void loadSettings();
-    void saveSettings();
-
-    int getStopsCount() const noexcept { return _rankwaves.size(); }
-    Rankwave* getStop(int i) { return &_rankwaves[i]; }
+    int getStopsCount() const noexcept { return _rankwavesByName.size(); }
 
     std::vector<std::string> getAllStopNames() const;
-    Rankwave* getStopByName(const std::string& name);
+    std::shared_ptr<Rankwave> getStopByName(const std::string& name);
 
     [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
     int getLongestIRLength() const noexcept { return _longestIRLength; }
 
     void updateStops(float sampleRate);
 
+    const int& getMIDISwellChannelsMask();
+
     [[nodiscard]] float getTuningFrequency() const noexcept { return _tuningFrequency; }
     void setTuningFrequency(float f) noexcept { _tuningFrequency = f; }
 
     [[nodiscard]] const Scale& getScale() const noexcept { return _scale; }
     void setScaleType(Scale::Type type) noexcept { _scale.setType(type); }
+
+    void process(const std::vector<MidiMessage>& messages, AudioBuffer& buffer);
+    void processMidi(const std::vector<MidiMessage>& messages);
 
     bool isConnectedToMTSMaster();
     std::string getMTSScaleName();
@@ -82,6 +86,9 @@ private:
     EngineGlobal();
     ~EngineGlobal();
 
+    aeolus::Engine engine;
+    MidiManager midiManager;
+
     void loadRankwaves();
 
     /**
@@ -93,10 +100,9 @@ private:
     // juce::Timer
     void timerCallback();
 
-//    std::vector<std::shared_ptr<Rankwave>> _rankwaves;
-    std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName;
+    std::unordered_map<std::string, std::shared_ptr<Rankwave>> _rankwavesByName;
 
-//    std::vector<IR> _irs;
+    std::vector<IR> _irs;
     IRs irs;
     int _longestIRLength;   ///< Longest IR length in samples
 
@@ -107,8 +113,13 @@ private:
     MTSClient* _mtsClient{};
     bool _mtsEnabled{};
     std::array<float, 128> _mtsTuningCache{};
-
-    float _uiScalingFactor{ UI_SCALING_DEFAULT };
+    Model model;
 };
+
+//namespace settings {
+//    const static char* tuningFrequency = "tuningFrequency";
+//    const static char* tuningTemperament = "tuningTemperament";
+//    const static char* mtsEnabled = "mtsEnabled";
+//}
 
 AEOLUS_NAMESPACE_END

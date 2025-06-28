@@ -19,6 +19,9 @@ project(aeolus_pi)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# TODO: Put this where it belongs... toolchain file?
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a -mcpu=cortex-a72")
+
 option(WITH_MULTIBUS_OUTPUT "Enable multibus output" OFF)
 
 include_directories(Source)
@@ -53,8 +56,8 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/dsp/interpolator.h
         Source/aeolus/dsp/spatial.cpp
         Source/aeolus/dsp/spatial.h
-        Source/aeolus/addsynth.cpp
-        Source/aeolus/addsynth.h
+        Source/aeolus/Addsynth.cpp
+        Source/aeolus/Addsynth.h
         Source/aeolus/audioparam.cpp
         Source/aeolus/audioparam.h
         Source/aeolus/division.cpp
@@ -84,10 +87,10 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/voice.h
         Source/aeolus/worker.cpp
         Source/aeolus/worker.h
-        Source/Parameters.cpp
-        Source/Parameters.h
-        Source/AeolusAudioProcessor.cpp
-        Source/AeolusAudioProcessor.h
+#        Source/Parameters.cpp
+#        Source/Parameters.h
+#        Source/AeolusAudioProcessor.cpp
+#        Source/AeolusAudioProcessor.h
         Source/mts/libMTSClient.cpp
         Source/mts/libMTSClient.h
         Source/main.cpp)

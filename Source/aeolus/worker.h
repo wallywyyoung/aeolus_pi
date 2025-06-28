@@ -63,7 +63,7 @@ public:
      * @note This must be called from audio thread only.
      */
     bool addJob(Job* job);
-    bool hasPendingJobs() noexcept;
+//    bool hasPendingJobs() noexcept;
     [[nodiscard]] bool isRunning() const noexcept;
 
     void purge();

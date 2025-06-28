@@ -21,7 +21,7 @@
 #pragma once
 
 #include "aeolus/globals.h"
-#include "aeolus/addsynth.h"
+#include "aeolus/Addsynth.h"
 #include "aeolus/scale.h"
 #include "aeolus/Pipewave.h"
 
@@ -39,15 +39,14 @@ AEOLUS_NAMESPACE_BEGIN
 class Rankwave
 {
 public:
-    explicit Rankwave(std::shared_ptr<Addsynth> model);
-
-    void createPipes(const Scale& scale, float tuningFreq);
+    explicit Rankwave(Addsynth model, const Scale& scale, float tuningFreq);
+    Rankwave(const Rankwave&);
 
     // Recalculate pipes tuning based on the current global scale and A4 frequency,
     // or global MTS tuning if enabed.
     void retunePipes(const Scale& scale, float tuningFreq);
 
-    std::string getStopName() const { return _model->getStopName(); }
+    const std::string& getStopName() const { return model->getStopName(); }
     bool isForNote(int note) const noexcept { return note >= _noteMin && note <= _noteMax; }
     int getNoteMin() const noexcept { return _noteMin; }
     int getNoteMax() const noexcept { return _noteMax; }
@@ -57,10 +56,11 @@ public:
     Pipewave::State trigger(int note);
 
 private:
-    std::shared_ptr<Addsynth> _model;
+    void createPipes(const Scale& scale, float tuningFreq);
+
     int _noteMin;
     int _noteMax;
-
+    std::shared_ptr<Addsynth> model;
     // Two sets of pipes to be able to switch between tunings
     // without releasing all the voices.
     std::vector<std::vector<Pipewave>> _pipes;
