@@ -2,10 +2,10 @@
 // Created by Wally Young on 6/27/25.
 //
 
-#include "globals.h"
-#include "N_func.h"
+#include "aeolus/globals.h"
+#include "aeolus/N_func.h"
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * @brief Interpolated per-note look-up table for harmonics.
@@ -24,8 +24,8 @@ AEOLUS_NAMESPACE_BEGIN
         float getValue(int harm, int idx) const;    // vs(h, i);
         bool isSet(int harm, int idx) const;        // st(h, i)
 
-        N_func& operator[](int harm) { assert(isPositiveAndBelow(harm, _h.size())); return _h[harm]; }
-        const N_func& operator[](int harm) const { assert(isPositiveAndBelow(harm, _h.size())); return _h[harm]; }
+        N_func& operator[](int harm) { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }
+        const N_func& operator[](int harm) const { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }
 
         void fromJson(const nlohmann::json& v);
 
@@ -35,4 +35,3 @@ AEOLUS_NAMESPACE_BEGIN
         std::array<N_func, N_HARM> _h;
     };
 
-AEOLUS_NAMESPACE_END

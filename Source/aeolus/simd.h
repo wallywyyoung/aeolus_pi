@@ -20,9 +20,10 @@
 #pragma once
 
 #include "aeolus/globals.h"
+
 #include <cstdint>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * CPU features detected with cpuid instruction.
@@ -70,4 +71,3 @@ struct simd
     static void  (*fft_step)(float*, const float*, size_t);
 };
 
-AEOLUS_NAMESPACE_END

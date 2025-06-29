@@ -22,15 +22,14 @@
 #include "aeolus/globals.h"
 #include "aeolus/list.h"
 #include "aeolus/rankwave.h"
-
-#include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/chiff.h"
+#include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/spatial.h"
 
 #include <vector>
 #include <atomic>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 class Engine;
 
@@ -110,11 +109,11 @@ private:
 
     Engine& _engine;
 
-    std::vector<Voice> _voices;     ///< All the voices.
+    std::vector<Voice> _voices{};     ///< All the voices.
     List<Voice> _idleVoices;        ///< Voices available to be triggered.
     std::atomic<int> _voiceCount;   ///< Number of taken voices.
 
     // TODO: LeakDetector ? JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(VoicePool)
 };
 
-AEOLUS_NAMESPACE_END
+

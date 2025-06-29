@@ -7,7 +7,7 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH RE
 THIS SOFTWARE.
 */
 
-#include "libMTSClient.h"
+#include "mts/libMTSClient.h"
 #include <math.h>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__) || defined(__TOS_WIN__) || defined(_MSC_VER)
 #define MTS_ESP_WIN

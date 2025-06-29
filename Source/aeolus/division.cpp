@@ -15,16 +15,16 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
-#include "globals.h"
-#include "division.h"
-#include "engine.h"
-#include "EngineGlobal.h"
+#include "aeolus/globals.h"
+#include "aeolus/division.h"
+#include "aeolus/engine.h"
+#include "aeolus/EngineGlobal.h"
 
 
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 Division::Division(Engine& engine, const std::string& name)
     : _engine{engine}
@@ -202,12 +202,12 @@ void Division::populateLinkedDivisions()
 
 int Division::getLinksCount() const noexcept
 {
-    return (int)_linkedDivisions.size();
+    return static_cast<int>(_linkedDivisions.size());
 }
 
-void Division::enableLink(int i, bool ena)
+void Division::enableLink(const int i, const bool ena)
 {
-    assert(isPositiveAndBelow(i, _linkedDivisions.size()));
+    isPositiveAndBelow(i, _linkedDivisions.size());
 
     if (_linkedDivisions[i].enabled != ena) {
         _linkedDivisions[i].enabled = ena;
@@ -215,15 +215,14 @@ void Division::enableLink(int i, bool ena)
     }
 }
 
-bool Division::isLinkEnabled(int i)
-{
-    assert(isPositiveAndBelow(i, _linkedDivisions.size()));
+bool Division::isLinkEnabled(const int i) const {
+    isPositiveAndBelow(i, _linkedDivisions.size());
     return _linkedDivisions[i].enabled;
 }
 
-Division::Link& Division::getLinkByIndex(int i)
+Division::Link& Division::getLinkByIndex(const int i)
 {
-    assert(isPositiveAndBelow(i, _linkedDivisions.size()));
+    isPositiveAndBelow(i, _linkedDivisions.size());
     return _linkedDivisions[i];
 }
 
@@ -231,10 +230,10 @@ void Division::cancelAllLinks()
 {
     bool changed{ false };
 
-    for (auto& link : _linkedDivisions) {
-        if (link.enabled) {
+    for (auto&[division, enabled] : _linkedDivisions) {
+        if (enabled) {
             changed = true;
-            link.enabled = false;
+            enabled = false;
         }
     }
 
@@ -247,8 +246,7 @@ void Division::clear()
     _stops.clear();
 }
 
-Stop& Division::addRankwave(std::shared_ptr<Rankwave> ptr, bool ena, const std::string& name)
-{
+Stop& Division::addRankwave(const std::shared_ptr<Rankwave> &ptr, const bool ena, const std::string& name) {
     assert(ptr != nullptr);
 
     Stop ref{};
@@ -260,7 +258,7 @@ Stop& Division::addRankwave(std::shared_ptr<Rankwave> ptr, bool ena, const std::
     return _stops.back();
 }
 
-Stop& Division::addRankwaves(const std::vector<std::shared_ptr<Rankwave>> rw, bool ena, const std::string& name)
+Stop& Division::addRankwaves(const std::vector<std::shared_ptr<Rankwave>> &rw, const bool ena, const std::string& name)
 {
     assert(!rw.empty());
     Stop ref{};
@@ -274,29 +272,28 @@ Stop& Division::addRankwaves(const std::vector<std::shared_ptr<Rankwave>> rw, bo
 
 int Division::getStopsCount() const noexcept
 {
-    return (int)_stops.size();
+    return static_cast<int>(_stops.size());
 }
 
-void Division::enableStop(int i, bool ena)
+void Division::enableStop(const int i, const bool ena)
 {
-    assert(isPositiveAndBelow(i, _stops.size()));
+    isPositiveAndBelow(i, _stops.size());
 
     if (_stops[i].isEnabled() != ena) {
         _stops[i].setEnabled(ena);
-
         _engine.getSequencer()->setCurrentStepDirty();
     }
 }
 
-bool Division::isStopEnabled(int i) const
+bool Division::isStopEnabled(const int i) const
 {
-    assert(isPositiveAndBelow(i, _stops.size()));
+    isPositiveAndBelow(i, _stops.size());
     return _stops[i].isEnabled();
 }
 
-Stop& Division::getStopByIndex(int i)
+Stop& Division::getStopByIndex(const int i)
 {
-    assert(isPositiveAndBelow(i, _stops.size()));
+    isPositiveAndBelow(i, _stops.size());
     return _stops[i];
 }
 
@@ -323,13 +320,13 @@ void Division::getAvailableRange(int& minNote, int& maxNote) const noexcept
     }
 }
 
-bool Division::isForMIDIChannel(int channel) const noexcept
+bool Division::isForMIDIChannel(const int channel) const noexcept
 {
     const int mask{ _midiChannelsMask.load() };
     return midi::matchChannelToMask(mask, channel);
 }
 
-void Division::setTremulantEnabled(bool ena) noexcept
+void Division::setTremulantEnabled(const bool ena) noexcept
 {
     if (!_hasTremulant)
         return;
@@ -342,7 +339,7 @@ void Division::setTremulantEnabled(bool ena) noexcept
     }
 }
 
-float Division::getTremulantLevel(bool update)
+float Division::getTremulantLevel(const bool update)
 {
     const auto level = _tremulantLevel;
 
@@ -352,7 +349,7 @@ float Division::getTremulantLevel(bool update)
     return level;
 }
 
-void Division::noteOn(int note, int midiChannel)
+void Division::noteOn(const int note, const int midiChannel)
 {
     if (hasBeenTriggered())
         return;
@@ -362,7 +359,7 @@ void Division::noteOn(int note, int midiChannel)
 
     _triggerFlag = true;
 
-    for (int stopIndex = 0; stopIndex < (int)_stops.size(); ++stopIndex)
+    for (int stopIndex = 0; stopIndex < static_cast<int>(_stops.size()); ++stopIndex)
         triggerVoicesForStop(stopIndex, note);
 
     if (midiChannel != 0) {
@@ -378,7 +375,7 @@ void Division::noteOn(int note, int midiChannel)
     }
 }
 
-void Division::noteOff(int note, int midiChannel)
+void Division::noteOff(const int note, const int midiChannel)
 {
     if (hasBeenTriggered())
         return;
@@ -403,9 +400,9 @@ void Division::noteOff(int note, int midiChannel)
     }
 
     // Forward to the linked divisions
-    for (auto& link : _linkedDivisions) {
-        if (link.enabled) {
-            link.division->noteOff(note, 0);
+    for (auto&[division, enabled] : _linkedDivisions) {
+        if (enabled) {
+            division->noteOff(note, 0);
         }
     }
 }
@@ -426,14 +423,14 @@ void Division::handleControlMessage(const MidiMessage& msg)
 {
     const int cc{ msg.getControllerNumber() };
 
-    if (cc != aeolus::CC_MODULATION && cc != aeolus::CC_VOLUME && cc != aeolus::CC_ALL_NOTES_OFF)
+    if (cc != CC_MODULATION && cc != CC_VOLUME && cc != CC_ALL_NOTES_OFF)
         return;
 
     const int swellCh{ EngineGlobal::getInstance().getMIDISwellChannelsMask() };
     const float value{ float(msg.getControllerValue()) / 127.0f };
 
     if (msg.getChannel() == 0 || (swellCh & (msg.getChannel() - 1)) != 0) {
-        if (_hasSwell && cc == aeolus::CC_VOLUME) {
+        if (_hasSwell && cc == CC_VOLUME) {
 //            *_paramGain = value;
             _params[Division::GAIN].setValue(value);
         }
@@ -443,10 +440,10 @@ void Division::handleControlMessage(const MidiMessage& msg)
     if (!isForMIDIChannel(msg.getChannel()))
         return;
 
-    if (cc == aeolus::CC_MODULATION && hasTremulant())
+    if (cc == CC_MODULATION && hasTremulant())
         setTremulantEnabled(value > 0.5f);
 
-    if (cc == aeolus::CC_ALL_NOTES_OFF)
+    if (cc == CC_ALL_NOTES_OFF)
         allNotesOff();
 }
 
@@ -605,9 +602,7 @@ void Division::triggerVoicesOfEnabledStops()
     std::bitset<TOTAL_NOTES> missingNotes{ _aggregatedKeysState };
 
     for (int stopIndex = 0; stopIndex < _stops.size(); ++stopIndex) {
-        auto& stop = _stops[stopIndex];
-
-        if (!stop.isEnabled())
+        if (auto& stop = _stops[stopIndex]; !stop.isEnabled())
             continue;
 
         bool hasVoices = false;
@@ -615,9 +610,7 @@ void Division::triggerVoicesOfEnabledStops()
         auto* voice = _activeVoices.first();
 
         while (voice != nullptr) {
-            const int voiceNote{ voice->getNote() };
-
-            if (voice->stopIndex() == stopIndex && voiceNote >= 0 && _aggregatedKeysState[voiceNote]) {
+            if (const int voiceNote{ voice->getNote() }; voice->stopIndex() == stopIndex && voiceNote >= 0 && _aggregatedKeysState[voiceNote]) {
                 hasVoices = true;
                 missingNotes[voiceNote] = 0;
                 break;
@@ -641,8 +634,8 @@ void Division::updateAggregatedKeysState()
     _aggregatedKeysState = _keysState;
 
     for (const auto* division : _linkedFromDivisions) {
-        for (const auto& link : division->_linkedDivisions) {
-            if (link.division.get() == this && link.enabled) {
+        for (const auto&[division, enabled] : division->_linkedDivisions) {
+            if (division.get() == this && enabled) {
                 _aggregatedKeysState |= division->_aggregatedKeysState;
                 break;
             }
@@ -650,9 +643,9 @@ void Division::updateAggregatedKeysState()
     }
 }
 
-bool Division::triggerVoicesForStop(int stopIndex, int note)
+bool Division::triggerVoicesForStop(const int stopIndex, const int note)
 {
-    assert(isPositiveAndBelow(stopIndex, _stops.size()));
+    isPositiveAndBelow(stopIndex, _stops.size());
 
     if (isAlreadyVoiced(stopIndex, note))
         return true;
@@ -666,12 +659,10 @@ bool Division::triggerVoicesForStop(int stopIndex, int note)
 
     for (const auto& zone : stop.getZones()) {
         if (zone.isForKey(note)) {
-            for (auto rw : zone.rankwaves) {
-                auto state = rw->trigger(note);
-
+            for (const auto rw : zone.rankwaves) {
                 // Rankwave may be in the middle of construction, in this case
                 // we don't trigger a voice.
-                if (state.isTriggered()) {
+                if (auto state = rw->trigger(note); state.isTriggered()) {
                     state.gain = stop.getGain();
                     state.chiffGain = stop.getChiffGain();
 
@@ -688,7 +679,7 @@ bool Division::triggerVoicesForStop(int stopIndex, int note)
     return voiceTriggered;
 }
 
-bool Division::isAlreadyVoiced(int stopIndex, int note)
+bool Division::isAlreadyVoiced(const int stopIndex, const int note)
 {
     auto* voice = _activeVoices.first();
 
@@ -702,5 +693,3 @@ bool Division::isAlreadyVoiced(int stopIndex, int note)
 
     return false;
 }
-
-AEOLUS_NAMESPACE_END

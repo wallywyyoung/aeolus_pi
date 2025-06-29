@@ -22,82 +22,7 @@
 
 
 
-AEOLUS_NAMESPACE_BEGIN
 
-//==============================================================================
-
-//var Sequencer::DivisionState::getPersistentState() const
-//{
-//    auto* obj = new DynamicObject();
-//
-//    Array<var> stopsArr;
-//
-//    for (const bool s : stops)
-//        stopsArr.add(s);
-//
-//    obj->setProperty("stops", stopsArr);
-//    obj->setProperty("tremulant", tremulant);
-//
-//    Array<var> linksArr;
-//
-//    for (const bool l : links)
-//        linksArr.add(l);
-//
-//    obj->setProperty("links", linksArr);
-//
-//    return var{obj};
-//}
-//
-//void Sequencer::DivisionState::setPersistentState(const var& v)
-//{
-//    if (const auto* obj = v.getDynamicObject()) {
-//        if (const auto* stopsArr = obj->getProperty("stops").getArray()) {
-//            if (stopsArr->size() == stops.size()) {
-//                for (int i = 0; i < stops.size(); ++i)
-//                    stops[i] = stopsArr->getUnchecked(i);
-//            }
-//        }
-//
-//        tremulant = obj->getProperty("tremulant");
-//
-//        if (const auto* linksArr = obj->getProperty("links").getArray()) {
-//            if (linksArr->size() == links.size()) {
-//                for (int i = 0; i < links.size(); ++i)
-//                    links[i] = linksArr->getUnchecked(i);
-//            }
-//        }
-//    }
-//}
-
-//==============================================================================
-
-//var Sequencer::OrganState::getPersistentState() const
-//{
-//    auto* obj = new DynamicObject();
-//
-//    Array<var> divisionsArr;
-//
-//    for (const auto& division : divisions)
-//        divisionsArr.add(division.getPersistentState());
-//
-//    obj->setProperty("divisions", divisionsArr);
-//
-//    return var{obj};
-//}
-//
-//void Sequencer::OrganState::setPersistentState(const var& v)
-//{
-//    if (const auto* obj = v.getDynamicObject()) {
-//        if (const auto* divisionsArr = obj->getProperty("divisions").getArray()) {
-//            if (divisionsArr->size() == divisions.size()) {
-//                for (int i = 0; i < divisions.size(); ++i)
-//                    divisions[i].setPersistentState(divisionsArr->getUnchecked(i));
-//            }
-//        }
-//    }
-//}
-
-//==============================================================================
 
 Sequencer::Sequencer(Engine& engine, int numSteps)
     : _engine{engine}
@@ -110,57 +35,15 @@ Sequencer::Sequencer(Engine& engine, int numSteps)
     initFromEngine();
 }
 
-//var Sequencer::getPersistentState() const
-//{
-//    auto* sequencerObj = new DynamicObject();
-//
-//    Array<var> stepsArr;
-//
-//    for (int stepIdx = 0; stepIdx < _steps.size(); ++stepIdx)
-//        stepsArr.add(_steps[stepIdx].getPersistentState());
-//
-//    sequencerObj->setProperty("steps", stepsArr);
-//    sequencerObj->setProperty("current_step", getCurrentStep());
-//    sequencerObj->setProperty("dirty", _dirty);
-//
-//    return var{sequencerObj};
-//}
-//
-//void Sequencer::setPersistentState(const var& v)
-//{
-//    if (auto* sequencerObj = v.getDynamicObject()) {
-//
-//        if (auto* stepsArr = sequencerObj->getProperty("steps").getArray()) {
-//            if (stepsArr->size() == _steps.size()) {
-//                for (int stepIdx = 0; stepIdx < _steps.size(); ++stepIdx)
-//                    _steps[stepIdx].setPersistentState(stepsArr->getUnchecked(stepIdx));
-//            }
-//        }
-//
-//        const int currentStep = sequencerObj->getProperty("current_step");
-//
-//        if (currentStep >= 0 && currentStep < (int)_steps.size()) {
-//            // Don't capture current state as it is unititialised
-//            // and should not go into the sequencer.
-//            setStep(currentStep, false);
-//        }
-//
-//        setCurrentStepDirty();
-//
-//        if (auto&& v = sequencerObj->getProperty("dirty"); v.isBool())
-//            _dirty = (bool)v;
-//    }
-//}
-
 void Sequencer::captureCurrentStep()
 {
     captureState(_steps[_currentStep]);
     _dirty = false;
 }
 
-void Sequencer::captureStateToStep(int index)
+void Sequencer::captureStateToStep(const int index)
 {
-    assert(isPositiveAndBelow(index, (int)_steps.size()));
+    isPositiveAndBelow(index, static_cast<int>(_steps.size()));
 
     captureState(_steps[index]);
 
@@ -169,9 +52,8 @@ void Sequencer::captureStateToStep(int index)
     _dirty = false;
 }
 
-void Sequencer::setStep(int index, bool captureCurrentState)
-{
-    assert(index >= 0 && index < (int)_steps.size());
+auto Sequencer::setStep(const int index, const bool captureCurrentState) -> void {
+    assert(index >= 0 && index < static_cast<int>(_steps.size()));
 
     if (captureCurrentState)
         captureCurrentStep();
@@ -189,7 +71,7 @@ void Sequencer::stepBackward()
 
 void Sequencer::stepForward()
 {
-    if (_currentStep < (int)_steps.size() - 1)
+    if (_currentStep < static_cast<int>(_steps.size()) - 1)
         setStep(_currentStep + 1);
 }
 
@@ -197,13 +79,13 @@ void Sequencer::initFromEngine()
 {
     const auto numDivisions = _engine.getDivisionCount();
 
-    for (auto& step : _steps) {
-        step.divisions.resize(numDivisions);
+    for (auto&[divisions] : _steps) {
+        divisions.resize(numDivisions);
 
         for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
             auto division = _engine.getDivisionByIndex(divIdx);
-            step.divisions[divIdx].stops.resize(division->getStopsCount());
-            step.divisions[divIdx].links.resize(division->getLinksCount());
+            divisions[divIdx].stops.resize(division->getStopsCount());
+            divisions[divIdx].links.resize(division->getLinksCount());
         }
     }
 }
@@ -215,22 +97,22 @@ void Sequencer::captureState(OrganState& organState)
 
     for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
         auto const division = _engine.getDivisionByIndex(divIdx);
-        auto& divisionState = organState.divisions[divIdx];
+        auto&[stops, tremulant, links] = organState.divisions[divIdx];
 
         const auto numStops = division->getStopsCount();
-        assert(divisionState.stops.size() == numStops);
+        assert(stops.size() == numStops);
 
         // Capture stops
         for (int stopIdx = 0; stopIdx < numStops; ++stopIdx)
-            divisionState.stops[stopIdx] = division->getStopByIndex(stopIdx).isEnabled();
+            stops[stopIdx] = division->getStopByIndex(stopIdx).isEnabled();
 
         // Capture tremulant
-        divisionState.tremulant = division->isTremulantEnabled();
+        tremulant = division->isTremulantEnabled();
 
         // Capture links
         const auto numLinks = division->getLinksCount();
         for (int linkIdx = 0; linkIdx < numLinks; ++linkIdx)
-            divisionState.links[linkIdx] = division->getLinkByIndex(linkIdx).enabled;
+            links[linkIdx] = division->getLinkByIndex(linkIdx).enabled;
     }
 }
 
@@ -256,5 +138,3 @@ void Sequencer::recallState(const OrganState& organState)
             division->enableLink(i, organState.divisions[divIdx].links[i]);
     }
 }
-
-AEOLUS_NAMESPACE_END

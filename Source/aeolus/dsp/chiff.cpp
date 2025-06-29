@@ -20,7 +20,7 @@
 #include "aeolus/dsp/chiff.h"
 #include <random>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -145,4 +145,4 @@ void Chiff::process(float* out, int numFrames)
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

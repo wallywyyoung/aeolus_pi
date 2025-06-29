@@ -20,22 +20,14 @@
 #include "aeolus/stop.h"
 #include "aeolus/EngineGlobal.h"
 
-AEOLUS_NAMESPACE_BEGIN
 
-Stop::Stop()
-    : _type{Type::Unknown}
-    , _name{}
-    , _zones()
-    , _gain{1.0f}
-    , _chiffGain{0.0f}
-    , _enabled{false}
-{
-}
+
+Stop::Stop() = default;
 
 std::vector<std::shared_ptr<Rankwave>> getRankwavesFromPipeVar(const nlohmann::json& v) {
     std::vector<std::shared_ptr<Rankwave>> rankwaves;
     auto addRankwave = [&](const std::string& name) {
-        if (auto rankwave = aeolus::EngineGlobal::getInstance().getStopByName(name)) {
+        if (const auto rankwave = EngineGlobal::getInstance().getStopByName(name)) {
             rankwaves.push_back(rankwave);
         } else {
             throw std::runtime_error("Stop pipe " + name + " cannot be found.");
@@ -67,9 +59,8 @@ void Stop::initFromJson(const nlohmann::json& v) {
 
         if (!v["pipe"].is_null()) {
             const auto pipeObj = v["pipe"];
-            const auto rankwaves{getRankwavesFromPipeVar(pipeObj)};
 
-            if (!rankwaves.empty())
+            if (const auto rankwaves{getRankwavesFromPipeVar(pipeObj)}; !rankwaves.empty())
                 addZone(rankwaves);
 
         } else if (!v["zones"].is_null()) {
@@ -77,10 +68,9 @@ void Stop::initFromJson(const nlohmann::json& v) {
                     Zone zone{};
                     zone.rankwaves = getRankwavesFromPipeVar(zoneDef["pipe"]);
 
-                    const auto range = zoneDef["range"];
-                    if (range.is_array()) {
+                    if (const auto range = zoneDef["range"]; range.is_array()) {
                         if (range.size() >= 2)
-                            zone.keyRange = Range((int) range.front(), (int) range.back() + 1);
+                            zone.keyRange = Range((int) range.front(), static_cast<int>(range.back()) + 1);
                     }
 
                     if (!zone.rankwaves.empty())
@@ -90,7 +80,9 @@ void Stop::initFromJson(const nlohmann::json& v) {
         }
     }
 
-void Stop::addZone(std::shared_ptr<Rankwave> ptr)
+float Stop::getGain() const noexcept { return _gain; }
+
+void Stop::addZone(const std::shared_ptr<Rankwave> &ptr)
 {
     assert(ptr != nullptr);
 
@@ -101,7 +93,7 @@ void Stop::addZone(std::shared_ptr<Rankwave> ptr)
     _zones.push_back(zone);
 }
 
-void Stop::addZone(const std::vector<std::shared_ptr<Rankwave>> rw)
+void Stop::addZone(const std::vector<std::shared_ptr<Rankwave>> &rw)
 {
     if (rw.empty()) {
         return;
@@ -146,7 +138,7 @@ Stop::Type Stop::getTypeFromString(const std::string& n)
 
     // TODO: This is ugly, make cleaner.
     auto nameToFind = n;
-    std::transform(nameToFind.begin(), nameToFind.end(), nameToFind.begin(), ::tolower);
+    std::ranges::transform(nameToFind, nameToFind.begin(), ::tolower);
     const auto it = nameToType.find(nameToFind);
 
     if (it != nameToType.end()) {
@@ -156,4 +148,4 @@ Stop::Type Stop::getTypeFromString(const std::string& n)
     return type;
 }
 
-AEOLUS_NAMESPACE_END
+

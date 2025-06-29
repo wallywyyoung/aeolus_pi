@@ -2,14 +2,22 @@
 // Created by Wally Young on 6/6/25.
 //
 
-#ifndef AEOLUS_PI_MIDIMESSAGE_H
-#define AEOLUS_PI_MIDIMESSAGE_H
-
+#pragma once
 
 struct MidiMessage {
     enum EventType {
         NOTE_ON, NOTE_OFF, CC, PC, IGNORE
     };
+
+    MidiMessage(const int controller_number, const int controller_value, const int channel, const int program_number, const unsigned char note,
+        const EventType event_type)
+        : controllerNumber(controller_number),
+          controllerValue(controller_value),
+          channel(channel),
+          programNumber(program_number),
+          note(note),
+          eventType(event_type) {
+    }
 
     [[nodiscard]] const int& getControllerNumber() const {
         return controllerNumber;
@@ -23,11 +31,11 @@ struct MidiMessage {
         return channel;
     }
 
-    [[nodiscard]] const int& getProgramNumber() const {
+    [[nodiscard]] int getProgramNumber() const {
         return programNumber;
     }
 
-    [[nodiscard]] const bool& isProgramChange() const {
+    [[nodiscard]] bool isProgramChange() const {
         return eventType == EventType::PC;
     }
 
@@ -35,11 +43,11 @@ struct MidiMessage {
         return note;
     }
 
-    [[nodiscard]] const bool& isController() const {
+    [[nodiscard]] bool isController() const {
         return eventType == EventType::CC;
     }
 
-    [[nodiscard]] const bool& isNoteOnOrOff() const {
+    [[nodiscard]] bool isNoteOnOrOff() const {
         return eventType == EventType::NOTE_ON || EventType::NOTE_OFF;
     }
 
@@ -52,6 +60,3 @@ private:
     unsigned char note;
     EventType eventType;
 };
-
-
-#endif //AEOLUS_PI_MIDIMESSAGE_H

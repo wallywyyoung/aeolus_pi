@@ -17,16 +17,16 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/worker.h"
 #include "ObjectBuffer.h"
 #include "aeolus/sema.h"
+#include "aeolus/worker.h"
 
 #include <atomic>
 #include <thread>
 
 
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 struct Worker::Impl
 {
@@ -163,4 +163,4 @@ void Worker::purge()
     d->purge();
 }
 
-AEOLUS_NAMESPACE_END
+

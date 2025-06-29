@@ -23,7 +23,7 @@
 
 #include <vector>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * Parameter with smoothed float value.
@@ -82,8 +82,7 @@ public:
     AudioParameter& findByName(const std::string& n);
 
 private:
-    std::vector<AudioParameter> _params;
+    std::vector<AudioParameter> _params{};
     AudioParameter _dummyParameter;
 };
 
-AEOLUS_NAMESPACE_END

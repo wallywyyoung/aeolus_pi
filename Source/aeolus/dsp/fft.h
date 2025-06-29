@@ -27,7 +27,7 @@
 #include <complex>
 #include <valarray>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -325,4 +325,4 @@ struct GFFT
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

@@ -21,7 +21,7 @@
 
 #include "aeolus/globals.h"
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * Implementation of a double-linked list.
@@ -167,4 +167,4 @@ private:
     Item* _tail = nullptr;
 };
 
-AEOLUS_NAMESPACE_END
+

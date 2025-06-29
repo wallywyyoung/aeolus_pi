@@ -22,7 +22,7 @@
 #include "aeolus/globals.h"
 
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -69,4 +69,4 @@ struct BiquadFilter
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

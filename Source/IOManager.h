@@ -3,13 +3,13 @@
 //
 #pragma once
 
+#include "aeolus/Addsynth.h"
 #include "aeolus/IR.h"
 
 class IOManager {
 public:
-    static void loadOrganDefinition();
     static IRs loadIRs();
-    static std::vector<aeolus::Addsynth> loadPipes();
+    static std::vector<Addsynth> loadPipes();
 private:
     const char* DIRECTORY = "./Resources/stops/";
     const char* BINARY_EXTENSION = ".ae0";

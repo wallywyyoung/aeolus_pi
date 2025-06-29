@@ -22,7 +22,7 @@
 #include "aeolus/globals.h"
 #include <memory>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -60,15 +60,15 @@ public:
 
     void prepareToPlay(float sampleRate, size_t nFrames);
 
-    void process(const float *inL, const float *inR, float *outL, float *outR, size_t numFrames);
+    void process(const float *inL, const float *inR, float *outL, float *outR, size_t numFrames) const;
 
-    void setNonRealtime(bool nonRealtime);
+    void setNonRealtime(bool nonRealtime) const;
 
     int length() const noexcept;
-    void setLength(int len) noexcept;
+    void setLength(int len) const noexcept;
 
     bool zeroDelay() const noexcept;
-    void setZeroDelay(bool v) noexcept;
+    void setZeroDelay(bool v) const noexcept;
 
 protected:
 
@@ -78,4 +78,4 @@ protected:
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

@@ -2,8 +2,7 @@
 // Created by Wally Young on 6/7/25.
 //
 
-#ifndef AEOLUS_PI_AUDIOBUFFER_H
-#define AEOLUS_PI_AUDIOBUFFER_H
+#pragma once
 
 #include <vector>
 
@@ -20,7 +19,7 @@ public:
         audioBuffer = newBuffer;
     }
 
-    void setBufferSize(size_t size) {
+    void setBufferSize(std::size_t size) {
         bufferSize = size;
     }
 
@@ -40,6 +39,3 @@ public:
 
     void clear();
 };
-
-
-#endif //AEOLUS_PI_AUDIOBUFFER_H

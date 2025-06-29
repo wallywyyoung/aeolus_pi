@@ -4,13 +4,14 @@
 
 #pragma once
 
-
-#include "ObjectBuffer.h"
-#include <thread>
-#include <asoundlib.h>
+#include "AudioServer.h"
 #include "MidiData.h"
+#include "ObjectBuffer.h"
 
-class AlsaInterface {
+#include <asoundlib.h>
+
+
+class AlsaInterface : AudioServer {
 private:
     void initMidi();
     void initAudio(int channels, unsigned int sampleRate, size_t bufferSize);
@@ -25,7 +26,7 @@ private:
     bool runningAudio, runningMidi;
     ObjectBuffer<MidiData> midiBuffer;
 public:
-    AlsaInterface();
+    AlsaInterface(float sampleRate);
     void beginPollMidi();
     void endPollMidi();
     void beginPlayback();

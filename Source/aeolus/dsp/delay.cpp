@@ -20,15 +20,11 @@
 #include "aeolus/dsp/delay.h"
 #include <cstring>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
-DelayLine::DelayLine(size_t size)
-    : _buffer(size, 0.0f)
-    , _writeIndex(0)
-{
-}
+DelayLine::DelayLine(const size_t size) : _buffer(size, 0.0f), _writeIndex(0) { }
 
 void DelayLine::resize (size_t size)
 {
@@ -42,7 +38,7 @@ void DelayLine::reset()
     ::memset(_buffer.data(), 0, sizeof (float) * _buffer.size());
 }
 
-void DelayLine::write (float x)
+void DelayLine::write (const float x)
 {
     if (_writeIndex == 0)
         _writeIndex = _buffer.size() - 1;
@@ -52,24 +48,24 @@ void DelayLine::write (float x)
     _buffer[_writeIndex] = x;
 }
 
-float DelayLine::read(float delay) const
+float DelayLine::read(const float delay) const
 {
-    int index = (int)std::floor(delay);
-    float frac = delay - (float)index;
+    int index = static_cast<int>(std::floor(delay));
+    float frac = delay - static_cast<float>(index);
 
-    index = (index + _writeIndex) % (int) _buffer.size();
+    index = (index + _writeIndex) % static_cast<int>(_buffer.size());
     const auto a = _buffer[index];
     const auto b = index < _buffer.size() - 1 ? _buffer[index + 1] : _buffer[0];
 
     return math::lerp(a, b, frac);
 }
 
-float DelayLine::readNearest(int delay) const
+float DelayLine::readNearest(const int delay) const
 {
-    const int index{ int ((delay + _writeIndex) % _buffer.size()) };
+    const int index{ static_cast<int>((delay + _writeIndex) % _buffer.size()) };
     return _buffer[index];
 }
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

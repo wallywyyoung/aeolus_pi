@@ -19,35 +19,30 @@
 
 #pragma once
 
+#include "AudioBuffer.h"
+#include "ObjectBuffer.h"
 #include "aeolus/globals.h"
-#include "../ObjectBuffer.h"
 #include "aeolus/scale.h"
 #include "aeolus/voice.h"
-#include "aeolus/Addsynth.h"
-#include "aeolus/rankwave.h"
 #include "aeolus/division.h"
 #include "aeolus/sequencer.h"
 #include "aeolus/audioparam.h"
-#include "aeolus/levelmeter.h"
 #include "aeolus/dsp/convolver.h"
 #include "aeolus/dsp/interpolator.h"
 #include "aeolus/MidiMessage.h"
 #include "aeolus/MidiManager.h"
-#include "AudioBuffer.h"
-#include "MidiManager.h"
 
 #include <optional>
 #include <vector>
-#include <any>
 #include <set>
 
-AEOLUS_NAMESPACE_BEGIN
+
 /**
  * @brief Organ engine.
  * This class defines the top-level organ engine that performs MIDI events processing
  * and audio generation.
  */
-class Engine : public MidiManager::MidiListener
+class Engine final : public MidiManager::MidiListener
 {
 public:
     struct NoteEvent
@@ -61,12 +56,6 @@ public:
     {
         int num;
     };
-
-//    struct Level
-//    {
-//        LevelMeter left;
-//        LevelMeter right;
-//    };
 
     enum {
         VOLUME = 0,
@@ -83,17 +72,17 @@ public:
      * by the plugin host. Internally the organ engine performs processing
      * with a fixed SAMPLE_RATE.
      */
-    float getSampleRate() const noexcept { return _sampleRate; }
+    [[nodiscard]] float getSampleRate() const noexcept { return _sampleRate; }
 
     /**
      * Returns the number of active (playing) voices.
      */
-    int getVoiceCount() const noexcept { return _voicePool.getNumberOfActiveVoices(); }
+    [[nodiscard]] int getVoiceCount() const noexcept { return _voicePool.getNumberOfActiveVoices(); }
 
     /**
      * Called by the host pefore starting requesting the audio blocks.
      */
-    void prepareToPlay(float sampleRate, int frameSize);
+    auto prepareToPlay(float sampleRate) -> void;
 
     /**
      * Set the reverb IR bu its number.
@@ -102,19 +91,14 @@ public:
     void setReverbIR(int num);
 
     /**
-     * Set the reverb IR by its number asynchronously.
-     * This to be called on the main (UI) thread.
-     */
-    void postReverbIR(int num);
-    /**
      * Returns currently set reverb IR number.
      */
-    int getReverbIR() const noexcept { return _selectedIR; }
+    [[nodiscard]] int getReverbIR() const noexcept { return _selectedIR; }
 
     /**
      * Returns the reverb tail in seconds.
      */
-    float getReverbLengthInSeconds() const;
+    [[nodiscard]] float getReverbLengthInSeconds() const;
 
     /**
      * Set reverb wet output level (linear).
@@ -139,7 +123,7 @@ public:
     void process(float* outL, float* outR, int numFrames, bool isNonRealtime = false);
 
     // Multibus version of the processing (does not include the convolver).
-    void process(AudioBuffer& out, bool isNonRealtime = false);
+    void process(AudioBuffer &out);
 
     /**
      * Process incoming MIDI messages.
@@ -155,13 +139,13 @@ public:
 
     MidiManager& getMidiKeyboardState() noexcept { return _midiKeyboardState; }
 
-    Range getMidiKeyboardRange() const;
+    [[nodiscard]] Range getMidiKeyboardRange() const;
 
-    std::set<int> getKeySwitches() const;
+    [[nodiscard]] std::set<int> getKeySwitches() const;
 
     VoicePool& getVoicePool() noexcept { return _voicePool; }
 
-    int getDivisionCount() const noexcept { return _divisions.size(); }
+    [[nodiscard]] int getDivisionCount() const noexcept { return _divisions.size(); }
     std::shared_ptr<Division> getDivisionByIndex(int i) { return _divisions[i]; }
     std::shared_ptr<Division> getDivisionByName(const std::string& name);
 
@@ -172,7 +156,7 @@ public:
 private:
     void populateDivisions();
 
-    void clearDivisionsTriggerFlag();
+    void clearDivisionsTriggerFlag() const;
 
     bool processSubFrame();
 
@@ -190,7 +174,7 @@ private:
     void processControlMIDIMessage(const MidiMessage& message);
 
     /// Process stop buttons MIDI controls.
-    void processStopControlMessage();
+    void processStopControlMessage() const;
 
     bool isKeySwitchForward(int key) const;
     bool isKeySwitchBackward(int key) const;
@@ -208,9 +192,9 @@ private:
     int _stopControlButton{};
 
     /// List of all divisions
-    std::vector<std::shared_ptr<Division>> _divisions;
+    std::vector<std::shared_ptr<Division>> _divisions{};
 
-    std::unique_ptr<Sequencer> _sequencer;
+    std::unique_ptr<Sequencer> _sequencer{};
 
     std::vector<int> _sequencerStepBackwardKeySwitches{ SEQUENCER_BACKWARD_MIDI_KEY };
     std::vector<int> _sequencerStepForwardKeySwitches{ SEQUENCER_FORWARD_MIDI_KEY };
@@ -238,4 +222,4 @@ private:
 
 };
 
-AEOLUS_NAMESPACE_END
+

@@ -19,17 +19,18 @@
 
 #pragma once
 
+#include "aeolus/globals.h"
+#include "aeolus/rankwave.h"
+#include "aeolus/scale.h"
+#include "aeolus/MidiMessage.h"
+#include "aeolus/MidiManager.h"
+#include "aeolus/engine.h"
+#include "aeolus/Model.h"
 #include "mts/libMTSClient.h"
-#include "globals.h"
-#include "rankwave.h"
-#include "scale.h"
-#include "../MidiMessage.h"
-#include "../MidiManager.h"
-#include "engine.h"
-#include "Model.h"
+
 #include <unordered_map>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * @brief A global shared instance of the organ engine.
@@ -42,14 +43,18 @@ public:
     /**
      * Impulse response descriptor for IRs embedded as binary resources.
      */
-    static EngineGlobal& getInstance() {
-        static EngineGlobal instance;
-        return instance;
-    }
-    EngineGlobal(const EngineGlobal&) = delete;
-    EngineGlobal& operator=(const EngineGlobal&) = delete;
-    EngineGlobal(EngineGlobal&&) = delete;
-    EngineGlobal& operator=(EngineGlobal&&) = delete;
+
+    EngineGlobal();
+    ~EngineGlobal();
+
+    // static EngineGlobal& getInstance() {
+    //     static EngineGlobal instance;
+    //     return instance;
+    // }
+    // EngineGlobal(const EngineGlobal&) = delete;
+    // EngineGlobal& operator=(const EngineGlobal&) = delete;
+    // EngineGlobal(EngineGlobal&&) = delete;
+    // EngineGlobal& operator=(EngineGlobal&&) = delete;
 
     int getStopsCount() const noexcept { return _rankwavesByName.size(); }
 
@@ -59,9 +64,9 @@ public:
     [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
     int getLongestIRLength() const noexcept { return _longestIRLength; }
 
-    void updateStops(float sampleRate);
+    void updateStops() const;
 
-    const int& getMIDISwellChannelsMask();
+    auto getMIDISwellChannelsMask() const -> int;
 
     [[nodiscard]] float getTuningFrequency() const noexcept { return _tuningFrequency; }
     void setTuningFrequency(float f) noexcept { _tuningFrequency = f; }
@@ -83,10 +88,8 @@ public:
     void rebuildRankwaves();
 
 private:
-    EngineGlobal();
-    ~EngineGlobal();
 
-    aeolus::Engine engine;
+    Engine engine;
     MidiManager midiManager;
 
     void loadRankwaves();
@@ -115,11 +118,3 @@ private:
     std::array<float, 128> _mtsTuningCache{};
     Model model;
 };
-
-//namespace settings {
-//    const static char* tuningFrequency = "tuningFrequency";
-//    const static char* tuningTemperament = "tuningTemperament";
-//    const static char* mtsEnabled = "mtsEnabled";
-//}
-
-AEOLUS_NAMESPACE_END

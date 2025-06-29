@@ -19,7 +19,7 @@
 
 #include "aeolus/globals.h"
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 //==============================================================================
 
@@ -27,10 +27,10 @@ namespace math {
 
 float exp2ap(float x)
 {
-    int i = (int)(floor (x));
+    int i = static_cast<int>(floor(x));
     x -= i;
     // return ldexp (1 + x * (0.66 + 0.34 * x), i);
-    return ldexp (1 + x * (0.6930f + x * (0.2416f + x * (0.0517f + x * 0.0137f))), i);
+    return ldexp(1 + x * (0.6930f + x * (0.2416f + x * (0.0517f + x * 0.0137f))), i);
 }
 
 } // namespace math
@@ -55,4 +55,4 @@ bool matchChannelToMask(int mask, int channel)
 
 } // namespace midi
 
-AEOLUS_NAMESPACE_END
+

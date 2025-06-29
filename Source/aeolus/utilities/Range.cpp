@@ -2,12 +2,11 @@
 // Created by Wally Young on 5/31/25.
 //
 
-#include "Range.h"
+#include "aeolus/utilities/Range.h"
 
-Range::Range(int start, int end) {
-    start = start;
-    end = end;
-}
+#include <algorithm>
+
+Range::Range(int start, int end) : start(start), end(end) { }
 
 bool Range::contains(int value) const {
     return value >= start && value <= end;

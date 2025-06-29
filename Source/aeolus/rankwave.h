@@ -20,15 +20,12 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
 #include "aeolus/Addsynth.h"
-#include "aeolus/scale.h"
 #include "aeolus/Pipewave.h"
+#include "aeolus/scale.h"
 
 #include <vector>
 #include <atomic>
-
-AEOLUS_NAMESPACE_BEGIN
 
 /**
  * @brief Pipes across the keys range.
@@ -46,10 +43,10 @@ public:
     // or global MTS tuning if enabed.
     void retunePipes(const Scale& scale, float tuningFreq);
 
-    const std::string& getStopName() const { return model->getStopName(); }
-    bool isForNote(int note) const noexcept { return note >= _noteMin && note <= _noteMax; }
-    int getNoteMin() const noexcept { return _noteMin; }
-    int getNoteMax() const noexcept { return _noteMax; }
+    [[nodiscard]] const std::string& getStopName() const { return model->getStopName(); }
+    [[nodiscard]] bool isForNote(const int note) const noexcept { return note >= _noteMin && note <= _noteMax; }
+    [[nodiscard]] int getNoteMin() const noexcept { return _noteMin; }
+    [[nodiscard]] int getNoteMax() const noexcept { return _noteMax; }
 
     void prepareToPlay(float sampleRate);
 
@@ -63,8 +60,8 @@ private:
     std::shared_ptr<Addsynth> model;
     // Two sets of pipes to be able to switch between tunings
     // without releasing all the voices.
-    std::vector<std::vector<Pipewave>> _pipes;
+    std::vector<std::vector<Pipewave>> _pipes{};
     std::atomic<int> _pipeSetIndex{ 0 };
 };
 
-AEOLUS_NAMESPACE_END
+

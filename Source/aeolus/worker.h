@@ -24,7 +24,7 @@
 #include <memory>
 #include <functional>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * @brief Schedule jobs run on a separate thread.
@@ -73,4 +73,4 @@ private:
     std::unique_ptr<Impl> d;
 };
 
-AEOLUS_NAMESPACE_END
+

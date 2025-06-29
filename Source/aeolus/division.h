@@ -24,7 +24,6 @@
 #include "aeolus/stop.h"
 #include "aeolus/voice.h"
 #include "aeolus/audioparam.h"
-#include "aeolus/levelmeter.h"
 #include "aeolus/dsp/filter.h"
 #include "aeolus/MidiMessage.h"
 #include "AudioBuffer.h"
@@ -34,7 +33,7 @@
 #include <bitset>
 #include <nlohmann/json.hpp>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 class Engine;
 
@@ -102,17 +101,17 @@ public:
 
     int getLinksCount() const noexcept;
     void enableLink(int i, bool ena);
-    bool isLinkEnabled(int i);
+    bool isLinkEnabled(int i) const;
     Link& getLinkByIndex(int i);
     void cancelAllLinks();
 
 
     void clear();
-    Stop& addRankwave(std::shared_ptr<Rankwave> ptr, bool ena = false, const std::string& name = std::string());
-    Stop& addRankwaves(const std::vector<std::shared_ptr<Rankwave>> rw, bool ena = false, const std::string& name = std::string());
+    Stop& addRankwave(const std::shared_ptr<Rankwave> &ptr, bool ena = false, const std::string& name = std::string());
+    Stop& addRankwaves(const std::vector<std::shared_ptr<Rankwave>> &rw, bool ena = false, const std::string& name = std::string());
 
 //    float* getParamGain() noexcept { return _paramGain; }
-    void setParamGain(std::shared_ptr<aeolus::AudioParameter> param) noexcept { _paramGain = param; }
+    void setParamGain(std::shared_ptr<AudioParameter> param) noexcept { _paramGain = param; }
 
     AudioParameterPool& parameters() noexcept { return _params; }
 
@@ -203,7 +202,7 @@ private:
     std::atomic<float> _tremulantTargetLevel;
 
     /// Stored gain parameter for easy access from the devision control UI component
-    std::shared_ptr<aeolus::AudioParameter> _paramGain;
+    std::shared_ptr<AudioParameter> _paramGain;
     AudioParameterPool _params;
 
     /// Swell low-pass filter.
@@ -233,4 +232,4 @@ private:
 //    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Division)
 };
 
-AEOLUS_NAMESPACE_END
+

@@ -2,17 +2,19 @@
 // Created by Wally Young on 6/6/25.
 //
 
-#include "EngineGlobal.h"
+#include "IOManager.h"
+#include "aeolus/EngineGlobal.h"
 #include "aeolus/engine.h"
 #include <thread_pool/thread_pool.h>
-#include "../IOManager.h"
 
-using namespace aeolus;
 
-EngineGlobal::EngineGlobal() : _rankwavesByName{}, _scale(Scale::EqualTemp), _tuningFrequency(TUNING_FREQUENCY_DEFAULT), _mtsClient {nullptr}, engine(), midiManager(), model() {
-    midiManager.addListener(dynamic_cast<MidiManager::MidiListener*>(&engine));
+
+EngineGlobal::EngineGlobal(float sampleRate = SAMPLE_RATE_F) : _scale(Scale::EqualTemp), _tuningFrequency(TUNING_FREQUENCY_DEFAULT), _sampleRate(sampleRate) {
+    midiManager.addListener(&engine);
     irs = IOManager::loadIRs();
     loadRankwaves();
+    updateStops();
+    engine.prepareToPlay(_sampleRate);
 }
 
 EngineGlobal::~EngineGlobal() {
@@ -37,25 +39,15 @@ std::shared_ptr<Rankwave> EngineGlobal::getStopByName(const std::string& name)
     return _rankwavesByName[name];
 }
 
-void EngineGlobal::updateStops(float sampleRate)
-{
-    _sampleRate = sampleRate;
-
+void EngineGlobal::updateStops() const {
     dp::thread_pool pool(_rankwavesByName.size());
-
     for (auto& rw : _rankwavesByName) {
         auto rwp = rw.second;
-        pool.enqueue_detach([sampleRate, rwp]() {
-            rwp->prepareToPlay(sampleRate);
+        pool.enqueue_detach([rwp]() {
+            rwp->prepareToPlay(SAMPLE_RATE_F);
         });
     }
-
     pool.wait_for_tasks();
-/*
-    // Single-thread equivalent
-    for (auto* rw : _rankwaves)
-        rw->prepareToPlay(sampleRate);
-*/
 }
 
 void process(const std::vector<MidiMessage>& messages, AudioBuffer& buffer) {
@@ -88,17 +80,17 @@ float EngineGlobal::getMTSNoteToFrequency(int midiNote, int midiChannel) {
         return _scale.getFrequencyForMidiNote(midiNote);
     }
 
-    return static_cast<float>(MTS_NoteToFrequency(_mtsClient, (char)midiNote, (char)midiChannel));
+    return static_cast<float>(MTS_NoteToFrequency(_mtsClient, static_cast<char>(midiNote), static_cast<char>(midiChannel)));
 }
 
-bool EngineGlobal::shouldMTSFilterNote(int midiNote, int midiChannel) {
+bool EngineGlobal::shouldMTSFilterNote(const int midiNote, const int midiChannel) {
     if (nullptr == _mtsClient || !isConnectedToMTSMaster()) {
         return false;
     }
-    return MTS_ShouldFilterNote(_mtsClient, (char)midiNote, (char)midiChannel);
+    return MTS_ShouldFilterNote(_mtsClient, static_cast<char>(midiNote), static_cast<char>(midiChannel));
 }
 
-void EngineGlobal::setMTSEnabled(bool shouldBeEnabled) {
+void EngineGlobal::setMTSEnabled(const bool shouldBeEnabled) {
     _mtsEnabled = shouldBeEnabled;
 
     if (_mtsEnabled && nullptr == _mtsClient) {
@@ -112,26 +104,24 @@ void EngineGlobal::setMTSEnabled(bool shouldBeEnabled) {
 void EngineGlobal::rebuildRankwaves()
 {
     // Prepare all the rankwaves to be retuned
-    for (auto& rw : _rankwavesByName) {
-        rw.second->retunePipes(_scale, _tuningFrequency);
+    for (auto &val: _rankwavesByName | std::views::values) {
+        val->retunePipes(_scale, _tuningFrequency);
     }
 
     // @note We don't kill active voices - they will be using pipes from a parallel set.
     //       However, switching tuning very fast (while keeping the voice sustained)
     //       may result in voice to be killed.
-
-    updateStops(_sampleRate);
+    updateStops();
 }
 
 void EngineGlobal::loadRankwaves() {
     for (int i = 0; i <  model.getStopsCount(); ++i) {
-        auto synth = model[i];
-        auto rankwave = Rankwave(synth, _scale, _tuningFrequency);
+        auto rankwave = Rankwave(model[i], _scale, _tuningFrequency);
         _rankwavesByName.emplace(rankwave.getStopName(),std::make_shared<Rankwave>(rankwave));
     }
 }
 
-const int& EngineGlobal::getMIDISwellChannelsMask() {
+int EngineGlobal::getMIDISwellChannelsMask() const{
     return midiManager.getMIDISwellChannelsMask();
 };
 
@@ -153,10 +143,7 @@ void EngineGlobal::timerCallback() {
     if (!_mtsEnabled) {
         return;
     }
-
-    auto changed{ updateMTSTuningCache() };
-
-    if (changed) {
+    if (updateMTSTuningCache()) {
         rebuildRankwaves();
     }
 }

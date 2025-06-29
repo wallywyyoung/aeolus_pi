@@ -25,7 +25,7 @@
 #include "aeolus/list.h"
 #include "aeolus/ringbuffer.h"
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * Allocate memory with predefined alignment.
@@ -45,14 +45,14 @@ struct AlignedMemory
         void* ptr = nullptr;
 
         if (alignment && size) {
-            uint32_t hdr_size = PTR_OFFSET_SIZE + (alignment - 1);
+            const uint32_t hdr_size = PTR_OFFSET_SIZE + (alignment - 1);
             void* p = ::malloc (size + hdr_size);
 
             if (p) {
-                ptr = (void*) alignUp(((uintptr_t)p + PTR_OFFSET_SIZE));
+                ptr = reinterpret_cast<void *>(alignUp((reinterpret_cast<uintptr_t>(p) + PTR_OFFSET_SIZE)));
 
                 //Calculate the offset and store it behind our aligned pointer
-                *((offset_t *)ptr - 1) = (offset_t) ((uintptr_t)ptr - (uintptr_t)p);
+                *(static_cast<offset_t *>(ptr) - 1) = static_cast<offset_t>(reinterpret_cast<uintptr_t>(ptr) - reinterpret_cast<uintptr_t>(p));
             }
         }
 
@@ -63,17 +63,17 @@ struct AlignedMemory
     static void free(void* ptr)
     {
         if (ptr) {
-            offset_t offset = *((offset_t *)ptr - 1);
+            const offset_t offset = *(static_cast<offset_t *>(ptr) - 1);
 
             // Once we have the offset, we can get our original pointer and call free
-            void* p = (void*) ((uint8_t*)ptr - offset);
+            auto p = static_cast<void *>(static_cast<uint8_t *>(ptr) - offset);
             ::free (p);
         }
     }
 
 private:
 
-    inline static size_t alignUp(size_t num)
+    inline static size_t alignUp(const size_t num)
     {
         return (num + (alignment - 1)) & ~(alignment - 1);
     }
@@ -84,4 +84,4 @@ private:
     }
 };
 
-AEOLUS_NAMESPACE_END
+

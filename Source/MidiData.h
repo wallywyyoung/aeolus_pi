@@ -12,7 +12,6 @@ struct MidiData {
     EventType eventType;
     MidiData() = default;
     MidiData(const snd_seq_event_t& event) {
-        event.type == SND_SEQ_EVENT_NOTEON;
         switch(event.type) {
             case SND_SEQ_EVENT_NOTEON:
                 eventType = NOTE_ON;

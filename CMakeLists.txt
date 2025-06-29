@@ -25,18 +25,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a -mcpu=cortex-a72")
 option(WITH_MULTIBUS_OUTPUT "Enable multibus output" OFF)
 
 include_directories(Source)
-include_directories(Source/aeolus)
-include_directories(Source/aeolus/dsp)
-include_directories(Source/mts)
 
-add_executable(aeolus_pi)
-
-file(GLOB_RECURSE resources "${CMAKE_CURRENT_SOURCE_DIR}/Resources/*.*")
-
-find_package(nlohmann_json CONFIG REQUIRED)
-find_package(AudioFile CONFIG REQUIRED)
-find_package(thread-pool CONFIG REQUIRED)
-target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool)
+add_executable(aeolus_pi
+        Source/aeolus/dsp/convolve.h)
 
 target_sources(aeolus_pi PRIVATE
         Source/aeolus/dsp/adsrenv.cpp
@@ -66,8 +57,6 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/engine.h
         Source/aeolus/globals.cpp
         Source/aeolus/globals.h
-        Source/aeolus/levelmeter.cpp
-        Source/aeolus/levelmeter.h
         Source/aeolus/list.h
         Source/aeolus/memory.h
         Source/aeolus/rankwave.cpp
@@ -87,13 +76,15 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/voice.h
         Source/aeolus/worker.cpp
         Source/aeolus/worker.h
-#        Source/Parameters.cpp
-#        Source/Parameters.h
-#        Source/AeolusAudioProcessor.cpp
-#        Source/AeolusAudioProcessor.h
         Source/mts/libMTSClient.cpp
         Source/mts/libMTSClient.h
         Source/main.cpp)
+
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(AudioFile CONFIG REQUIRED)
+find_package(thread-pool CONFIG REQUIRED)
+
+target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool)
 
 if(WITH_MULTIBUS_OUTPUT)
     target_compile_definitions(aeolus_pi PUBLIC AEOLUS_MULTIBUS_OUTPUT=1)

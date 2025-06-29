@@ -20,12 +20,13 @@
 #pragma once
 
 #include "aeolus/globals.h"
+
 #include <atomic>
 #include <vector>
 #include <map>
 #include <any>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 class Engine;
 
@@ -92,4 +93,4 @@ private:
     bool _dirty;
 };
 
-AEOLUS_NAMESPACE_END
+

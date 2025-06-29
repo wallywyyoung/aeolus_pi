@@ -2,12 +2,12 @@
 // Created by Wally Young on 6/27/25.
 //
 
+#include "aeolus/globals.h"
 
 #include <array>
 #include <nlohmann/json.hpp>
-#include <globals.h>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * @brief Interpolated per-note look-up table.
@@ -38,4 +38,4 @@ private:
     std::array<float, N_NOTES> _v;
 };
 
-AEOLUS_NAMESPACE_END
+

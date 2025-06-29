@@ -19,43 +19,21 @@
 
 #include "aeolus/engine.h"
 #include "IOManager.h"
-#include "EngineGlobal.h"
+#include "aeolus/EngineGlobal.h"
 #include <any>
 
 
-AEOLUS_NAMESPACE_BEGIN
 
-Engine::Engine()
-    : _sampleRate{SAMPLE_RATE_F}
-    , _voicePool(*this)
-    , _params{NUM_PARAMS}
-    , _divisions{}
-    , _sequencer{}
-    , _subFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}
-    , _divisionFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}
-    , _voiceFrameBuffer{N_VOICE_CHANNELS, SUB_FRAME_LENGTH}
-    , _remainedSamples{0}
-    , _tremulantBuffer{1, SUB_FRAME_LENGTH}
-    , _tremulantPhase{0.0f}
-    , _convolver{}
-    , _selectedIR{0}
-    , _irSwitchEvents{}
-    , _reverbTailCounter{0}
-    , _interpolator{1.0f, N_OUTPUT_CHANNELS}
-    , _midiKeyboardState{}
-//    , _volumeLevel{}
+
+Engine::Engine() : _sampleRate{SAMPLE_RATE_F}, _voicePool(*this), _params{NUM_PARAMS}, _subFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _divisionFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _voiceFrameBuffer{N_VOICE_CHANNELS, SUB_FRAME_LENGTH}, _remainedSamples{0}, _tremulantBuffer{1, SUB_FRAME_LENGTH}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}
 {
     populateDivisions();
-
     // Sequencer can be created only after the divisions have been populated.
     _sequencer = std::make_unique<Sequencer>(*this, SEQUENCER_N_STEPS);
 }
 
-void Engine::prepareToPlay(float sampleRate, int frameSize)
+void Engine::prepareToPlay(float sampleRate)
 {
-    // Make sure the stops wavetable is updated.
-    EngineGlobal::getInstance().updateStops(SAMPLE_RATE_F);
-
     // Select the first IR for reverb by default
     setReverbIR(_selectedIR);
     _convolver.setDryWet(1.0f, 0.25f, true);
@@ -68,45 +46,24 @@ void Engine::prepareToPlay(float sampleRate, int frameSize)
 
 void Engine::setReverbIR(int num)
 {
-    const auto& irs = EngineGlobal::getInstance().getIRs();
-
-    if (num >= 0 && num < irs.irs.size()) {
-        const auto& ir = irs.irs[num];
-        _convolver.setLength(int(ir.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
+    if (const auto&[irs, longestIRLength] = EngineGlobal::getInstance().getIRs(); num >= 0 && num < irs.size()) {
+        const auto& ir = irs[num];
+        _convolver.setLength(static_cast<int>(ir.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
         _convolver.prepareToPlay(SAMPLE_RATE_F, SUB_FRAME_LENGTH); // these parameters are irrelevant
         _convolver.setZeroDelay(ir.zeroDelay);
         _convolver.setIR(ir);
-
         _reverbTailCounter = _convolver.length();
-
         _selectedIR = num;
     }
 }
 
-void Engine::postReverbIR(int num)
-{
-    // Anticipate the IR change that will happen later.
-    // This is required for the UI to be updated correctly.
-    _selectedIR = num;
-    _irSwitchEvents.push(Engine::IRSwithEvent(num));
-}
+float Engine::getReverbLengthInSeconds() const { return static_cast<float>(_convolver.length()) * SAMPLE_RATE_R; }
 
-float Engine::getReverbLengthInSeconds() const
-{
-    return float(_convolver.length()) * SAMPLE_RATE_R;
-}
+void Engine::setReverbWet(const float v) { _convolver.setDryWet(1.0f, v); }
 
-void Engine::setReverbWet(float v)
-{
-    _convolver.setDryWet(1.0f, v);
-}
+void Engine::setVolume(const float v) { _params[VOLUME].setValue(v); }
 
-void Engine::setVolume(float v)
-{
-    _params[VOLUME].setValue(v);
-}
-
-void Engine::process(float* outL, float* outR, int numFrames, bool isNonRealtime)
+void Engine::process(float* outL, float* outR, int numFrames, const bool isNonRealtime)
 {
     assert(outL != nullptr);
     assert(outR != nullptr);
@@ -163,14 +120,10 @@ void Engine::process(float* outL, float* outR, int numFrames, bool isNonRealtime
     }
 
     applyVolume(origOutL, origOutR, origNumFrames);
-
-//    _volumeLevel.left.process(origOutL, origNumFrames);
-//    _volumeLevel.right.process(origOutR, origNumFrames);
 }
 
-void Engine::process(AudioBuffer& out, bool isNonRealtime)
+void Engine::process(AudioBuffer &out)
 {
-
     const int numChannels = out.getNumChannels();
     int numFrames = out.getNumSamples();
 
@@ -186,7 +139,7 @@ void Engine::process(AudioBuffer& out, bool isNonRealtime)
 
         while (_remainedSamples > 0 && _interpolator.canWrite()) {
             for (int ch = 0; ch < numChannels; ++ch)
-                _interpolator.writeUnchecked(_subFrameBuffer.getReadPointer(ch)[idx], (size_t) ch);
+                _interpolator.writeUnchecked(_subFrameBuffer.getReadPointer(ch)[idx], static_cast<size_t>(ch));
 
             _interpolator.writeIncrement();
 
@@ -216,9 +169,6 @@ void Engine::process(AudioBuffer& out, bool isNonRealtime)
 
     // Global volume across all the buses
     applyVolume(out);
-
-//    _volumeLevel.left.process(out);
-//    _volumeLevel.right = _volumeLevel.left;
 }
 
 void Engine::handleSequencerSwitch(const int& note) {
@@ -233,22 +183,22 @@ void Engine::handleSequencerSwitch(const int& note) {
 void Engine::handleNoteOn(const int &channel, const int &note) {
     clearDivisionsTriggerFlag();
     // Ignore note-on event if filtered by MTS.
-    if (aeolus::EngineGlobal::getInstance().shouldMTSFilterNote(note, channel)) {
-        for (auto &division: _divisions)
+    if (EngineGlobal::getInstance().shouldMTSFilterNote(note, channel)) {
+        for (const auto &division: _divisions)
             division->noteOn(note, channel);
     }
 }
 
 void Engine::handleNoteOff(const int &channel, const int &note) {
     clearDivisionsTriggerFlag();
-    for (auto &division : _divisions) {
+    for (const auto &division : _divisions) {
         division->noteOff(note, channel);
     }
 }
 
 void Engine::handleAllNotesOff()
 {
-    for (auto &division : _divisions)
+    for (const auto &division : _divisions)
         division->allNotesOff();
 }
 
@@ -270,7 +220,7 @@ Range Engine::getMidiKeyboardRange() const
         }
     }
 
-    return Range(minNote, maxNote);
+    return {minNote, maxNote};
 }
 
 std::set<int> Engine::getKeySwitches() const
@@ -296,7 +246,7 @@ std::shared_ptr<Division> Engine::getDivisionByName(const std::string& name)
     return nullptr;
 }
 
-void Engine::clearDivisionsTriggerFlag() {
+void Engine::clearDivisionsTriggerFlag() const {
     for (auto& division : _divisions) {
         division->clearTriggerFlag();
     }
@@ -312,7 +262,7 @@ bool Engine::processSubFrame() {
 
     bool wasAudioGenerated = false;
 
-    for (auto &division : _divisions) {
+    for (const auto &division : _divisions) {
 
         _divisionFrameBuffer.clear();
 
@@ -326,14 +276,6 @@ bool Engine::processSubFrame() {
                 _subFrameBuffer.addFrom(ch, 0, _divisionFrameBuffer, ch, 0, SUB_FRAME_LENGTH);
             }
         }
-
-//#if AEOLUS_MULTIBUS_OUTPUT
-//        division.volumeLevel().left.process(_divisionFrameBuffer);
-//        division.volumeLevel().right = division->volumeLevel().left;
-//#else
-//        division.volumeLevel().left.process(_divisionFrameBuffer, 0);
-//        division.volumeLevel().right.process(_divisionFrameBuffer, 1);
-//#endif
     }
 
     _remainedSamples = SUB_FRAME_LENGTH;
@@ -343,7 +285,7 @@ bool Engine::processSubFrame() {
 
 void Engine::processPendingIRSwitchEvents()
 {
-    IRSwithEvent event;
+    IRSwithEvent event{};
     bool received = false;
 
     while (_irSwitchEvents.pop(event)) {
@@ -414,9 +356,8 @@ void Engine::handleCC(const int& channel, const int& cc, const int& value) {
     if (cc == CC_STOP_BUTTONS) {
         if ((value & 0xC8) == 0x40) {
             // 01mm0ggg
-            StopControlMode mode { StopControlMode::Disabled };
-            const int modeValue{ (value >> 4) & 0x03 };
-            switch (modeValue) {
+            auto mode { StopControlMode::Disabled };
+            switch (value >> 4 & 0x03) {
                 case 0: mode = StopControlMode::Disabled; break;
                 case 1: mode = StopControlMode::SetOff; break;
                 case 2: mode = StopControlMode::SetOn; break;
@@ -442,13 +383,11 @@ void Engine::handleCC(const int& channel, const int& cc, const int& value) {
     }
 }
 
-void Engine::processStopControlMessage()
-{
+void Engine::processStopControlMessage() const {
     if (!_stopControlMode.has_value())
         return;
 
-    if (!isPositiveAndBelow(_stopControlGroup, _divisions.size()))
-        return;
+    isPositiveAndBelow(_stopControlGroup, _divisions.size());
 
     auto division{ _divisions[_stopControlGroup] };
 
@@ -472,17 +411,17 @@ void Engine::processStopControlMessage()
     }
 }
 
-bool Engine::isKeySwitchForward(int key) const
+bool Engine::isKeySwitchForward(const int key) const
 {
-    return std::find(_sequencerStepForwardKeySwitches.begin(), _sequencerStepForwardKeySwitches.end(), key) != _sequencerStepForwardKeySwitches.end();
+    return std::ranges::find(_sequencerStepForwardKeySwitches, key) != _sequencerStepForwardKeySwitches.end();
 }
 
-bool Engine::isKeySwitchBackward(int key) const
+bool Engine::isKeySwitchBackward(const int key) const
 {
-    return std::find(_sequencerStepBackwardKeySwitches.begin(), _sequencerStepBackwardKeySwitches.end(), key) != _sequencerStepBackwardKeySwitches.end();
+    return std::ranges::find(_sequencerStepBackwardKeySwitches, key) != _sequencerStepBackwardKeySwitches.end();
 }
 
-void Engine::populateDivisions() {
+auto Engine::populateDivisions() -> void {
     const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
 
     if (!exists(configFile))
@@ -492,7 +431,7 @@ void Engine::populateDivisions() {
     auto config = nlohmann::json::parse(stream);
 
     for (auto divisionDef : config["divisions"]) {
-        auto division = std::make_shared<aeolus::Division>(*this);
+        auto division = std::make_shared<Division>(*this);
         division->initFromJson(divisionDef);
         _divisions.push_back(division);
     }
@@ -527,11 +466,9 @@ void Engine::populateKeySwitchesVector(std::vector<int>& switches, const nlohman
     switches.clear();
 
     if (v.is_number_integer()) {
-        switches.push_back((int)v);
+        switches.push_back(v);
     } else if (v.is_array()) {
         for (const auto& key : v)
             switches.push_back(key);
     }
 }
-
-AEOLUS_NAMESPACE_END

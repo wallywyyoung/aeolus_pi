@@ -21,7 +21,7 @@
 
 #include "aeolus/globals.h"
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -89,4 +89,4 @@ private:
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

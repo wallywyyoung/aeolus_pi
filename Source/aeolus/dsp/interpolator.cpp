@@ -20,7 +20,7 @@
 #include "aeolus/dsp/interpolator.h"
 #include <cstring>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -158,4 +158,4 @@ bool Interpolator::write(float l, float r) noexcept
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

@@ -19,21 +19,18 @@
 
 #include "aeolus/voice.h"
 #include "aeolus/engine.h"
+
 #include <cstring>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 Voice::Voice(Engine& engine)
     : _engine(engine)
-    , _state{}
-    , _stopIndex{-1}
-    , _buffer{0}
-    , _delayLine{SAMPLE_RATE}
-    , _delay{0}
-    , _chiff{}
-    , _panPosition{0.0f}
-    , _spatialSource{}
-{
+      , _stopIndex{-1}
+      , _buffer{0}
+      , _delayLine{SAMPLE_RATE}
+      , _panPosition{0.0f}
+      , _postReleaseCounter(0) {
 }
 
 void Voice::trigger(const Pipewave::State& state)
@@ -46,7 +43,7 @@ void Voice::trigger(const Pipewave::State& state)
     const auto dt = 1.0f / freq;
 
     // Delay pipe harmonic signal so that chiff noise builds up first
-    _delay = (int) std::min<float>((float)_delayLine.size(), 0.5f * dt * SAMPLE_RATE_F);
+    _delay = static_cast<int>(std::min<float>(static_cast<float>(_delayLine.size()), 0.5f * dt * SAMPLE_RATE_F));
 
     _chiff.setAttack(5.0f * dt);
     _chiff.setDecay(100.0f * dt);
@@ -54,29 +51,29 @@ void Voice::trigger(const Pipewave::State& state)
     _chiff.setRelease(100.0f * dt);
 
     // Frequency-dependant chiff attenuation
-    float att = 1.0f - expf(-freq / 3000.0f);
+    const float att = 1.0f - expf(-freq / 3000.0f);
     _chiff.setGain(std::min<float>(1.0f, 0.02f * _state.chiffGain * att));
     _chiff.setFrequency(freq);
     _chiff.trigger();
 
     // Spatialisation
-    int note = _state.pipewave->getNote();
-    float k = note % 2 != 0 ? 1.0f : -1.0f;
+    const int note = _state.pipewave->getNote();
+    const float k = note % 2 != 0 ? 1.0f : -1.0f;
 
     // Wider spread for low-pitched pipes
     const auto& model = _state.pipewave->getModel();
     const float width = 0.15f * static_cast<float>(model->getFd()) / static_cast<float>(model->getFn());
 
-    float x = width * k * (float)abs(note - 65);
+    const float x = width * k * static_cast<float>(abs(note - 65));
 
     // Assuming notes range [36..96]
-    float n = k * float(abs(note - 65)); // ~[-30..30]
+    float n = k * static_cast<float>(abs(note - 65)); // ~[-30..30]
     _panPosition = limitRange(0.0f, 1.0f, (n + 30.0f) / 60.0f);
 
     _spatialSource.setSampleRate(SAMPLE_RATE_F);
     _spatialSource.setSourcePosition(x, 5.0f);
     _spatialSource.recalculate();
-    _postReleaseCounter = _spatialSource.getPostFxSamplesCount() + 2 * _delay + (int)TREMULANT_DELAY_LENGTH;
+    _postReleaseCounter = _spatialSource.getPostFxSamplesCount() + 2 * _delay + static_cast<int>(TREMULANT_DELAY_LENGTH);
 }
 
 void Voice::release()
@@ -172,7 +169,6 @@ void Voice::resetAndReturnToPool()
 VoicePool::VoicePool(Engine& engine, int maxVoices)
     : _engine{engine}
     , _voices(maxVoices, Voice(engine))
-    , _idleVoices{}
     , _voiceCount{0}
 {
     for (auto& voice : _voices)
@@ -202,4 +198,4 @@ void VoicePool::resetAndReturnToPool(Voice* voice)
     --_voiceCount;
 }
 
-AEOLUS_NAMESPACE_END
+

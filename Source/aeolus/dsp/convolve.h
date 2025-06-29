@@ -30,7 +30,7 @@
 #include <vector>
 #include <cstring>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -172,20 +172,20 @@ struct FFT : public ConvPart<L>
     constexpr static size_t Length2 = Length * 2;
     constexpr static size_t Length4 = Length * 4;
 
-    float* complexInputBuffer;
-    float* complexIrBuffer;
+    float* complexInputBuffer{};
+    float* complexIrBuffer{};
 
     bool irReady = false;
-    float* tailBuffer;
-    size_t tailIndex;
+    float* tailBuffer{};
+    size_t tailIndex{};
 
     using FftImpl = GFFT<Length2, float>;
 
     FFT()
     {
-        complexInputBuffer = (float*) AlignedMemory<32>::alloc(Length4 * sizeof(float));
-        complexIrBuffer    = (float*) AlignedMemory<32>::alloc(Length4 * sizeof(float));
-        tailBuffer         = (float*) AlignedMemory<32>::alloc(Length * sizeof(float));
+        complexInputBuffer = static_cast<float *>(AlignedMemory<32>::alloc(Length4 * sizeof(float)));
+        complexIrBuffer    = static_cast<float *>(AlignedMemory<32>::alloc(Length4 * sizeof(float)));
+        tailBuffer         = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
 
         reset();
     }
@@ -343,8 +343,8 @@ public:
         , blocks{n}
     {
 
-        inputSpectrumBuffer = (float*) AlignedMemory<32>::alloc(inputSpectrumBufferSize * sizeof(float));
-        irSpectrumBuffer = (float*) AlignedMemory<32>::alloc(irSpectrumBufferSize * sizeof(float));
+        inputSpectrumBuffer = static_cast<float *>(AlignedMemory<32>::alloc(inputSpectrumBufferSize * sizeof(float)));
+        irSpectrumBuffer = static_cast<float *>(AlignedMemory<32>::alloc(irSpectrumBufferSize * sizeof(float)));
 
         reset();
     }
@@ -361,13 +361,13 @@ public:
         if (n * Length4 != irSpectrumBufferSize) {
             AlignedMemory<32>::free(irSpectrumBuffer);
             irSpectrumBufferSize = n * Length4;
-            irSpectrumBuffer = (float*) AlignedMemory<32>::alloc(irSpectrumBufferSize * sizeof(float));
+            irSpectrumBuffer = static_cast<float *>(AlignedMemory<32>::alloc(irSpectrumBufferSize * sizeof(float)));
         }
 
         if (n * Length4 != inputSpectrumBufferSize) {
             AlignedMemory<32>::free(inputSpectrumBuffer);
             inputSpectrumBufferSize = Length4 * n;
-            inputSpectrumBuffer = (float*) AlignedMemory<32>::alloc(inputSpectrumBufferSize * sizeof(float));
+            inputSpectrumBuffer = static_cast<float *>(AlignedMemory<32>::alloc(inputSpectrumBufferSize * sizeof(float)));
         }
 
         blocks.resize(n);
@@ -405,7 +405,7 @@ public:
         }
     }
 
-    void feedIr(float x)
+    void feedIr(const float x)
     {
         assert(irInputIndex < irSpectrumBufferSize);
         assert(irInputBlockIndex < blocks.size());
@@ -483,9 +483,9 @@ private:
         float* inputSpectrumPtr = nullptr;
         float* irSpectrumPtr = nullptr;
 
-        float* convolutionBuffer;
-        float* outputBuffer;
-        float* tailBuffer;
+        float* convolutionBuffer{};
+        float* outputBuffer{};
+        float* tailBuffer{};
 
         size_t tailIndex = 0;
         bool irReady = false;
@@ -494,22 +494,16 @@ private:
         size_t preconvolveIndex = 0;
         std::atomic<bool> preconvolved = false;
 
-        Block()
-        {
-            convolutionBuffer = (float*) AlignedMemory<32>::alloc(Length4 * sizeof(float));
-            outputBuffer      = (float*) AlignedMemory<32>::alloc(Length * sizeof(float));
-            tailBuffer        = (float*) AlignedMemory<32>::alloc(Length * sizeof(float));
+        Block() {
+            convolutionBuffer = static_cast<float *>(AlignedMemory<32>::alloc(Length4 * sizeof(float)));
+            outputBuffer      = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
+            tailBuffer        = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
         }
 
-        Block(const Block& other)
-            : worker{other.worker}
-            , inputSpectrumPtr{other.inputSpectrumPtr}
-            , irSpectrumPtr{other.irSpectrumPtr}
-            , preconvolved{false}
-        {
-            convolutionBuffer = (float*) AlignedMemory<32>::alloc(Length4 * sizeof(float));
-            outputBuffer      = (float*) AlignedMemory<32>::alloc(Length * sizeof(float));
-            tailBuffer        = (float*) AlignedMemory<32>::alloc(Length * sizeof(float));
+        Block(const Block& other) : worker{other.worker}, inputSpectrumPtr{other.inputSpectrumPtr}, irSpectrumPtr{other.irSpectrumPtr}, preconvolved{false} {
+            convolutionBuffer = static_cast<float *>(AlignedMemory<32>::alloc(Length4 * sizeof(float)));
+            outputBuffer      = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
+            tailBuffer        = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
         }
 
         ~Block()
@@ -630,4 +624,4 @@ private:
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

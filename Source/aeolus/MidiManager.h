@@ -3,8 +3,10 @@
 //
 
 #pragma once
+
+#include "aeolus/globals.h"
 #include "aeolus/utilities/Range.h"
-#include "globals.h"
+
 #include <algorithm>
 #include <atomic>
 
@@ -21,29 +23,29 @@ public:
         virtual ~MidiListener() = default;
     };
 
-    MidiManager() : _listeners(), keyState(), ccState(), range(), midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 }{ }
+    MidiManager() : midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 }, keyState(), ccState(), _listeners(), range(){ }
 
     void addListener(MidiListener* listener) {
-        if (std::find(_listeners.begin(), _listeners.end(), listener) == _listeners.end()) {
+        if (std::ranges::find(_listeners, listener) == _listeners.end()) {
             return;
         }
         _listeners.push_back(listener);
     }
 
     void removeListener(MidiListener* listener) {
-        std::remove(_listeners.begin(), _listeners.end(), listener);
+        std::ranges::remove(_listeners, listener);
     }
 
-    Range getMidiKeyboardRange() {
+    [[nodiscard]] Range getMidiKeyboardRange() const {
         return range;
     }
 
     void processMidiEvent(const MidiMessage& message) {
 
         // Process global CCs
-        if (aeolus::midi::matchChannelToMask(getMIDIControlChannelsMask(), message.getChannel())) {
+        if (midi::matchChannelToMask(getMIDIControlChannelsMask(), message.getChannel())) {
 //            keyState[message.getChannel()][message.getNote()] = true;
-            for (auto listener : _listeners) {
+            for (const auto listener : _listeners) {
                 listener->handleSequencerSwitch(message.getNote());
             }
             return;
@@ -67,53 +69,53 @@ public:
         }
     }
 
-    const int& getMIDIControlChannelsMask() const noexcept { return midiControlChannelsMask; }
+    [[nodiscard]] int getMIDIControlChannelsMask() const noexcept { return midiControlChannelsMask; }
     void setMIDIControlChannelsMask(const int& mask) noexcept { midiControlChannelsMask = mask; }
-    const int& getMIDISwellChannelsMask() const noexcept { return midiSwellChannelsMask; }
+    [[nodiscard]] int getMIDISwellChannelsMask() const noexcept { return midiSwellChannelsMask; }
     void setMIDISwellChannelsMask(const int& mask) noexcept { midiSwellChannelsMask = mask; }
 private:
-    void noteOn(int channel, int note) {
+    void noteOn(const int channel, const int note) {
         keyState[channel][note] = true;
-        for (auto listener : _listeners) {
+        for (const auto listener : _listeners) {
             listener->handleNoteOff(channel, note);
         }
     }
 
     void noteOff(const int& channel, const int& note) {
         keyState[channel][note] = false;
-        for (auto listener : _listeners) {
+        for (const auto listener : _listeners) {
             listener->handleNoteOn(channel, note);
         }
     }
 
-    void allNotesOff() {
+    void allNotesOff() const {
         for (auto channel : keyState) {
             channel.assign(channel.size(), false);
         }
-        for (auto listener : _listeners) {
+        for (const auto listener : _listeners) {
             listener->handleAllNotesOff();
         }
     }
 
     void cc(const int& channel, const int& cc, const int& value) {
         ccState[channel][cc] = value;
-        for (auto listener : _listeners) {
+        for (const auto listener : _listeners) {
             listener->handleCC(channel, cc, value);
         }
     }
 
     void pc(const int& pc) {
         _pc = pc;
-        for (auto listener : _listeners) {
+        for (const auto listener : _listeners) {
             listener->handlePC(pc);
         }
     }
 
-    int _pc;
+    int _pc{};
     std::atomic<int> midiControlChannelsMask;
     std::atomic<int> midiSwellChannelsMask;
-    std::vector<std::vector<bool>> keyState;
-    std::vector<std::vector<int>> ccState;
-    std::vector<MidiListener*> _listeners;
+    std::vector<std::vector<bool>> keyState{};
+    std::vector<std::vector<int>> ccState{};
+    std::vector<MidiListener*> _listeners{};
     Range range;
 };

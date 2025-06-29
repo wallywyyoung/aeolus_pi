@@ -2,10 +2,10 @@
 // Created by Wally Young on 6/27/25.
 //
 
-#include "Model.h"
-#include "../IOManager.h"
+#include "IOManager.h"
+#include "aeolus/Model.h"
 
-using namespace aeolus;
+
 
 Model::Model() {
     synths = IOManager::loadPipes();

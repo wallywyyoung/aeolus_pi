@@ -17,10 +17,11 @@
 //
 // ----------------------------------------------------------------------------
 
-#include <cmath>
-#include "adsrenv.h"
+#include "aeolus/dsp/adsrenv.h"
 
-AEOLUS_NAMESPACE_BEGIN
+#include <cmath>
+
+
 
 namespace dsp {
 
@@ -124,4 +125,4 @@ float Envelope::calculate(float rate, float targetRatio)
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

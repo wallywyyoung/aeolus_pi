@@ -19,12 +19,13 @@
 
 #pragma once
 
+#include "aeolus/IR.h"
+
 #include <cstddef>
 #include <cmath>
 #include <cassert>
 #include <fstream>
 #include <expected>
-#include "IR.h"
 
 template <typename T> T limitRange(T min, T max, T value) {
     return std::max(min, std::min(max, value));
@@ -32,18 +33,20 @@ template <typename T> T limitRange(T min, T max, T value) {
 
 // TODO: Fix mixed comparison with large unsigned types.
 template <typename T1, typename T2> bool isPositiveAndBelow(T1 instance, T2 threshold) {
-    return T1() <= instance && instance < static_cast<T1>(threshold);
-}
+    if (T1() <= instance && instance < static_cast<T1>(threshold)) {
+        return true;
+    } else {
+        throw std::runtime_error("isPositiveAndBelow - instance out of range");
+    }
 
-#define AEOLUS_NAMESPACE_BEGIN namespace aeolus {
-#define AEOLUS_NAMESPACE_END }
+}
 
 /// Multibus output option (must be set in the project configuration)
 #ifndef AEOLUS_MULTIBUS_OUTPUT
 #   define AEOLUS_MULTIBUS_OUTPUT 0
 #endif
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 #if AEOLUS_MULTIBUS_OUTPUT
     constexpr static int N_OUTPUT_CHANNELS = 8;
@@ -233,4 +236,4 @@ namespace midi {
 
 } // namespace midi
 
-AEOLUS_NAMESPACE_END
+

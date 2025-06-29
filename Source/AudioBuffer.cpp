@@ -3,6 +3,7 @@
 //
 
 #include "AudioBuffer.h"
+
 #include <algorithm>
 
 float* AudioBuffer::getWritePointer(int channel) {
@@ -27,7 +28,7 @@ void AudioBuffer::zero() {
 
 void AudioBuffer::applyGain(const float& gain) {
     for (auto& channel : audioBuffer) {
-        std::transform(channel.begin(), channel.end(), channel.begin(), [&](float element) { return element * gain; });
+        std::ranges::transform(channel, channel.begin(), [&](float element) { return element * gain; });
     }
 }
 

@@ -23,7 +23,7 @@
 
 
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -186,7 +186,7 @@ struct Convolver::Impl
         const float* irL = ir.getReadPointer(0);
         const float* irR = ir.getReadPointer(1);
 
-        while (i < std::min((int)inputSize, ir.getNumSamples())) {
+        while (i < std::min(static_cast<int>(inputSize), ir.getNumSamples())) {
             convL.feedIr(irL[i]);
             convR.feedIr(irR[i]);
             ++i;
@@ -301,22 +301,20 @@ void Convolver::prepareToPlay(float /* sampleRate */, size_t /* nFrames */)
     d->prepareToPlay();
 }
 
-void Convolver::process(const float *inL, const float *inR, float *outL, float *outR, size_t numFrames)
-{
+void Convolver::process(const float *inL, const float *inR, float *outL, float *outR, const size_t numFrames) const {
     d->process(inL, inR, outL, outR, numFrames);
 }
 
-void Convolver::setNonRealtime(bool nonRealtime)
-{
+void Convolver::setNonRealtime(const bool nonRealtime) const {
     d->updateRealtime(nonRealtime);
 }
 
 int Convolver::length() const noexcept
 {
-    return (int) d->length;
+    return static_cast<int>(d->length);
 }
 
-void Convolver::setLength(int len) noexcept
+void Convolver::setLength(const int len) const noexcept
 {
     d->length = len;
 }
@@ -326,11 +324,11 @@ bool Convolver::zeroDelay() const noexcept
     return d->zeroDelay;
 }
 
-void Convolver::setZeroDelay(bool v) noexcept
+void Convolver::setZeroDelay(const bool v) const noexcept
 {
     d->zeroDelay = v;
 }
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

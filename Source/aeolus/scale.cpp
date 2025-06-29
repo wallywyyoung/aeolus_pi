@@ -17,9 +17,9 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "scale.h"
+#include "aeolus/scale.h"
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 const Scale::Map Scale::_scales = {
     {
@@ -255,4 +255,4 @@ std::string Scale::getNameForType(Type type)
     return {};
 }
 
-AEOLUS_NAMESPACE_END
+

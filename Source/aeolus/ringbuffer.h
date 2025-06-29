@@ -20,9 +20,10 @@
 #pragma once
 
 #include "aeolus/globals.h"
+
 #include <atomic>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * @brief Simple lock-free ring buffer.
@@ -89,4 +90,4 @@ private:
     T data[Size];
 };
 
-AEOLUS_NAMESPACE_END
+

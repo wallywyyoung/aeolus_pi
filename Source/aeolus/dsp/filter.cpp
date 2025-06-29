@@ -20,7 +20,7 @@
 #include <cstring>
 #include "aeolus/dsp/filter.h"
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -176,4 +176,4 @@ void BiquadFilter::process(const Spec& spec, State& state, const float* in, floa
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

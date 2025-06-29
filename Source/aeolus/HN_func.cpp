@@ -2,14 +2,9 @@
 // Created by Wally Young on 6/27/25.
 //
 
-#include "HN_func.h"
+#include "aeolus/HN_func.h"
 
-using namespace aeolus;
-
-HN_func::HN_func()
-        : _h{}
-{
-}
+HN_func::HN_func() : _h{} { }
 
 void HN_func::reset(float v)
 {
@@ -18,52 +13,52 @@ void HN_func::reset(float v)
     }
 }
 
-void HN_func::setValue(int idx, float v)
+void HN_func::setValue(const int idx, const float v)
 {
-    assert(isPositiveAndBelow(idx, N_NOTES));
+    isPositiveAndBelow(idx, N_NOTES);
 
     for (auto& h: _h) {
         h.setValue(idx, v);
     }
 }
 
-void HN_func::setValue(int harm, int idx, float v)
+void HN_func::setValue(const int harm, const int idx, const float v)
 {
-    assert(isPositiveAndBelow(harm, _h.size()));
-    assert(isPositiveAndBelow(idx, N_NOTES));
+    isPositiveAndBelow(harm, _h.size());
+    isPositiveAndBelow(idx, N_NOTES);
 
     _h[harm].setValue(idx, v);
 }
 
-void HN_func::clearValue(int idx)
+void HN_func::clearValue(const int idx)
 {
-    assert(isPositiveAndBelow(idx, N_NOTES));
+    isPositiveAndBelow(idx, N_NOTES);
 
     for (auto& h : _h) {
         h.clearValue(idx);
     }
 }
 
-void HN_func::clearValue(int harm, int idx)
+void HN_func::clearValue(const int harm, const int idx)
 {
-    assert(isPositiveAndBelow(harm, _h.size()));
-    assert(isPositiveAndBelow(idx, N_NOTES));
+    isPositiveAndBelow(harm, _h.size());
+    isPositiveAndBelow(idx, N_NOTES);
 
     _h[harm].clearValue(idx);
 }
 
-float HN_func::getValue(int harm, int idx) const
+float HN_func::getValue(const int harm, const int idx) const
 {
-    assert(isPositiveAndBelow(harm, _h.size()));
-    assert(isPositiveAndBelow(idx, N_NOTES));
+    isPositiveAndBelow(harm, _h.size());
+    isPositiveAndBelow(idx, N_NOTES);
 
     return _h[harm].getValue(idx);
 }
 
-bool HN_func::isSet(int harm, int idx) const
+bool HN_func::isSet(const int harm, const int idx) const
 {
-    assert(isPositiveAndBelow(harm, _h.size()));
-    assert(isPositiveAndBelow(idx, N_NOTES));
+    isPositiveAndBelow(harm, _h.size());
+    isPositiveAndBelow(idx, N_NOTES);
 
     return _h[harm].isSet(idx);
 }
@@ -78,7 +73,7 @@ void HN_func::fromJson(const nlohmann::json& v)
 
 void HN_func::read(std::istream& stream, int n)
 {
-    const auto m = std::min(_h.size(), (size_t)n);
+    const auto m = std::min(_h.size(), static_cast<size_t>(n));
 
     for (int i = 0; i < m; ++i)
         _h[i].read(stream);

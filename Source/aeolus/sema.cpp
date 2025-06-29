@@ -19,7 +19,7 @@
 
 #include "aeolus/sema.h"
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 Semaphore::Semaphore(unsigned initialCount)
     : _mutex()
@@ -63,4 +63,4 @@ unsigned Semaphore::count() const
     return _counter;
 }
 
-AEOLUS_NAMESPACE_END
+

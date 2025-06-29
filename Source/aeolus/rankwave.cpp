@@ -18,18 +18,19 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "rankwave.h"
-#include "EngineGlobal.h"
+#include "aeolus/EngineGlobal.h"
+#include "aeolus/rankwave.h"
+
 #include <cstring>
 
-AEOLUS_NAMESPACE_BEGIN
 
-Rankwave::Rankwave(Addsynth model, const Scale& scale, float tuningFreq) : model(std::make_shared<Addsynth>(model)), _noteMin(model.getNoteMin()), _noteMax(model.getNoteMax()), _pipes{2} {
+
+Rankwave::Rankwave(Addsynth model, const Scale& scale, const float tuningFreq) : _noteMin(model.getNoteMin()), _noteMax(model.getNoteMax()), model(std::make_shared<Addsynth>(model)), _pipes{2} {
     assert(_noteMax - _noteMin + 1 > 0);
     createPipes(scale, tuningFreq);
 }
 
-Rankwave::Rankwave(const Rankwave& other) : model(other.model), _noteMin(other._noteMin), _noteMax(other._noteMax), _pipes{2} {
+Rankwave::Rankwave(const Rankwave& other) : _noteMin(other._noteMin), _noteMax(other._noteMax), model(other.model), _pipes{2} {
 
 }
 
@@ -52,12 +53,12 @@ void Rankwave::createPipes(const Scale& scale, float tuningFrequency) {
     }
 }
 
-void Rankwave::retunePipes(const Scale& scale, float tuningFrequency)
+void Rankwave::retunePipes(const Scale& scale, const float tuningFrequency)
 {
-    const float fnd = (float)model->getFn() / (float)model->getFd();
+    const float fnd = static_cast<float>(model->getFn()) / (float)model->getFd();
 
-    int pipeSetIndex{ _pipeSetIndex.load() };
-    int nextPipeSetIndex{ (pipeSetIndex + 1) % (int)_pipes.size() };
+    const int pipeSetIndex{ _pipeSetIndex.load() };
+    const int nextPipeSetIndex{ (pipeSetIndex + 1) % (int)_pipes.size() };
 
     if (EngineGlobal::getInstance().isMTSEnabled()) {
         // Use MTS provided tuning
@@ -65,16 +66,15 @@ void Rankwave::retunePipes(const Scale& scale, float tuningFrequency)
             auto& pipe = _pipes[nextPipeSetIndex].at(i - _noteMin);
 
             // @note MTS tuning may return some weird frequencies, we need to clamp them
-            const float f{limitRange(0.1f, SAMPLE_RATE * 0.5f - 0.1f, EngineGlobal::getInstance().getMTSNoteToFrequency(i) * fnd) };
 
-            if (pipe.getPipeFrequency() != f) {
+            if (const float f{limitRange(0.1f, SAMPLE_RATE * 0.5f - 0.1f, EngineGlobal::getInstance().getMTSNoteToFrequency(i) * fnd) }; pipe.getPipeFrequency() != f) {
                 pipe.setFrequency(f);
                 pipe.setNeedsToBeRebuilt(true);
             }
         }
     } else {
         // Use local scale
-        float fbase = tuningFrequency * fnd;
+        const float fbase = tuningFrequency * fnd;
 
         for (int i = _noteMin; i <= _noteMax; ++i) {
             auto& pipe = _pipes[nextPipeSetIndex][i - _noteMin];
@@ -84,10 +84,10 @@ void Rankwave::retunePipes(const Scale& scale, float tuningFrequency)
     }
 }
 
-void Rankwave::prepareToPlay(float sampleRate)
+void Rankwave::prepareToPlay(const float sampleRate)
 {
-    int pipeSetIndex{ _pipeSetIndex.load() };
-    int nextPipeSetIndex{ (pipeSetIndex + 1) % (int)_pipes.size() };
+    const int pipeSetIndex{ _pipeSetIndex.load() };
+    const int nextPipeSetIndex{ (pipeSetIndex + 1) % static_cast<int>(_pipes.size()) };
 
     for (auto& pipe : _pipes[nextPipeSetIndex]) {
         pipe.prepateToPlay(sampleRate);
@@ -103,15 +103,12 @@ Pipewave::State Rankwave::trigger(int note)
 
     const int index = note - _noteMin;
 
-    int pipeSetIndex{ _pipeSetIndex.load() };
+    const int pipeSetIndex{ _pipeSetIndex.load() };
 
-    if (!isPositiveAndBelow(index, _pipes[pipeSetIndex].size())) {
-        assert(false);
-        return {};
-    }
+    isPositiveAndBelow(index, _pipes[pipeSetIndex].size());
 
     auto &pipe = _pipes[pipeSetIndex][note - _noteMin];
     return pipe.trigger();
 }
 
-AEOLUS_NAMESPACE_END
+

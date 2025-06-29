@@ -3,15 +3,16 @@
 //
 
 #include "AlsaInterface.h"
+#include "aeolus/globals.h"
+
 #include <asoundlib.h>
 #include <stdexcept>
 #include <cassert>
 #include <vector>
-#include "aeolus/globals.h"
 
-AlsaInterface::AlsaInterface() : midiBuffer() {
+AlsaInterface::AlsaInterface()  {
     initMidi();
-    initAudio(aeolus::N_OUTPUT_CHANNELS, static_cast<unsigned int>(aeolus::SAMPLE_RATE), aeolus::BPS_RATE);
+    initAudio(N_OUTPUT_CHANNELS, SAMPLE_RATE, BPS_RATE);
 }
 
 void AlsaInterface::beginPollMidi() {

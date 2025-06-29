@@ -1,6 +1,8 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
+//  Copyright (C) 2003-2013 Fons Adriaensen <fons@linuxaudio.org>
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -19,9 +21,10 @@
 
 #pragma once
 
+#include "AudioBuffer.h"
+
 #include <string>
 #include <vector>
-#include "AudioBuffer.h"
 
 class IR : public AudioBuffer {
     std::string name;

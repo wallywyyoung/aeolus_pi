@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //  Copyright (C) 2003-2013 Fons Adriaensen <fons@linuxaudio.org>
 //
@@ -18,7 +19,7 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "Addsynth.h"
+#include "aeolus/Addsynth.h"
 #include <fstream>
 #include <cassert>
 #include <map>
@@ -29,7 +30,7 @@ static inline bool isPositiveAndBelow(T valueToTest, T upperLimit) {
     return valueToTest >= 0 && valueToTest < upperLimit;
 }
 
-using namespace aeolus;
+
 
 Addsynth::Addsynth()
 {
@@ -60,11 +61,6 @@ void Addsynth::reset()
 void Addsynth::fromJson(const nlohmann::json& v)
 {
     int version = v["version"];
-
-    int nHarm = v["n_harm"];
-
-    if (nHarm == 0)
-        nHarm = deprecated::N_HARM;
 
     _noteMin = v["note_min"];
     _noteMax = v["note_max"];

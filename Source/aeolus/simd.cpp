@@ -34,7 +34,7 @@
 #   define SIMD
 #endif
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 // perform cpuid function
 static void cpuid_func(uint32_t* regs, unsigned funcId)
@@ -90,7 +90,7 @@ CPUTraits CPUTraits::get()
 [[maybe_unused]]
 static inline bool is_aligned(const void *pointer, size_t byte_count)
 {
-    return (uintptr_t)pointer % byte_count == 0;
+    return reinterpret_cast<uintptr_t>(pointer) % byte_count == 0;
 }
 
 //------------------------------------------------------------------------------
@@ -1017,4 +1017,4 @@ static const bool simd_map = []() -> bool {
 
 #endif
 
-AEOLUS_NAMESPACE_END
+

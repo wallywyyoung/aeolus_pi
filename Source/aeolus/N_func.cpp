@@ -2,9 +2,9 @@
 // Created by Wally Young on 6/27/25.
 //
 
-#include "N_func.h"
+#include "aeolus/N_func.h"
 
-using namespace aeolus;
+
 
 N_func::N_func()
         : _b{}
@@ -100,15 +100,13 @@ void N_func::clearValue(int idx)
 
 float N_func::getValue(int idx) const
 {
-    assert(isPositiveAndBelow(idx, _v.size()));
-
+    isPositiveAndBelow(idx, _v.size());
     return _v[idx];
 }
 
 bool N_func::isSet(int idx) const
 {
-    assert(isPositiveAndBelow(idx, _v.size()));
-
+    isPositiveAndBelow(idx, _v.size());
     return (_b & (1 << idx)) != 0;
 }
 
@@ -120,7 +118,7 @@ float N_func::operator[](int note) const
 
     if (k) {
         // Apply linear interpolation if falls into the gap.
-        assert(isPositiveAndBelow(i + 1, _v.size()));
+        isPositiveAndBelow(i + 1, _v.size());
 
         v += k * (_v [i + 1] - v) / NOTES_GAP;
     }

@@ -23,7 +23,7 @@
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/filter.h"
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -92,8 +92,8 @@ private:
     DelayLine _delayLine;
     int _leftDelay;
     int _rightDelay;
-    float _leftAttenuation;
-    float _rightAttenuation;
+    float _leftAttenuation{};
+    float _rightAttenuation{};
 
     // Attenuation filters
     BiquadFilter::Spec _filterSpec[2];
@@ -102,4 +102,3 @@ private:
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END

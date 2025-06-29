@@ -2,10 +2,10 @@
 // Created by Wally Young on 6/27/25.
 //
 
-#include "globals.h"
-#include "Addsynth.h"
+#pragma once
 
-AEOLUS_NAMESPACE_BEGIN
+#include "aeolus/Addsynth.h"
+#include "aeolus/globals.h"
 
 /**
  * @brief A collection of all available stops.
@@ -26,11 +26,11 @@ public:
     [[nodiscard]] std::vector<std::string> getStopNames() const;
 
     [[nodiscard]] int getStopsCount() const { return synths.size(); }
-    Addsynth operator[](int idx) { return synths[idx]; }
-    Addsynth operator[](int idx) const { return synths[idx]; }
+    Addsynth operator[](const int idx) { return synths[idx]; }
+    Addsynth operator[](const int idx) const { return synths[idx]; }
 
 private:
     std::vector<Addsynth> synths{};
 };
 
-AEOLUS_NAMESPACE_END
+

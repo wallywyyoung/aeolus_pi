@@ -3,11 +3,12 @@
 //
 #pragma once
 
-#include "globals.h"
-#include "Addsynth.h"
+#include "aeolus/Addsynth.h"
+#include "aeolus/globals.h"
+
 #include <atomic>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * @brief Single pipe wavetable.
@@ -106,4 +107,3 @@ private:
     float* _loopEndPtr;     // _p2
 };
 
-AEOLUS_NAMESPACE_END

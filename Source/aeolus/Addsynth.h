@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //  Copyright (C) 2003-2013 Fons Adriaensen <fons@linuxaudio.org>
 //
@@ -16,12 +17,12 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
 #pragma once
 
 #include "aeolus/globals.h"
-#include "HN_func.h"
+#include "aeolus/HN_func.h"
 
 #include <cstdint>
 #include <array>
@@ -29,10 +30,9 @@
 #include <map>
 #include <any>
 #include <memory>
-
 #include <nlohmann/json.hpp>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 class Addsynth final
 {
@@ -41,38 +41,37 @@ public:
 
     void reset();
 
-    std::string getStopName() const { return _stopName; }
     void setStopName(const std::string& n) { _stopName = n; }
-    std::string getCopyright() const { return _copyright; }
-    std::string getMnemonic() const { return _mnemonic; }
-    std::string getComments() const { return _comments; }
 
-    int getNoteMin() const noexcept { return _noteMin; }
-    int getNoteMax() const noexcept { return _noteMax; }
+    [[nodiscard]] const std::string& getStopName() const { return _stopName; }
+    [[nodiscard]] const std::string& getCopyright() const { return _copyright; }
+    [[nodiscard]] const std::string& getMnemonic() const { return _mnemonic; }
+    [[nodiscard]] const std::string& getComments() const { return _comments; }
+    [[nodiscard]] int getNoteMin() const noexcept { return _noteMin; }
+    [[nodiscard]] int getNoteMax() const noexcept { return _noteMax; }
 
     void fromJson(const nlohmann::json& v);
 
     void fromStream(std::istream& stream);
 
-    float getNoteVolume(int n) const noexcept { return _n_vol[n]; }
-    float getNoteAttack(int n) const noexcept { return _n_att[n]; }
-    float getNoteOffset(int n) const noexcept { return _n_off[n]; }
-    float getNoteRandomisation(int n) const noexcept { return _n_ran[n]; }
-    float getNoteInstability(int n) const noexcept { return _n_ins[n]; }
-    float getNoteAttackDetune(int n) const noexcept { return _n_atd[n]; }
-    float getNoteRelease(int n) const noexcept { return _n_dct[n]; }
-    float getNoteReleaseDetune(int n) const noexcept { return _n_dcd[n]; }
-
-    float getHarmonicLevel(int h, int n) const noexcept { return _h_lev[h][n]; }
-    float getHarmonicAttack(int h, int n) const noexcept { return _h_att[h][n]; }
-    float getHarmonicRandomisation(int h, int n) const noexcept { return _h_ran[h][n]; }
-    float getHarmonicAttackProfile(int h, int n) const noexcept { return _h_atp[h][n]; }
+    [[nodiscard]] float getNoteVolume(const int n) const noexcept { return _n_vol[n]; }
+    [[nodiscard]] float getNoteAttack(const int n) const noexcept { return _n_att[n]; }
+    [[nodiscard]] float getNoteOffset(const int n) const noexcept { return _n_off[n]; }
+    [[nodiscard]] float getNoteRandomisation(const int n) const noexcept { return _n_ran[n]; }
+    [[nodiscard]] float getNoteInstability(const int n) const noexcept { return _n_ins[n]; }
+    [[nodiscard]] float getNoteAttackDetune(const int n) const noexcept { return _n_atd[n]; }
+    [[nodiscard]] float getNoteRelease(const int n) const noexcept { return _n_dct[n]; }
+    [[nodiscard]] float getNoteReleaseDetune(const int n) const noexcept { return _n_dcd[n]; }
+    [[nodiscard]] float getHarmonicLevel(const int h, const int n) const noexcept { return _h_lev[h][n]; }
+    [[nodiscard]] float getHarmonicAttack(const int h, const int n) const noexcept { return _h_att[h][n]; }
+    [[nodiscard]] float getHarmonicRandomisation(const int h, const int n) const noexcept { return _h_ran[h][n]; }
+    [[nodiscard]] float getHarmonicAttackProfile(const int h, const int n) const noexcept { return _h_atp[h][n]; }
 
     /// Frequency ration nominator.
-    int getFn() const noexcept { return _fn; }
+    [[nodiscard]] int getFn() const noexcept { return _fn; }
 
     ///  Frequency ratio denominator.
-    int getFd() const noexcept { return _fd; }
+    [[nodiscard]] int getFd() const noexcept { return _fd; }
 
 private:
 
@@ -85,15 +84,15 @@ private:
     constexpr static size_t comments_length  = 56;
     constexpr static size_t reserved_length  = 8;
 
-    std::string _stopName;
-    std::string _copyright;
-    std::string _mnemonic;
-    std::string _comments;
+    std::string _stopName{};
+    std::string _copyright{};
+    std::string _mnemonic{};
+    std::string _comments{};
 
-    int _noteMin;   // _n0;
-    int _noteMax;   // _n1;
-    int _fn;
-    int _fd;
+    int _noteMin{};   // _n0;
+    int _noteMax{};   // _n1;
+    int _fn{};
+    int _fd{};
 
     N_func  _n_vol;
     N_func  _n_off;
@@ -110,4 +109,4 @@ private:
     HN_func _h_atp; ///< Harmonic attack profile.
 };
 
-AEOLUS_NAMESPACE_END
+

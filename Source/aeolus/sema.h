@@ -24,7 +24,7 @@
 #include <mutex>
 #include <condition_variable>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * @brief Semaphore imlementation based on conditional variable.
@@ -49,4 +49,4 @@ private:
     unsigned _counter;
 };
 
-AEOLUS_NAMESPACE_END
+

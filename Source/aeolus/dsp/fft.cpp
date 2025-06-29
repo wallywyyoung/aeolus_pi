@@ -20,10 +20,11 @@
 #include "aeolus/dsp/fft.h"
 
 #include <cmath>
+#include <algorithm>
 
 
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -43,13 +44,14 @@ static float blackman(int i, int n)
     return 0.42659f - 0.49656f * std::cos (x) + 0.076849f * std::cos (2.0f * x);
 }
 
-void Fft::direct(Fft::Array& x, Fft::Window win)
+void Fft::direct(Fft::Array& x, const Fft::Window win)
 {
     applyWindow(x, win);
 
+    const auto N = static_cast<unsigned int>(x.size());
     // DFT
-    unsigned int N = (unsigned int) x.size(), k = N, n;
-    float thetaT = M_PI / N;
+    unsigned int k = N, n;
+    const float thetaT = M_PI / N;
     Complex phiT = Complex (std::cos (thetaT), std::sin (thetaT)), T;
 
     while (k > 1) {
@@ -71,7 +73,7 @@ void Fft::direct(Fft::Array& x, Fft::Window win)
     }
 
     // Decimate
-    unsigned int m = (unsigned int) log2 (N);
+    const auto m = static_cast<unsigned int>(log2(N));
 
     for (unsigned int a = 0; a < N; a++) {
         unsigned int b = a;
@@ -103,7 +105,8 @@ void Fft::inverse(Array &x)
     x = x.apply(std::conj);
 
     // scale the numbers
-    x /= (float) x.size();
+    std::ranges::transform(begin(x),end(x), begin(x),[x](const Complex c){return c / static_cast<float>(x.size());});
+    // x /= static_cast<float>(x.size());
 }
 
 void Fft::applyWindow(Fft::Array&x, Fft::Window win)
@@ -113,15 +116,15 @@ void Fft::applyWindow(Fft::Array&x, Fft::Window win)
         break;
     case Fft::Window::Hann:
         for (int i = 0; i < x.size(); ++i)
-            x[i] *= hann(i, (int) x.size());
+            x[i] *= hann(i, static_cast<int>(x.size()));
         break;
     case Fft::Window::Hamming:
         for (int i = 0; i < x.size(); ++i)
-            x[i] *= hamming(i, (int) x.size());
+            x[i] *= hamming(i, static_cast<int>(x.size()));
         break;
     case Fft::Window::Blackman:
         for (int i = 0; i < x.size(); ++i)
-            x[i] *= blackman(i, (int) x.size());
+            x[i] *= blackman(i, static_cast<int>(x.size()));
         break;
     default:
         break;
@@ -130,4 +133,4 @@ void Fft::applyWindow(Fft::Array&x, Fft::Window win)
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+

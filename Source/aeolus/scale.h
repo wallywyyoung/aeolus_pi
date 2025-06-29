@@ -25,14 +25,13 @@
 #include <map>
 #include <string>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 class Scale
 {
 public:
     enum Type {
         First = 0,
-
         Pythagorean = 0,
         MeanQuart,
         Werckm3,
@@ -70,4 +69,4 @@ private:
     const static Map _scales;
 };
 
-AEOLUS_NAMESPACE_END
+

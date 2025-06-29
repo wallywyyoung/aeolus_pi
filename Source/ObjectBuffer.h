@@ -15,9 +15,12 @@ private:
     alignas(std::hardware_destructive_interference_size) std::atomic<size_t> _writeIndex{0};
     alignas(std::hardware_destructive_interference_size) size_t _readIndexCached{0};
     alignas(std::hardware_destructive_interference_size) size_t _writeIndexCached{0};
-    std::vector<T> buffer;
+    std::vector<T> buffer{};
 public:
-    ObjectBuffer(size_t bufferSize = 1024) : buffer(1024, T()) { }
+    explicit ObjectBuffer(size_t bufferSize = 1024) : buffer(1024, T()) { }
+    ~ObjectBuffer() = default;
+    ObjectBuffer(const ObjectBuffer&) = delete;
+    ObjectBuffer& operator=(const ObjectBuffer&) = delete;
 
     bool push(T object) {
         auto const writeIndex = _writeIndex.load(std::memory_order_relaxed);

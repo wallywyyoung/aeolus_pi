@@ -25,7 +25,7 @@
 
 #include <nlohmann/json.hpp>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 /**
  * This class represents a single stop.
@@ -60,13 +60,14 @@ public:
 
     void initFromJson(const nlohmann::json& v);
 
-    Type getType() const noexcept { return _type; }
+    [[nodiscard]] Type getType() const noexcept { return _type; }
     void setType(Type t) noexcept { _type = t; }
 
-    std::string getName() const { return _name; }
+    [[nodiscard]] std::string getName() const { return _name; }
     void setName(const std::string& name) { _name = name; }
 
-    float getGain() const noexcept { return _gain; }
+    float getGain() const noexcept;
+
     void setGain(float g) noexcept { _gain = g; }
 
     float getChiffGain() const noexcept { return _chiffGain; }
@@ -81,12 +82,12 @@ public:
      * Add a zone that consists of a single rankwave (pipe)
      * that covers its entire range of keys.
      */
-    void addZone(std::shared_ptr<Rankwave> ptr);
+    void addZone(const std::shared_ptr<Rankwave> &ptr);
 
     /**
      * Add a zone composed of multiple pipes.
      */
-    void addZone(const std::vector<std::shared_ptr<Rankwave>> rw);
+    void addZone(const std::vector<std::shared_ptr<Rankwave>> &rw);
 
     /**
      * Returns the range of keys this stop can be triggered by.
@@ -98,11 +99,11 @@ public:
 
 private:
     Type _type{Type::Unknown};
-    std::string _name;
-    std::vector<Zone> _zones;
+    std::string _name{};
+    std::vector<Zone> _zones{};
     float _gain{1.0f};
     float _chiffGain{0.0f};
     bool _enabled{false};
 };
 
-AEOLUS_NAMESPACE_END
+

@@ -1,6 +1,8 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
+//  Copyright (C) 2003-2013 Fons Adriaensen <fons@linuxaudio.org>
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -19,20 +21,9 @@
 
 #include "aeolus/audioparam.h"
 
-AEOLUS_NAMESPACE_BEGIN
 
-AudioParameter::AudioParameter(float value,
-                               float min,
-                               float max,
-                               float smooth)
-    : _currentValue{value}
-    , _minValue{min}
-    , _maxValue{max}
-    , _targetValue{value}
-    , _frac{smooth}
-    , _smoothing{false}
-{
-}
+
+AudioParameter::AudioParameter(float value, float min, float max, float smooth) : _currentValue{value}, _minValue{min}, _maxValue{max}, _targetValue{value}, _frac{smooth}, _smoothing{false} { }
 
 void AudioParameter::setValue(float v, float s, bool force)
 {
@@ -105,26 +96,19 @@ void AudioParameter::updateSmoothing()
 
 //----------------------------------------------------------
 
-AudioParameterPool::AudioParameterPool (size_t size)
-    : _params (size)
-{
-}
+AudioParameterPool::AudioParameterPool (const size_t size) : _params (size) { }
 
-AudioParameter& AudioParameterPool::operator[] (int index)
+AudioParameter& AudioParameterPool::operator[] (const int index)
 {
-    assert(index >= 0 && index < (int)_params.size());
-
-    if (index >= 0 && index < (int)_params.size())
+    if (index >= 0 && index < static_cast<int>(_params.size()))
         return _params.at(index);
 
     return _dummyParameter;
 }
 
-const AudioParameter& AudioParameterPool::operator[] (int index) const
+const AudioParameter& AudioParameterPool::operator[] (const int index) const
 {
-    assert(index >= 0 && index < (int)_params.size());
-
-    if (index >= 0 && index < (int)_params.size())
+    if (index >= 0 && index < static_cast<int>(_params.size()))
         return _params.at(index);
 
     return _dummyParameter;
@@ -140,4 +124,4 @@ AudioParameter& AudioParameterPool::findByName(const std::string& n)
     return _dummyParameter;
 }
 
-AEOLUS_NAMESPACE_END
+

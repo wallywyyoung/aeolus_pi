@@ -23,7 +23,7 @@
 #include <array>
 #include <vector>
 
-AEOLUS_NAMESPACE_BEGIN
+
 
 namespace dsp {
 
@@ -72,5 +72,5 @@ private:
 
 } // namespace dsp
 
-AEOLUS_NAMESPACE_END
+
 

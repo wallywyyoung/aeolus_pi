@@ -2,15 +2,13 @@
 // Created by Wally Young on 6/14/25.
 //
 
-#include "Pipewave.h"
+#include "aeolus/Pipewave.h"
+
 #include <random>
 #include <cstring>
 #include <memory>
 #include <limits>
 #include <vector>
-
-AEOLUS_NAMESPACE_BEGIN
-
 
 Pipewave::Pipewave(std::shared_ptr<Addsynth> model, int note, float freq) : _model(model), _note(note), _freq(freq) , _needsToBeRebuilt(std::make_shared<std::atomic<bool>>(true)) { }
 
@@ -220,34 +218,29 @@ void Pipewave::play(Pipewave::State& state, float* out)
 
 void Pipewave::genwave()
 {
-#if ! TARGET_OS_IPHONE
-    thread_local
-#endif
-    static std::random_device rnd;
+    // TODO: Is this right?
+    thread_local std::random_device rnd;
     std::mt19937 gen(rnd());
     std::uniform_real_distribution<float> dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
-
 
     const float sampleRate_r = 1.0f / _sampleRate;
 
     float m = _model->getNoteAttack(_note);
 
     for (int h = 0; h < N_HARM; ++h) {
-        const float t = _model->getHarmonicAttack(h, _note);
-
-        if (t > m)
+        if (const float t = _model->getHarmonicAttack(h, _note); t > m)
             m = t;
     }
 
     // Attack length aligned to the processing sub-frames
-    _attackLength = (int)(_sampleRate * m + 0.5f);
+    _attackLength = static_cast<int>(_sampleRate * m + 0.5f);
     _attackLength = (_attackLength + SUB_FRAME_LENGTH - 1) & ~(SUB_FRAME_LENGTH - 1);
 
     // Target frequency
-    float f1 = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * (2.0f * (dist(gen)) + 1.0f)) * sampleRate_r;
+    const float f1 = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * (2.0f * (dist(gen)) + 1.0f)) * sampleRate_r;
 
     // Attack frequency (detuned)
-    float f0 = f1 * math::exp2ap(_model->getNoteAttackDetune(_note) / 1200.0f);
+    const float f0 = f1 * math::exp2ap(_model->getNoteAttackDetune(_note) / 1200.0f);
 
     float f = 0.0f;
 
@@ -267,17 +260,17 @@ void Pipewave::genwave()
 
     int nc = 0;
 
-    Pipewave::looplen(f1 * _sampleRate, static_cast<float>(_sampleStep) * _sampleRate, (int)(_sampleRate / 6.0f), _loopLength, nc);
+    looplen(f1 * _sampleRate, static_cast<float>(_sampleStep) * _sampleRate, static_cast<int>(_sampleRate / 6.0f), _loopLength, nc);
     assert(_loopLength > 0);
     assert(nc > 0);
 
     if (_loopLength < _sampleStep * SUB_FRAME_LENGTH) {
-        int k = (_sampleStep * SUB_FRAME_LENGTH - 1) / _loopLength + 1;
+        const int k = (_sampleStep * SUB_FRAME_LENGTH - 1) / _loopLength + 1;
         _loopLength *= k;
         nc *= k;
     }
 
-    int wavetableLength = _attackLength + _loopLength + _sampleStep * (SUB_FRAME_LENGTH + 4);
+    const int wavetableLength = _attackLength + _loopLength + _sampleStep * (SUB_FRAME_LENGTH + 4);
     _wavetable.resize(wavetableLength);
 
     std::vector<float> arg(wavetableLength);
@@ -289,12 +282,12 @@ void Pipewave::genwave()
 
     memset(_attackStartPtr, 0, sizeof(float) * _wavetable.size());
 
-    _releaseLength = (int)(ceilf(_model->getNoteRelease(_note) * _sampleRate / SUB_FRAME_LENGTH) + 1);
+    _releaseLength = static_cast<int>(ceilf(_model->getNoteRelease(_note) * _sampleRate / SUB_FRAME_LENGTH) + 1);
     _releaseMultiplier = 1.0f - powf(0.1f, 1.0f / static_cast<float>(_releaseLength));
     _releaseDetune = static_cast<float>(_sampleStep) * (math::exp2ap(_model->getNoteReleaseDetune(_note) / 1200.0f) - 1.0f);
     _instability = _model->getNoteInstability(_note);
 
-    int k = (int)(_sampleRate * _model->getNoteAttack(_note) + 0.5);
+    int k = static_cast<int>(_sampleRate * _model->getNoteAttack(_note) + 0.5);
 
     // arg[i] will contain phase steps along the generated wavetable
 
@@ -310,11 +303,11 @@ void Pipewave::genwave()
 
     // Generate phase steps of the sustained loop
     for (int i = 1; i < _loopLength; ++i) {
-        float t = arg[_attackLength] + (float)i * static_cast<float>(nc) / static_cast<float>(_loopLength);
+        const float t = arg[_attackLength] + (float)i * static_cast<float>(nc) / static_cast<float>(_loopLength);
         arg[i + _attackLength] = t - floorf(t + 0.5f);
     }
 
-    float v0 = math::exp2ap(0.1661f * _model->getNoteVolume(_note));
+    const float v0 = math::exp2ap(0.1661f * _model->getNoteVolume(_note));
 
     for (int h = 0; h < N_HARM; ++h) {
         if (static_cast<float>(h + 1) * f1 > 0.45f)
@@ -326,7 +319,7 @@ void Pipewave::genwave()
             continue;
 
         v = v0 * math::exp2ap(0.1661f * (v + _model->getHarmonicRandomisation(h, _note) * (2.0f * dist(gen) - 1.0f)));
-        k = (int)(_sampleRate * _model->getHarmonicAttack(h, _note) + 0.5f);
+        k = static_cast<int>(_sampleRate * _model->getHarmonicAttack(h, _note) + 0.5f);
 
         if (k > att.size())
             att.resize(k);
@@ -353,7 +346,7 @@ void Pipewave::genwave()
     _needsToBeRebuilt->store(false);
 }
 
-void Pipewave::looplen(float f, float sampleRate, int lmax, int& aa, int& bb)
+void Pipewave::looplen(const float f, const float sampleRate, const int lmax, int& aa, int& bb)
 {
     constexpr int N = 8;
     int z[N];
@@ -363,7 +356,7 @@ void Pipewave::looplen(float f, float sampleRate, int lmax, int& aa, int& bb)
     float g = sampleRate / f;
 
     for (int i = 0; i < N; ++i) {
-        a = z[i] = (int)(floor (g + 0.5));
+        a = z[i] = static_cast<int>(floor(g + 0.5));
         g -= a;
         b = 1;
         int j = i;
@@ -387,8 +380,8 @@ void Pipewave::looplen(float f, float sampleRate, int lmax, int& aa, int& bb)
 
             g = (fabs(g) < 1e-6f) ? 1e6f : 1.0f / g;
         } else  {
-            b = (int)(static_cast<float>(lmax) * f / sampleRate);
-            a = (int)(b * sampleRate / f + 0.5f);
+            b = static_cast<int>(static_cast<float>(lmax) * f / sampleRate);
+            a = static_cast<int>(b * sampleRate / f + 0.5f);
             d = sampleRate * b / a - f;
             break;
         }
@@ -412,17 +405,16 @@ void Pipewave::attgain(float* att, int n, float p)
 
     for (int i = 1; i <= 24; i++)
     {
-        int k = n * i / 24;
-        float x =  1.0f - z - 1.5f * y;
+        const int k = n * i / 24;
+        const float x =  1.0f - z - 1.5f * y;
         y += w * x;
-        float d = k == j ? 0.0f : w * y * p / static_cast<float>(k - j);
+        const float d = k == j ? 0.0f : w * y * p / static_cast<float>(k - j);
 
         while (j < k) {
-            float m = (float) j / n;
+            const float m = static_cast<float>(j) / n;
             att[j++] = (1.0f - m) * z + m;
             z += d;
         }
     }
 }
 
-AEOLUS_NAMESPACE_END
