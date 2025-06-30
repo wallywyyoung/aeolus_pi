@@ -50,19 +50,19 @@ std::vector<std::byte> IOManager::readBinaryFile(std::string path) {
 
 std::vector<Addsynth> IOManager::loadPipes() {
     std::vector<Addsynth> synths;
-    for (const auto& entry : std::filesystem::directory_iterator(DIRECTORY)) {
+    for (const auto& entry : std::filesystem::directory_iterator("./Resources/stops/")) {
         if (!std::filesystem::is_regular_file(entry)) {
             continue;
         }
         auto extension = entry.path().extension().string();
         auto synth = Addsynth();
-        if (extension == BINARY_EXTENSION) {
+        if (extension == ".ae0") {
             auto binary = IOManager::readBinaryFile(entry.path());
             std::string binaryString(reinterpret_cast<const char*>(binary.data()), binary.size());
             std::istringstream stream(binaryString);
             synth.fromStream(stream);
             synths.push_back(synth);
-        } else if (extension == JSON_EXTENSION) {
+        } else if (extension == ".json") {
             std::ifstream stream(entry.path());
             auto json = nlohmann::json::parse(stream);
             synth.fromJson(json);

@@ -161,7 +161,7 @@ int Voice::getNote() const
 
 void Voice::resetAndReturnToPool()
 {
-    _engine.getVoicePool().resetAndReturnToPool(this);
+    _engine.getVoicePool()->resetAndReturnToPool(this);
 }
 
 //==============================================================================

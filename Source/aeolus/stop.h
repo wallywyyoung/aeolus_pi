@@ -25,8 +25,6 @@
 
 #include <nlohmann/json.hpp>
 
-
-
 /**
  * This class represents a single stop.
  * A stop can be a combination of pipes arranged in zones.
@@ -36,47 +34,37 @@
 class Stop
 {
 public:
-
     // Stop type.
-    enum class Type {
-        Unknown,
-        Principal,
-        Flute,
-        Reed,
-        String
-    };
+    enum class Type { Unknown, Principal, Flute, Reed, String };
 
     // Zone - a grouping pipes for a range of keys.
     struct Zone {
         Range keyRange;
         std::vector<std::shared_ptr<Rankwave>> rankwaves;
-
-        bool isForKey(int key) const noexcept { return keyRange.contains(key); }
+        [[nodiscard]] bool isForKey(const int key) const noexcept { return keyRange.contains(key); }
     };
 
-    //------------------------------------------------------
-
-    Stop();
+    explicit Stop(const Configuration& config);
 
     void initFromJson(const nlohmann::json& v);
 
     [[nodiscard]] Type getType() const noexcept { return _type; }
-    void setType(Type t) noexcept { _type = t; }
+    void setType(const Type t) noexcept { _type = t; }
 
     [[nodiscard]] std::string getName() const { return _name; }
     void setName(const std::string& name) { _name = name; }
 
-    float getGain() const noexcept;
+    [[nodiscard]] float getGain() const noexcept;
 
     void setGain(float g) noexcept { _gain = g; }
 
-    float getChiffGain() const noexcept { return _chiffGain; }
+    [[nodiscard]] float getChiffGain() const noexcept { return _chiffGain; }
     void setChiffGain(float g) noexcept { _chiffGain = g; }
 
-    bool isEnabled() const noexcept { return _enabled; }
-    void setEnabled(bool shouldBeEnabled) noexcept { _enabled = shouldBeEnabled; }
+    [[nodiscard]] bool isEnabled() const noexcept { return _enabled; }
+    void setEnabled(const bool shouldBeEnabled) noexcept { _enabled = shouldBeEnabled; }
 
-    const std::vector<Zone>& getZones() const noexcept { return _zones; }
+    [[nodiscard]] const std::vector<Zone>& getZones() const noexcept { return _zones; }
 
     /**
      * Add a zone that consists of a single rankwave (pipe)
@@ -98,12 +86,15 @@ public:
     static Type getTypeFromString(const std::string& n);
 
 private:
+    std::vector<std::shared_ptr<Rankwave>> getRankwavesFromPipeVar(const nlohmann::json& v) const;
+
     Type _type{Type::Unknown};
     std::string _name{};
     std::vector<Zone> _zones{};
     float _gain{1.0f};
     float _chiffGain{0.0f};
     bool _enabled{false};
+    const Configuration& configuration;
 };
 
 

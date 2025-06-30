@@ -22,10 +22,10 @@
 #include "aeolus/EngineGlobal.h"
 #include <any>
 
+#include "../Configuration.h"
 
 
-
-Engine::Engine() : _sampleRate{SAMPLE_RATE_F}, _voicePool(*this), _params{NUM_PARAMS}, _subFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _divisionFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _voiceFrameBuffer{N_VOICE_CHANNELS, SUB_FRAME_LENGTH}, _remainedSamples{0}, _tremulantBuffer{1, SUB_FRAME_LENGTH}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}
+Engine::Engine(const Configuration& config) : configuration(config), _sampleRate{SAMPLE_RATE_F}, _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _subFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _divisionFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _voiceFrameBuffer{N_VOICE_CHANNELS, SUB_FRAME_LENGTH}, _remainedSamples{0}, _tremulantBuffer{1, SUB_FRAME_LENGTH}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}
 {
     populateDivisions();
     // Sequencer can be created only after the divisions have been populated.
@@ -46,7 +46,7 @@ void Engine::prepareToPlay(float sampleRate)
 
 void Engine::setReverbIR(int num)
 {
-    if (const auto&[irs, longestIRLength] = EngineGlobal::getInstance().getIRs(); num >= 0 && num < irs.size()) {
+    if (const auto&[irs, longestIRLength] = configuration.getIRs(); num >= 0 && num < irs.size()) {
         const auto& ir = irs[num];
         _convolver.setLength(static_cast<int>(ir.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
         _convolver.prepareToPlay(SAMPLE_RATE_F, SUB_FRAME_LENGTH); // these parameters are irrelevant
@@ -63,65 +63,7 @@ void Engine::setReverbWet(const float v) { _convolver.setDryWet(1.0f, v); }
 
 void Engine::setVolume(const float v) { _params[VOLUME].setValue(v); }
 
-void Engine::process(float* outL, float* outR, int numFrames, const bool isNonRealtime)
-{
-    assert(outL != nullptr);
-    assert(outR != nullptr);
-
-    float* origOutL = outL;
-    float* origOutR = outR;
-    int origNumFrames = numFrames;
-
-    processPendingIRSwitchEvents();
-    processPendingNoteEvents();
-
-    bool wasAudioGenerated = false;
-
-    while (numFrames > 0)
-    {
-        if (_remainedSamples > 0)
-        {
-            const int idx = SUB_FRAME_LENGTH - _remainedSamples;
-            const float* subL = _subFrameBuffer.getReadPointer(0, idx);
-            const float* subR = _subFrameBuffer.getReadPointer(1, idx);
-
-            while (_remainedSamples > 0 && _interpolator.canWrite()) {
-                _interpolator.write(*subL, *subR);
-                --_remainedSamples;
-                subL += 1;
-                subR += 1;
-            }
-
-            while (numFrames > 0 && _interpolator.canRead()) {
-                _interpolator.read(*outL, *outR);
-                numFrames -= 1;
-                outL += 1;
-                outR += 1;
-            }
-        }
-
-        if (_remainedSamples == 0 && numFrames > 0)
-        {
-            wasAudioGenerated |= processSubFrame();
-            assert(_remainedSamples > 0);
-        }
-    }
-
-    // When there is no audio generated we let the reverb tail to
-    // sound and stop the reverb processing to avoid convolving with silence.
-    if (wasAudioGenerated)
-        _reverbTailCounter = _convolver.length();
-    else
-        _reverbTailCounter = std::max(0, _reverbTailCounter - origNumFrames);
-
-    if (_reverbTailCounter > 0 && _convolver.isAudible()) {
-        _convolver.setNonRealtime(isNonRealtime);
-        _convolver.process(origOutL, origOutR, origOutL, origOutR, origNumFrames);
-    }
-
-    applyVolume(origOutL, origOutR, origNumFrames);
-}
-
+#if AEOLUS_MULTIBUS_OUTPUT
 void Engine::process(AudioBuffer &out)
 {
     const int numChannels = out.getNumChannels();
@@ -170,6 +112,63 @@ void Engine::process(AudioBuffer &out)
     // Global volume across all the buses
     applyVolume(out);
 }
+#else
+void Engine::process(float* outL, float* outR, int numFrames, const bool isNonRealtime)
+{
+    assert(outL != nullptr);
+    assert(outR != nullptr);
+
+    float* origOutL = outL;
+    float* origOutR = outR;
+    int origNumFrames = numFrames;
+
+    bool wasAudioGenerated = false;
+
+    while (numFrames > 0)
+    {
+        if (_remainedSamples > 0)
+        {
+            const int idx = SUB_FRAME_LENGTH - _remainedSamples;
+            const float* subL = _subFrameBuffer.getReadPointer(0, idx);
+            const float* subR = _subFrameBuffer.getReadPointer(1, idx);
+
+            while (_remainedSamples > 0 && _interpolator.canWrite()) {
+                _interpolator.write(*subL, *subR);
+                --_remainedSamples;
+                subL += 1;
+                subR += 1;
+            }
+
+            while (numFrames > 0 && _interpolator.canRead()) {
+                _interpolator.read(*outL, *outR);
+                numFrames -= 1;
+                outL += 1;
+                outR += 1;
+            }
+        }
+
+        if (_remainedSamples == 0 && numFrames > 0)
+        {
+            wasAudioGenerated |= processSubFrame();
+            assert(_remainedSamples > 0);
+        }
+    }
+
+    // When there is no audio generated we let the reverb tail to
+    // sound and stop the reverb processing to avoid convolving with silence.
+    if (wasAudioGenerated)
+        _reverbTailCounter = _convolver.length();
+    else
+        _reverbTailCounter = std::max(0, _reverbTailCounter - origNumFrames);
+
+    if (_reverbTailCounter > 0 && _convolver.isAudible()) {
+        _convolver.setNonRealtime(isNonRealtime);
+        _convolver.process(origOutL, origOutR, origOutL, origOutR, origNumFrames);
+    }
+
+    applyVolume(origOutL, origOutR, origNumFrames);
+}
+#endif
 
 void Engine::handleSequencerSwitch(const int& note) {
     clearDivisionsTriggerFlag();
@@ -183,7 +182,7 @@ void Engine::handleSequencerSwitch(const int& note) {
 void Engine::handleNoteOn(const int &channel, const int &note) {
     clearDivisionsTriggerFlag();
     // Ignore note-on event if filtered by MTS.
-    if (EngineGlobal::getInstance().shouldMTSFilterNote(note, channel)) {
+    if (configuration.shouldMTSFilterNoteByChannel(note, channel)) {
         for (const auto &division: _divisions)
             division->noteOn(note, channel);
     }
@@ -236,8 +235,7 @@ std::set<int> Engine::getKeySwitches() const
     return keySwitches;
 }
 
-std::shared_ptr<Division> Engine::getDivisionByName(const std::string& name)
-{
+std::shared_ptr<Division> Engine::getDivisionByName(const std::string &name) const {
     for (auto &division : _divisions) {
         if (division->getName() == name)
             return division;
@@ -281,20 +279,6 @@ bool Engine::processSubFrame() {
     _remainedSamples = SUB_FRAME_LENGTH;
 
     return wasAudioGenerated;
-}
-
-void Engine::processPendingIRSwitchEvents()
-{
-    IRSwithEvent event{};
-    bool received = false;
-
-    while (_irSwitchEvents.pop(event)) {
-        received = true;
-    }
-
-    if (received) {
-        setReverbIR(event.num);
-    }
 }
 
 void Engine::generateTremulant()
@@ -431,7 +415,7 @@ auto Engine::populateDivisions() -> void {
     auto config = nlohmann::json::parse(stream);
 
     for (auto divisionDef : config["divisions"]) {
-        auto division = std::make_shared<Division>(*this);
+        auto division = std::make_shared<Division>(*this, reinterpret_cast<Configuration&>(*this));
         division->initFromJson(divisionDef);
         _divisions.push_back(division);
     }

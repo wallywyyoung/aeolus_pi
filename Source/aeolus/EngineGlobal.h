@@ -30,6 +30,7 @@
 
 #include <unordered_map>
 
+#include "Configuration.h"
 
 
 /**
@@ -38,62 +39,38 @@
  * This class in a singleton which is shared among all the plugin instances.
  */
 
-class EngineGlobal {
+class EngineGlobal final : public Configuration {
 public:
     /**
      * Impulse response descriptor for IRs embedded as binary resources.
      */
-
     EngineGlobal();
-    ~EngineGlobal();
-
-    // static EngineGlobal& getInstance() {
-    //     static EngineGlobal instance;
-    //     return instance;
-    // }
-    // EngineGlobal(const EngineGlobal&) = delete;
-    // EngineGlobal& operator=(const EngineGlobal&) = delete;
-    // EngineGlobal(EngineGlobal&&) = delete;
-    // EngineGlobal& operator=(EngineGlobal&&) = delete;
+    ~EngineGlobal() override;
+    [[nodiscard ]] const int getMIDISwellChannelsMask() const override;
+    [[nodiscard]] const bool shouldMTSFilterNoteByChannel(int midiNote, int midiChannel) const override;
+    [[nodiscard]] const bool isMTSEnabled() const override { return _mtsEnabled; }
+    [[nodiscard]] const IRs& getIRs() const noexcept override { return irs; }
+    [[nodiscard]] const std::shared_ptr<Rankwave> getStopByName(const std::string &name) const override { return _rankwavesByName.at(name); }
+    [[nodiscard]] const float getMTSNoteToFrequency(int midiNote, int midiChannel) const override;
 
     int getStopsCount() const noexcept { return _rankwavesByName.size(); }
-
-    std::vector<std::string> getAllStopNames() const;
-    std::shared_ptr<Rankwave> getStopByName(const std::string& name);
-
-    [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
-    int getLongestIRLength() const noexcept { return _longestIRLength; }
-
+    [[nodiscard]] std::vector<std::string> getAllStopNames() const;
+    [[nodiscard]] int getLongestIRLength() const noexcept { return _longestIRLength; }
     void updateStops() const;
-
-    auto getMIDISwellChannelsMask() const -> int;
-
     [[nodiscard]] float getTuningFrequency() const noexcept { return _tuningFrequency; }
     void setTuningFrequency(float f) noexcept { _tuningFrequency = f; }
-
-    [[nodiscard]] const Scale& getScale() const noexcept { return _scale; }
-    void setScaleType(Scale::Type type) noexcept { _scale.setType(type); }
-
+    [[nodiscard]] const Scale& getScale() const noexcept { return *_scale; }
+    void setScaleType(Scale::Type type) noexcept { _scale->setType(type); }
     void process(const std::vector<MidiMessage>& messages, AudioBuffer& buffer);
     void processMidi(const std::vector<MidiMessage>& messages);
-
-    bool isConnectedToMTSMaster();
-    std::string getMTSScaleName();
-    float getMTSNoteToFrequency(int midiNote, int midiChannel = -1);
-    bool shouldMTSFilterNote(int midiNote, int midiChannel = -1);
-
-    [[nodiscard]] bool isMTSEnabled() const { return _mtsEnabled; }
+    [[nodiscard]] bool isConnectedToMTSMaster() const;
+    [[nodiscard]] std::string getMTSScaleName();
     void setMTSEnabled(bool shouldBeEnabled);
-
     void rebuildRankwaves();
-
 private:
-
     Engine engine;
     MidiManager midiManager;
-
     void loadRankwaves();
-
     /**
      * Refresh MTS tuning table for all MIDI notes.
      * Returns true if there was a change to the tuning.
@@ -107,13 +84,13 @@ private:
 
     std::vector<IR> _irs;
     IRs irs;
+    MTSClient* _mtsClient{};
+    std::shared_ptr<Scale> _scale;
     int _longestIRLength;   ///< Longest IR length in samples
 
     float _sampleRate;
-    Scale _scale;
     float _tuningFrequency;
 
-    MTSClient* _mtsClient{};
     bool _mtsEnabled{};
     std::array<float, 128> _mtsTuningCache{};
     Model model;

@@ -23,18 +23,19 @@
 
 #include <cstring>
 
+#include "Configuration.h"
 
 
-Rankwave::Rankwave(Addsynth model, const Scale& scale, const float tuningFreq) : _noteMin(model.getNoteMin()), _noteMax(model.getNoteMax()), model(std::make_shared<Addsynth>(model)), _pipes{2} {
+Rankwave::Rankwave(Addsynth model, const Scale& scale, const float tuningFreq, const Configuration &config) : _noteMin(model.getNoteMin()), _noteMax(model.getNoteMax()), configuration(config), model(std::make_shared<Addsynth>(model)), _pipes{2} {
     assert(_noteMax - _noteMin + 1 > 0);
     createPipes(scale, tuningFreq);
 }
 
-Rankwave::Rankwave(const Rankwave& other) : _noteMin(other._noteMin), _noteMax(other._noteMax), model(other.model), _pipes{2} {
+Rankwave::Rankwave(const Rankwave& other) : _noteMin(other._noteMin), _noteMax(other._noteMax), configuration(other.configuration), model(other.model), _pipes{2} {
 
 }
 
-void Rankwave::createPipes(const Scale& scale, float tuningFrequency) {
+auto Rankwave::createPipes(const Scale &scale, const float tuningFrequency) -> void {
     for (auto& p : _pipes)
         p.clear();
 
@@ -55,19 +56,18 @@ void Rankwave::createPipes(const Scale& scale, float tuningFrequency) {
 
 void Rankwave::retunePipes(const Scale& scale, const float tuningFrequency)
 {
-    const float fnd = static_cast<float>(model->getFn()) / (float)model->getFd();
+    const float fnd = static_cast<float>(model->getFn()) / static_cast<float>(model->getFd());
 
     const int pipeSetIndex{ _pipeSetIndex.load() };
-    const int nextPipeSetIndex{ (pipeSetIndex + 1) % (int)_pipes.size() };
+    const int nextPipeSetIndex{ (pipeSetIndex + 1) % static_cast<int>(_pipes.size()) };
 
-    if (EngineGlobal::getInstance().isMTSEnabled()) {
+    if (configuration.isMTSEnabled()) {
         // Use MTS provided tuning
         for (int i = _noteMin; i <= _noteMax; ++i) {
             auto& pipe = _pipes[nextPipeSetIndex].at(i - _noteMin);
 
             // @note MTS tuning may return some weird frequencies, we need to clamp them
-
-            if (const float f{limitRange(0.1f, SAMPLE_RATE * 0.5f - 0.1f, EngineGlobal::getInstance().getMTSNoteToFrequency(i) * fnd) }; pipe.getPipeFrequency() != f) {
+            if (const float f{limitRange(0.1f, SAMPLE_RATE * 0.5f - 0.1f, configuration.getMTSNoteToFrequency(i, -1) * fnd) }; pipe.getPipeFrequency() != f) {
                 pipe.setFrequency(f);
                 pipe.setNeedsToBeRebuilt(true);
             }

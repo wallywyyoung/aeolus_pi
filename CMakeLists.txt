@@ -30,6 +30,8 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/convolve.h)
 
 target_sources(aeolus_pi PRIVATE
+        Source/aeolus/utilities/Range.cpp
+        Source/aeolus/utilities/Range.h
         Source/aeolus/dsp/adsrenv.cpp
         Source/aeolus/dsp/adsrenv.h
         Source/aeolus/dsp/chiff.cpp
@@ -59,6 +61,10 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/globals.h
         Source/aeolus/list.h
         Source/aeolus/memory.h
+        Source/aeolus/MidiManager.h
+        Source/aeolus/MidiMessage.h
+        Source/aeolus/Model.h
+        Source/aeolus/Model.cpp
         Source/aeolus/rankwave.cpp
         Source/aeolus/rankwave.h
         Source/aeolus/ringbuffer.h
@@ -76,15 +82,30 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/voice.h
         Source/aeolus/worker.cpp
         Source/aeolus/worker.h
+        Source/aeolus/HN_func.cpp
+        Source/aeolus/HN_func.h
+        Source/aeolus/N_func.cpp
+        Source/aeolus/N_func.h
+        Source/aeolus/Pipewave.cpp
+        Source/aeolus/Pipewave.h
+        Source/aeolus/EngineGlobal.cpp
+        Source/aeolus/EngineGlobal.h
         Source/mts/libMTSClient.cpp
         Source/mts/libMTSClient.h
+        Source/AudioBuffer.cpp
+        Source/AudioBuffer.h
+        Source/AlsaInterface.cpp
+        Source/AlsaInterface.h
+        Source/Configuration.h
+        Source/IOManager.cpp
+        Source/IOManager.h
         Source/main.cpp)
 
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)
 find_package(thread-pool CONFIG REQUIRED)
-
-target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool)
+find_package(ALSA REQUIRED)
+target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool ALSA::ALSA)
 
 if(WITH_MULTIBUS_OUTPUT)
     target_compile_definitions(aeolus_pi PUBLIC AEOLUS_MULTIBUS_OUTPUT=1)

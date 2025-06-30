@@ -34,7 +34,7 @@
 #include <nlohmann/json.hpp>
 
 
-
+class Configuration;
 class Engine;
 
 /**
@@ -46,31 +46,14 @@ class Engine;
 class Division
 {
 public:
-
-    enum Params
-    {
-        GAIN = 0,
-
-        NUM_PARAMS
-    };
-
+    enum Params { GAIN = 0, NUM_PARAMS };
     /// Link with another division.
-    struct Link
-    {
+    struct Link {
         std::shared_ptr<Division> division;
         bool enabled = false;
     };
 
-//    /// Volume level
-//    struct Level
-//    {
-//        LevelMeter left;
-//        LevelMeter right;
-//    };
-
-    //--------------------------------------------------------------------------
-
-    Division(Engine& engine, const std::string& name = std::string());
+    explicit Division(const Engine& engine, const Configuration& config, const std::string& name = std::string());
 
     /**
      * @brief Load the division configuration from a JSON object.
@@ -79,13 +62,10 @@ public:
      */
     void initFromJson(const nlohmann::json& v);
 
-//    std::map<std::string, std::any> getPersistentState() const;
-//    void setPersistentState(const std::map<std::string, std::any>& v);
+    const Engine& getEngine() const noexcept { return _engine; }
 
-    Engine& getEngine() noexcept { return _engine; }
-
-    std::string getName() const { return _name; }
-    std::string getMnemonic() const { return _mnemonic; }
+    [[nodiscard]] std::string getName() const { return _name; }
+    [[nodiscard]] std::string getMnemonic() const { return _mnemonic; }
 
     /**
      * Remove all the links between the divisions.
@@ -99,9 +79,9 @@ public:
      */
     void populateLinkedDivisions();
 
-    int getLinksCount() const noexcept;
+    [[nodiscard]] int getLinksCount() const noexcept;
     void enableLink(int i, bool ena);
-    bool isLinkEnabled(int i) const;
+    [[nodiscard]] bool isLinkEnabled(int i) const;
     Link& getLinkByIndex(int i);
     void cancelAllLinks();
 
@@ -110,12 +90,9 @@ public:
     Stop& addRankwave(const std::shared_ptr<Rankwave> &ptr, bool ena = false, const std::string& name = std::string());
     Stop& addRankwaves(const std::vector<std::shared_ptr<Rankwave>> &rw, bool ena = false, const std::string& name = std::string());
 
-//    float* getParamGain() noexcept { return _paramGain; }
-    void setParamGain(std::shared_ptr<AudioParameter> param) noexcept { _paramGain = param; }
+    void setParamGain(const std::shared_ptr<AudioParameter> &param) noexcept { _paramGain = param; }
 
     AudioParameterPool& parameters() noexcept { return _params; }
-
-//    Level& volumeLevel() noexcept { return _volumeLevel; }
 
     int getStopsCount() const noexcept;
     void enableStop(int i, bool ena);
@@ -170,7 +147,7 @@ public:
     void clearTriggerFlag() noexcept { _triggerFlag = false; }
 
 private:
-
+    const Configuration&  configuration;
     /**
      * This will construct the keys aggregated state from the division's keys state
      * and all the coupled from divisions.
@@ -181,15 +158,13 @@ private:
 
     bool isAlreadyVoiced(int stopIndex, int node);
 
-    Engine& _engine;
-
     std::string _name;     ///< The division name.
     std::string _mnemonic; ///< Short mnemonic name.
 
     /// List of linked divisions names.
-    std::vector<std::string> _linkedDivisionNames;
-    std::vector<Link> _linkedDivisions;
-    std::vector<Division*> _linkedFromDivisions;
+    std::vector<std::string> _linkedDivisionNames{};
+    std::vector<Link> _linkedDivisions{};
+    std::vector<Division*> _linkedFromDivisions{};
 
     bool _hasSwell;         ///< Whetehr this division has a swell control.
     bool _hasTremulant;     ///< Whether this division has a remulant control.
@@ -214,7 +189,7 @@ private:
     dsp::DelayLine _tremulantDelayL;
     dsp::DelayLine _tremulantDelayR;
 
-    std::vector<Stop> _stops;   ///< All the stops this division has.
+    std::vector<Stop> _stops{};   ///< All the stops this division has.
 
     List<Voice> _activeVoices;  ///< Active voices on this division.
 
@@ -226,10 +201,7 @@ private:
     /// times by the same not on/off even, which is the case
     /// for linked divisions.
     bool _triggerFlag;
-
-//    Level _volumeLevel;
-
-//    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Division)
+    const Engine& _engine;
 };
 
 

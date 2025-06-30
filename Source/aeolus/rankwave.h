@@ -33,10 +33,13 @@
  * This class is a collection of pipes based on the same
  * additive synth model.
  */
+
+class Configuration;
+
 class Rankwave
 {
 public:
-    explicit Rankwave(Addsynth model, const Scale& scale, float tuningFreq);
+    explicit Rankwave(Addsynth model, const Scale& scale, float tuningFreq, const Configuration &config);
     Rankwave(const Rankwave&);
 
     // Recalculate pipes tuning based on the current global scale and A4 frequency,
@@ -53,10 +56,11 @@ public:
     Pipewave::State trigger(int note);
 
 private:
-    void createPipes(const Scale& scale, float tuningFreq);
+    void createPipes(const Scale& scale, float tuningFrequency);
 
     int _noteMin;
     int _noteMax;
+    const Configuration&  configuration;
     std::shared_ptr<Addsynth> model;
     // Two sets of pipes to be able to switch between tunings
     // without releasing all the voices.

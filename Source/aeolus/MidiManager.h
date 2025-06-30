@@ -10,19 +10,19 @@
 #include <algorithm>
 #include <atomic>
 
+class MidiListener {
+public:
+    virtual ~MidiListener() = default;
+    virtual void handleNoteOn(const int& channel, const int& note) = 0;
+    virtual void handleNoteOff(const int& channel, const int& note) = 0;
+    virtual void handleAllNotesOff() = 0;
+    virtual void handleCC(const int& channel, const int& cc, const int& value) = 0;
+    virtual void handlePC(const int& pc) = 0;
+    virtual void handleSequencerSwitch(const int& note) = 0;
+};
+
 class MidiManager {
 public:
-    class MidiListener {
-    public:
-        virtual void handleNoteOn(const int& channel, const int& note);
-        virtual void handleNoteOff(const int& channel, const int& note);
-        virtual void handleAllNotesOff();
-        virtual void handleCC(const int& channel, const int& cc, const int& value);
-        virtual void handlePC(const int& pc);
-        virtual void handleSequencerSwitch(const int& note);
-        virtual ~MidiListener() = default;
-    };
-
     MidiManager() : midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 }, keyState(), ccState(), _listeners(), range(){ }
 
     void addListener(MidiListener* listener) {

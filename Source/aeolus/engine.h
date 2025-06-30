@@ -20,9 +20,7 @@
 #pragma once
 
 #include "AudioBuffer.h"
-#include "ObjectBuffer.h"
 #include "aeolus/globals.h"
-#include "aeolus/scale.h"
 #include "aeolus/voice.h"
 #include "aeolus/division.h"
 #include "aeolus/sequencer.h"
@@ -37,35 +35,22 @@
 #include <set>
 
 
+class Configuration;
 /**
  * @brief Organ engine.
  * This class defines the top-level organ engine that performs MIDI events processing
  * and audio generation.
  */
-class Engine final : public MidiManager::MidiListener
+class Engine final : public MidiListener
 {
 public:
-    struct NoteEvent
-    {
-        bool on;
-        int note;
-        int midiChannel;
-    };
-
-    struct IRSwithEvent
-    {
-        int num;
-    };
-
     enum {
         VOLUME = 0,
-
         NUM_PARAMS
     };
 
-    //--------------------------------------------------------------------------
-
-    Engine();
+    explicit Engine(const Configuration& config);
+    ~Engine() override = default;
 
     /**
      * This method returns external processing sample rate as mandated
@@ -77,7 +62,7 @@ public:
     /**
      * Returns the number of active (playing) voices.
      */
-    [[nodiscard]] int getVoiceCount() const noexcept { return _voicePool.getNumberOfActiveVoices(); }
+    [[nodiscard]] int getVoiceCount() const noexcept { return _voicePool->getNumberOfActiveVoices(); }
 
     /**
      * Called by the host pefore starting requesting the audio blocks.
@@ -111,31 +96,27 @@ public:
      * @note This must be called on the audio thread.
      */
     void setVolume(float v);
-
-//    /**
-//     * Returns volume levels.
-//     */
-//    Level& getVolumeLevel() noexcept { return _volumeLevel; }
-
+#if AEOLUS_MULTIBUS_OUTPUT
+    /**
+     * Multibus version of the processing (does not include the convolver).
+     */
+    void process(AudioBuffer &out);
+#else
     /**
      * Generate audio.
      */
     void process(float* outL, float* outR, int numFrames, bool isNonRealtime = false);
-
-    // Multibus version of the processing (does not include the convolver).
-    void process(AudioBuffer &out);
-
+#endif
     /**
      * Process incoming MIDI messages.
      */
-    void processMIDIMessage(MidiMessage message);
 
-    void handleSequencerSwitch(const int& note) override;
     void handleNoteOn(const int &channel, const int &note) override;
     void handleNoteOff(const int &channel, const int &note) override;
     void handleAllNotesOff() override;
-    void handlePC(const int& pc) override;
     void handleCC(const int& channel, const int& cc, const int& value) override;
+    void handlePC(const int& pc) override;
+    void handleSequencerSwitch(const int& note) override;
 
     MidiManager& getMidiKeyboardState() noexcept { return _midiKeyboardState; }
 
@@ -143,47 +124,35 @@ public:
 
     [[nodiscard]] std::set<int> getKeySwitches() const;
 
-    VoicePool& getVoicePool() noexcept { return _voicePool; }
+    [[nodiscard]] std::shared_ptr<VoicePool> getVoicePool() const noexcept { return _voicePool; }
 
     [[nodiscard]] int getDivisionCount() const noexcept { return _divisions.size(); }
-    std::shared_ptr<Division> getDivisionByIndex(int i) { return _divisions[i]; }
-    std::shared_ptr<Division> getDivisionByName(const std::string& name);
+    std::shared_ptr<Division> getDivisionByIndex(const int i) { return _divisions[i]; }
 
-    Sequencer* getSequencer() noexcept { return _sequencer.get(); }
+    [[nodiscard]] std::shared_ptr<Division> getDivisionByName(const std::string &name) const;
 
-    void postNoteEvent(bool onOff, int note, int midiChannel);
+    [[nodiscard]] Sequencer& getSequencer() const noexcept { return *_sequencer.get(); }
 
 private:
     void populateDivisions();
-
     void clearDivisionsTriggerFlag() const;
-
     bool processSubFrame();
-
-    void processPendingNoteEvents();
-    void processPendingIRSwitchEvents();
-
     /// Generate tremulant osc waveform for a subframe.
     void generateTremulant();
-
     /// Apply the gloval volume.
     void applyVolume(AudioBuffer& out);
     void applyVolume(float* outL, float* outR, int numFrames);
-
     /// Process control MIDI messages: program change (sequencer) and stop buttons CC.
-    void processControlMIDIMessage(const MidiMessage& message);
-
     /// Process stop buttons MIDI controls.
     void processStopControlMessage() const;
-
-    bool isKeySwitchForward(int key) const;
-    bool isKeySwitchBackward(int key) const;
-
+    [[nodiscard]] bool isKeySwitchForward(int key) const;
+    [[nodiscard]] bool isKeySwitchBackward(int key) const;
     static void populateKeySwitchesVector(std::vector<int>& switches, const nlohmann::json& v);
 
+    const Configuration& configuration;
     float _sampleRate;
 
-    VoicePool _voicePool;           ///< All the voices.
+    std::shared_ptr<VoicePool> _voicePool;           ///< All the voices.
 
     AudioParameterPool _params;     ///< Internal parameters.
 
@@ -210,16 +179,11 @@ private:
 
     dsp::Convolver _convolver;
     std::atomic<int> _selectedIR;
-    ObjectBuffer<IRSwithEvent> _irSwitchEvents;
     int _reverbTailCounter;
 
     dsp::Interpolator _interpolator;
 
     MidiManager _midiKeyboardState;
-
-//    Level _volumeLevel;
-
-
 };
 
 

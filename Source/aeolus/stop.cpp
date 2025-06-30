@@ -22,19 +22,17 @@
 
 
 
-Stop::Stop() = default;
+Stop::Stop(const Configuration& config) : configuration(config) { };
 
-std::vector<std::shared_ptr<Rankwave>> getRankwavesFromPipeVar(const nlohmann::json& v) {
+std::vector<std::shared_ptr<Rankwave>> Stop::getRankwavesFromPipeVar(const nlohmann::json& v) const {
     std::vector<std::shared_ptr<Rankwave>> rankwaves;
     auto addRankwave = [&](const std::string& name) {
-        if (const auto rankwave = EngineGlobal::getInstance().getStopByName(name)) {
+        if (const auto rankwave = configuration.getStopByName(name)) {
             rankwaves.push_back(rankwave);
         } else {
             throw std::runtime_error("Stop pipe " + name + " cannot be found.");
         }
     };
-
-
     if (v.is_array()) {
         for (const auto& i : v) {
             addRankwave(i);
@@ -43,7 +41,6 @@ std::vector<std::shared_ptr<Rankwave>> getRankwavesFromPipeVar(const nlohmann::j
         const std::string pipeName = v;
         addRankwave(pipeName);
     }
-
     return rankwaves;
 }
 
@@ -67,12 +64,10 @@ void Stop::initFromJson(const nlohmann::json& v) {
             for (auto &zoneDef: v["zones"]) {
                     Zone zone{};
                     zone.rankwaves = getRankwavesFromPipeVar(zoneDef["pipe"]);
-
                     if (const auto range = zoneDef["range"]; range.is_array()) {
                         if (range.size() >= 2)
                             zone.keyRange = Range((int) range.front(), static_cast<int>(range.back()) + 1);
                     }
-
                     if (!zone.rankwaves.empty())
                         _zones.push_back(zone);
                 }
@@ -82,8 +77,7 @@ void Stop::initFromJson(const nlohmann::json& v) {
 
 float Stop::getGain() const noexcept { return _gain; }
 
-void Stop::addZone(const std::shared_ptr<Rankwave> &ptr)
-{
+void Stop::addZone(const std::shared_ptr<Rankwave> &ptr) {
     assert(ptr != nullptr);
 
     Zone zone{};
@@ -111,22 +105,17 @@ void Stop::addZone(const std::vector<std::shared_ptr<Rankwave>> &rw)
     _zones.push_back(zone);
 }
 
-Range Stop::getKeyRange() const
-{
+Range Stop::getKeyRange() const {
     if (_zones.empty()) {
         return {};
     }
-
     auto range(_zones[0].keyRange);
-
-    for (const auto& zone : _zones)
-        range = range.getUnionWith(zone.keyRange);
-
+    for (const auto&[keyRange, rankwaves] : _zones)
+        range = range.getUnionWith(keyRange);
     return range;
 }
 
-Stop::Type Stop::getTypeFromString(const std::string& n)
-{
+Stop::Type Stop::getTypeFromString(const std::string& n) {
     const static std::map<std::string, Stop::Type> nameToType {
         { "principal", Stop::Type::Principal },
         { "flute",     Stop::Type::Flute },
@@ -134,14 +123,13 @@ Stop::Type Stop::getTypeFromString(const std::string& n)
         { "string",    Stop::Type::String }
     };
 
-    auto type = Stop::Type::Unknown;
+    auto type = Type::Unknown;
 
     // TODO: This is ugly, make cleaner.
     auto nameToFind = n;
     std::ranges::transform(nameToFind, nameToFind.begin(), ::tolower);
-    const auto it = nameToType.find(nameToFind);
 
-    if (it != nameToType.end()) {
+    if (const auto it = nameToType.find(nameToFind); it != nameToType.end()) {
         type = it->second;
     }
 

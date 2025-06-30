@@ -6,9 +6,9 @@
 #include "aeolus/globals.h"
 
 #include <asoundlib.h>
-#include <stdexcept>
 #include <cassert>
 #include <vector>
+#include <thread>
 
 AlsaInterface::AlsaInterface()  {
     initMidi();

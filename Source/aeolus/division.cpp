@@ -21,36 +21,27 @@
 #include "aeolus/division.h"
 #include "aeolus/engine.h"
 #include "aeolus/EngineGlobal.h"
+#include "Configuration.h"
 
-
-
-
-
-Division::Division(Engine& engine, const std::string& name)
-    : _engine{engine}
+Division::Division(const Engine& engine, const Configuration& config, const std::string& name)
+    : configuration(config)
     , _name{name}
     , _mnemonic{name}
-    , _linkedDivisionNames{}
-    , _linkedDivisions{}
     , _hasSwell{false}
     , _hasTremulant{false}
-    , _midiChannelsMask{ (1 << 16) - 1 } // Select all MIDI channels by default
-    , _tremulantEnabled{false}
+    , _midiChannelsMask{ (1 << 16) - 1 }
+    , _tremulantEnabled{false} // Select all MIDI channels by default
     , _tremulantLevel{0.0f}
     , _tremulantMaxLevel{TREMULANT_TARGET_LEVEL}
     , _tremulantTargetLevel{0.0f}
-//    , _paramGain{nullptr}
-    , _params{Division::NUM_PARAMS}
+    , _params{NUM_PARAMS}
     , _swellFilterSpec{}
     , _swellFilterStateL{}
     , _swellFilterStateR{}
     , _tremulantDelayL(TREMULANT_DELAY_LENGTH)
     , _tremulantDelayR(TREMULANT_DELAY_LENGTH)
-    , _stops{}
-    , _activeVoices{}
-    , _keysState{}
     , _triggerFlag{}
-//    , _volumeLevel{}
+    , _engine{engine}
 {
     _swellFilterSpec.type = dsp::BiquadFilter::LowPass;
     _swellFilterSpec.sampleRate = SAMPLE_RATE_F;
@@ -86,7 +77,7 @@ void Division::initFromJson(const nlohmann::json& v)
         const auto arr = v["stops"];
         if (arr.is_array()) {
             for (int i = 0; i < arr.size(); ++i) {
-                Stop stop{};
+                Stop stop { configuration };
                 stop.initFromJson(arr[i]);
 
                 if (!stop.getZones().empty())
@@ -192,7 +183,7 @@ void Division::clearLinkedDivisions()
 void Division::populateLinkedDivisions()
 {
     for (const auto& name : _linkedDivisionNames) {
-        if (auto division = _engine.getDivisionByName(name)) {
+        if (const auto division = _engine.getDivisionByName(name)) {
             Link link{ division, false };
             _linkedDivisions.push_back(link);
             division->_linkedFromDivisions.push_back(this);
@@ -211,7 +202,7 @@ void Division::enableLink(const int i, const bool ena)
 
     if (_linkedDivisions[i].enabled != ena) {
         _linkedDivisions[i].enabled = ena;
-        _engine.getSequencer()->setCurrentStepDirty();
+        _engine.getSequencer().setCurrentStepDirty();
     }
 }
 
@@ -238,7 +229,7 @@ void Division::cancelAllLinks()
     }
 
     if (changed)
-        _engine.getSequencer()->setCurrentStepDirty();
+        _engine.getSequencer().setCurrentStepDirty();
 }
 
 void Division::clear()
@@ -249,7 +240,7 @@ void Division::clear()
 Stop& Division::addRankwave(const std::shared_ptr<Rankwave> &ptr, const bool ena, const std::string& name) {
     assert(ptr != nullptr);
 
-    Stop ref{};
+    Stop ref(configuration);
     ref.addZone(ptr);
     ref.setEnabled(ena);
     ref.setName(name.empty() ? ptr->getStopName() : name);
@@ -261,7 +252,7 @@ Stop& Division::addRankwave(const std::shared_ptr<Rankwave> &ptr, const bool ena
 Stop& Division::addRankwaves(const std::vector<std::shared_ptr<Rankwave>> &rw, const bool ena, const std::string& name)
 {
     assert(!rw.empty());
-    Stop ref{};
+    Stop ref(configuration);
     ref.addZone(rw);
     ref.setEnabled(ena);
     ref.setName(name.empty() ? rw[0]->getStopName() : name);
@@ -281,7 +272,7 @@ void Division::enableStop(const int i, const bool ena)
 
     if (_stops[i].isEnabled() != ena) {
         _stops[i].setEnabled(ena);
-        _engine.getSequencer()->setCurrentStepDirty();
+        _engine.getSequencer().setCurrentStepDirty();
     }
 }
 
@@ -335,7 +326,7 @@ void Division::setTremulantEnabled(const bool ena) noexcept
         _tremulantEnabled = ena;
         _tremulantTargetLevel = _tremulantEnabled ? _tremulantMaxLevel : 0.0f;
 
-        _engine.getSequencer()->setCurrentStepDirty();
+        _engine.getSequencer().setCurrentStepDirty();
     }
 }
 
@@ -426,7 +417,7 @@ void Division::handleControlMessage(const MidiMessage& msg)
     if (cc != CC_MODULATION && cc != CC_VOLUME && cc != CC_ALL_NOTES_OFF)
         return;
 
-    const int swellCh{ EngineGlobal::getInstance().getMIDISwellChannelsMask() };
+    const int swellCh{ configuration.getMIDISwellChannelsMask() };
     const float value{ float(msg.getControllerValue()) / 127.0f };
 
     if (msg.getChannel() == 0 || (swellCh & (msg.getChannel() - 1)) != 0) {
@@ -666,7 +657,7 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note)
                     state.gain = stop.getGain();
                     state.chiffGain = stop.getChiffGain();
 
-                    if (auto* voice = _engine.getVoicePool().trigger(state)) {
+                    if (const auto voice = _engine.getVoicePool()->trigger(state)) {
                         voice->setStopIndex(stopIndex);
                         _activeVoices.append(voice);
                         voiceTriggered = true;

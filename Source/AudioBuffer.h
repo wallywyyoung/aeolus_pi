@@ -19,7 +19,7 @@ public:
         audioBuffer = newBuffer;
     }
 
-    void setBufferSize(std::size_t size) {
+    void setBufferSize(const std::size_t size) {
         bufferSize = size;
     }
 

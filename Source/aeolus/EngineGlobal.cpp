@@ -9,7 +9,8 @@
 
 
 
-EngineGlobal::EngineGlobal(float sampleRate = SAMPLE_RATE_F) : _scale(Scale::EqualTemp), _tuningFrequency(TUNING_FREQUENCY_DEFAULT), _sampleRate(sampleRate) {
+EngineGlobal::EngineGlobal() : engine(*this), _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _tuningFrequency(TUNING_FREQUENCY_DEFAULT),
+                               _sampleRate(SAMPLE_RATE_F) {
     midiManager.addListener(&engine);
     irs = IOManager::loadIRs();
     loadRankwaves();
@@ -23,6 +24,13 @@ EngineGlobal::~EngineGlobal() {
     }
 }
 
+const float EngineGlobal::getMTSNoteToFrequency(int midiNote, int midiChannel) const {
+    if (_mtsClient == nullptr || !isConnectedToMTSMaster()) {
+        return _scale->getFrequencyForMidiNote(midiNote);
+    }
+    return static_cast<float>(MTS_NoteToFrequency(_mtsClient, static_cast<char>(midiNote), static_cast<char>(midiChannel)));
+}
+
 std::vector<std::string> EngineGlobal::getAllStopNames() const
 {
     auto names = std::vector<std::string>();
@@ -32,11 +40,6 @@ std::vector<std::string> EngineGlobal::getAllStopNames() const
     }
 
     return names;
-}
-
-std::shared_ptr<Rankwave> EngineGlobal::getStopByName(const std::string& name)
-{
-    return _rankwavesByName[name];
 }
 
 void EngineGlobal::updateStops() const {
@@ -60,7 +63,7 @@ void EngineGlobal::processMidi(const std::vector<MidiMessage>& messages) {
     }
 }
 
-bool EngineGlobal::isConnectedToMTSMaster() {
+bool EngineGlobal::isConnectedToMTSMaster() const {
     if (nullptr == _mtsClient) {
         return false;
     }
@@ -73,21 +76,6 @@ std::string EngineGlobal::getMTSScaleName() {
     }
 
     return std::string(MTS_GetScaleName(_mtsClient));
-}
-
-float EngineGlobal::getMTSNoteToFrequency(int midiNote, int midiChannel) {
-    if (_mtsClient == nullptr || !isConnectedToMTSMaster()) {
-        return _scale.getFrequencyForMidiNote(midiNote);
-    }
-
-    return static_cast<float>(MTS_NoteToFrequency(_mtsClient, static_cast<char>(midiNote), static_cast<char>(midiChannel)));
-}
-
-bool EngineGlobal::shouldMTSFilterNote(const int midiNote, const int midiChannel) {
-    if (nullptr == _mtsClient || !isConnectedToMTSMaster()) {
-        return false;
-    }
-    return MTS_ShouldFilterNote(_mtsClient, static_cast<char>(midiNote), static_cast<char>(midiChannel));
 }
 
 void EngineGlobal::setMTSEnabled(const bool shouldBeEnabled) {
@@ -104,8 +92,8 @@ void EngineGlobal::setMTSEnabled(const bool shouldBeEnabled) {
 void EngineGlobal::rebuildRankwaves()
 {
     // Prepare all the rankwaves to be retuned
-    for (auto &val: _rankwavesByName | std::views::values) {
-        val->retunePipes(_scale, _tuningFrequency);
+    for (const auto &val: _rankwavesByName | std::views::values) {
+        val->retunePipes(*_scale, _tuningFrequency);
     }
 
     // @note We don't kill active voices - they will be using pipes from a parallel set.
@@ -116,20 +104,27 @@ void EngineGlobal::rebuildRankwaves()
 
 void EngineGlobal::loadRankwaves() {
     for (int i = 0; i <  model.getStopsCount(); ++i) {
-        auto rankwave = Rankwave(model[i], _scale, _tuningFrequency);
+        auto rankwave = Rankwave(model[i], *_scale, _tuningFrequency, *this);
         _rankwavesByName.emplace(rankwave.getStopName(),std::make_shared<Rankwave>(rankwave));
     }
 }
 
-int EngineGlobal::getMIDISwellChannelsMask() const{
+const int EngineGlobal::getMIDISwellChannelsMask() const{
     return midiManager.getMIDISwellChannelsMask();
-};
+}
+
+const bool EngineGlobal::shouldMTSFilterNoteByChannel(int midiNote, int midiChannel) const {
+    if (nullptr == _mtsClient || !isConnectedToMTSMaster()) {
+        return false;
+    }
+    return MTS_ShouldFilterNote(_mtsClient, static_cast<char>(midiNote), static_cast<char>(midiChannel));
+}
 
 bool EngineGlobal::updateMTSTuningCache() {
     bool changed{};
 
     for (int midiNote = 0; midiNote < _mtsTuningCache.size(); ++midiNote) {
-        const float f{ getMTSNoteToFrequency(midiNote) };
+        const float f{ getMTSNoteToFrequency(midiNote, -1) };
         if (_mtsTuningCache[midiNote] != f) {
             _mtsTuningCache[midiNote] = f;
             changed = true;
