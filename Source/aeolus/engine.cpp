@@ -20,12 +20,9 @@
 #include "aeolus/engine.h"
 #include "IOManager.h"
 #include "aeolus/EngineGlobal.h"
-#include <any>
+#include "DivisionFactory.h"
 
-#include "../Configuration.h"
-
-
-Engine::Engine(const Configuration& config) : configuration(config), _sampleRate{SAMPLE_RATE_F}, _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _subFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _divisionFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _voiceFrameBuffer{N_VOICE_CHANNELS, SUB_FRAME_LENGTH}, _remainedSamples{0}, _tremulantBuffer{1, SUB_FRAME_LENGTH}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}
+Engine::Engine() : _sampleRate{SAMPLE_RATE_F}, _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _subFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _divisionFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _voiceFrameBuffer{N_VOICE_CHANNELS, SUB_FRAME_LENGTH}, _remainedSamples{0}, _tremulantBuffer{1, SUB_FRAME_LENGTH}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}
 {
     populateDivisions();
     // Sequencer can be created only after the divisions have been populated.
@@ -46,7 +43,7 @@ void Engine::prepareToPlay(float sampleRate)
 
 void Engine::setReverbIR(int num)
 {
-    if (const auto&[irs, longestIRLength] = configuration.getIRs(); num >= 0 && num < irs.size()) {
+    if (const auto&[irs, longestIRLength] = EngineGlobal::getInstance().getIRs(); num >= 0 && num < irs.size()) {
         const auto& ir = irs[num];
         _convolver.setLength(static_cast<int>(ir.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
         _convolver.prepareToPlay(SAMPLE_RATE_F, SUB_FRAME_LENGTH); // these parameters are irrelevant
@@ -182,7 +179,7 @@ void Engine::handleSequencerSwitch(const int& note) {
 void Engine::handleNoteOn(const int &channel, const int &note) {
     clearDivisionsTriggerFlag();
     // Ignore note-on event if filtered by MTS.
-    if (configuration.shouldMTSFilterNoteByChannel(note, channel)) {
+    if (EngineGlobal::getInstance().shouldMTSFilterNoteByChannel(note, channel)) {
         for (const auto &division: _divisions)
             division->noteOn(note, channel);
     }
@@ -235,10 +232,10 @@ std::set<int> Engine::getKeySwitches() const
     return keySwitches;
 }
 
-std::shared_ptr<Division> Engine::getDivisionByName(const std::string &name) const {
+Division *Engine::getDivisionByName(const std::string &name) const {
     for (auto &division : _divisions) {
         if (division->getName() == name)
-            return division;
+            return division.get();
     }
 
     return nullptr;
@@ -373,22 +370,20 @@ void Engine::processStopControlMessage() const {
 
     isPositiveAndBelow(_stopControlGroup, _divisions.size());
 
-    auto division{ _divisions[_stopControlGroup] };
-
     const auto mode{ *_stopControlMode };
 
     switch (mode) {
         case StopControlMode::Disabled:
-            division->disableAllStops();
+            _divisions[_stopControlGroup]->disableAllStops();
             break;
         case StopControlMode::SetOff:
-            division->enableStop(_stopControlButton, false);
+            _divisions[_stopControlGroup]->enableStop(_stopControlButton, false);
             break;
         case StopControlMode::SetOn:
-            division->enableStop(_stopControlButton, true);
+            _divisions[_stopControlGroup]->enableStop(_stopControlButton, true);
             break;
         case StopControlMode::Toggle:
-            division->enableStop(_stopControlButton, !division->isStopEnabled(_stopControlButton));
+            _divisions[_stopControlGroup]->enableStop(_stopControlButton, !_divisions[_stopControlGroup]->isStopEnabled(_stopControlButton));
             break;
         default:
             break;
@@ -415,9 +410,8 @@ auto Engine::populateDivisions() -> void {
     auto config = nlohmann::json::parse(stream);
 
     for (auto divisionDef : config["divisions"]) {
-        auto division = std::make_shared<Division>(*this, reinterpret_cast<Configuration&>(*this));
-        division->initFromJson(divisionDef);
-        _divisions.push_back(division);
+        auto division = DivisionFactory::initFromJson(divisionDef, *this);
+        _divisions.push_back(std::move(division));
     }
 
     if (auto sequencer = config["sequencer"]) {
@@ -431,12 +425,12 @@ auto Engine::populateDivisions() -> void {
     }
 
     // Remove all the links if any.
-    for (auto division : _divisions) {
+    for (const auto& division : _divisions) {
         division->clearLinkedDivisions();
     }
 
     // Update division links after they've been loaded.
-    for (auto division : _divisions) {
+    for (const auto& division : _divisions) {
         division->populateLinkedDivisions();
     }
 

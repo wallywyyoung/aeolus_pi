@@ -37,7 +37,9 @@
 class Addsynth final
 {
 public:
-    Addsynth();
+    explicit Addsynth() {
+        reset();
+    }
 
     void reset();
 
@@ -83,7 +85,9 @@ private:
     constexpr static size_t mnemonic_length  = 8;
     constexpr static size_t comments_length  = 56;
     constexpr static size_t reserved_length  = 8;
+    constexpr static size_t data_offset = header_length + stopName_length + copyright_length + mnemonic_length + comments_length + reserved_length;
 
+    std::string _fileName{};
     std::string _stopName{};
     std::string _copyright{};
     std::string _mnemonic{};
@@ -107,6 +111,8 @@ private:
     HN_func _h_ran; ///< Harmonic level randomization.
     HN_func _h_att; ///< Harmonic attack time
     HN_func _h_atp; ///< Harmonic attack profile.
+
+    friend class IOManager;
 };
 
 

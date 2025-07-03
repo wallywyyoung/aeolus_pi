@@ -11,5 +11,7 @@ public:
     static IRs loadIRs();
     static std::vector<Addsynth> loadPipes();
 private:
-    static std::vector<std::byte> readBinaryFile(std::string path);
+    static std::vector<std::byte> readBinaryFile(const std::string &path);
+    static void addsynthFromJson(const std::filesystem::directory_entry& entry, Addsynth &adsynth);
+    static void addsynthFromBinary(const std::filesystem::directory_entry& entry, Addsynth &addsynth);
 };

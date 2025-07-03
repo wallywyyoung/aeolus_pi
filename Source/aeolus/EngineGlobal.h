@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
 #include "aeolus/rankwave.h"
 #include "aeolus/scale.h"
 #include "aeolus/MidiMessage.h"
@@ -30,8 +29,6 @@
 
 #include <unordered_map>
 
-#include "Configuration.h"
-
 
 /**
  * @brief A global shared instance of the organ engine.
@@ -39,19 +36,26 @@
  * This class in a singleton which is shared among all the plugin instances.
  */
 
-class EngineGlobal final : public Configuration {
+class EngineGlobal final {
 public:
+    static EngineGlobal& getInstance() {
+        static EngineGlobal instance;
+        return instance;
+    }
+    EngineGlobal(EngineGlobal const&) = delete;
+    void operator=(EngineGlobal const&) = delete;
+
     /**
      * Impulse response descriptor for IRs embedded as binary resources.
      */
-    EngineGlobal();
-    ~EngineGlobal() override;
-    [[nodiscard ]] const int getMIDISwellChannelsMask() const override;
-    [[nodiscard]] const bool shouldMTSFilterNoteByChannel(int midiNote, int midiChannel) const override;
-    [[nodiscard]] const bool isMTSEnabled() const override { return _mtsEnabled; }
-    [[nodiscard]] const IRs& getIRs() const noexcept override { return irs; }
-    [[nodiscard]] const std::shared_ptr<Rankwave> getStopByName(const std::string &name) const override { return _rankwavesByName.at(name); }
-    [[nodiscard]] const float getMTSNoteToFrequency(int midiNote, int midiChannel) const override;
+    [[nodiscard ]] const int getMIDISwellChannelsMask() const;
+    [[nodiscard]] const bool shouldMTSFilterNoteByChannel(int midiNote, int midiChannel) const;
+    [[nodiscard]] const bool isMTSEnabled() const { return _mtsEnabled; }
+    [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
+    [[nodiscard]] Rankwave *getStopByName(const std::string &name) const {
+        return _rankwavesByName.at(name).get();
+    }
+    [[nodiscard]] const float getMTSNoteToFrequency(int midiNote, int midiChannel) const;
 
     int getStopsCount() const noexcept { return _rankwavesByName.size(); }
     [[nodiscard]] std::vector<std::string> getAllStopNames() const;
@@ -67,9 +71,11 @@ public:
     [[nodiscard]] std::string getMTSScaleName();
     void setMTSEnabled(bool shouldBeEnabled);
     void rebuildRankwaves();
+    void audioCallback (char* buffer, size_t size);
 private:
-    Engine engine;
-    MidiManager midiManager;
+
+    EngineGlobal();
+    ~EngineGlobal();
     void loadRankwaves();
     /**
      * Refresh MTS tuning table for all MIDI notes.
@@ -79,9 +85,10 @@ private:
 
     // juce::Timer
     void timerCallback();
-
-    std::unordered_map<std::string, std::shared_ptr<Rankwave>> _rankwavesByName;
-
+    Model model;
+    Engine engine;
+    MidiManager midiManager;
+    std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName;
     std::vector<IR> _irs;
     IRs irs;
     MTSClient* _mtsClient{};
@@ -93,5 +100,4 @@ private:
 
     bool _mtsEnabled{};
     std::array<float, 128> _mtsTuningCache{};
-    Model model;
 };

@@ -43,7 +43,7 @@ void disableFlushToZeroDenormalsAreZero() {
 //    asm volatile("vmsr fpscr, %0" : : "ri"(fpsr));
 }
 
-void signalHandler(int signal) {
+void signalHandler(const int signal) {
     running = false;
     midiInterface->endPlayback();
     midiInterface->endPollMidi();
@@ -63,7 +63,7 @@ int main (int argc, char* argv[]) {
     enableFlushToZeroDenormalsAreZero();
 
     midiInterface = std::make_unique<AlsaInterface>();
-    auto engine = EngineGlobal();
+    midiInterface->audioCallback = EngineGlobal::getInstance().audioCallback;
 
     midiInterface->beginPollMidi();
     midiInterface->beginPlayback();

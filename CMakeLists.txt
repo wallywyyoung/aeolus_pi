@@ -53,8 +53,10 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/Addsynth.h
         Source/aeolus/audioparam.cpp
         Source/aeolus/audioparam.h
-        Source/aeolus/division.cpp
-        Source/aeolus/division.h
+        Source/aeolus/Division.cpp
+        Source/aeolus/Division.h
+        Source/aeolus/DivisionFactory.cpp
+        Source/aeolus/DivisionFactory.h
         Source/aeolus/engine.cpp
         Source/aeolus/engine.h
         Source/aeolus/globals.cpp
@@ -96,7 +98,6 @@ target_sources(aeolus_pi PRIVATE
         Source/AudioBuffer.h
         Source/AlsaInterface.cpp
         Source/AlsaInterface.h
-        Source/Configuration.h
         Source/IOManager.cpp
         Source/IOManager.h
         Source/main.cpp)
@@ -106,6 +107,8 @@ find_package(AudioFile CONFIG REQUIRED)
 find_package(thread-pool CONFIG REQUIRED)
 find_package(ALSA REQUIRED)
 target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool ALSA::ALSA)
+
+file(COPY Resources DESTINATION ${CMAKE_BINARY_DIR})
 
 if(WITH_MULTIBUS_OUTPUT)
     target_compile_definitions(aeolus_pi PUBLIC AEOLUS_MULTIBUS_OUTPUT=1)

@@ -22,20 +22,17 @@
 #include "AudioBuffer.h"
 #include "aeolus/globals.h"
 #include "aeolus/voice.h"
-#include "aeolus/division.h"
+#include "aeolus/Division.h"
 #include "aeolus/sequencer.h"
 #include "aeolus/audioparam.h"
 #include "aeolus/dsp/convolver.h"
 #include "aeolus/dsp/interpolator.h"
-#include "aeolus/MidiMessage.h"
 #include "aeolus/MidiManager.h"
 
 #include <optional>
 #include <vector>
 #include <set>
 
-
-class Configuration;
 /**
  * @brief Organ engine.
  * This class defines the top-level organ engine that performs MIDI events processing
@@ -49,7 +46,7 @@ public:
         NUM_PARAMS
     };
 
-    explicit Engine(const Configuration& config);
+    explicit Engine();
     ~Engine() override = default;
 
     /**
@@ -127,9 +124,9 @@ public:
     [[nodiscard]] std::shared_ptr<VoicePool> getVoicePool() const noexcept { return _voicePool; }
 
     [[nodiscard]] int getDivisionCount() const noexcept { return _divisions.size(); }
-    std::shared_ptr<Division> getDivisionByIndex(const int i) { return _divisions[i]; }
+    Division *getDivisionByIndex(const int i) { return _divisions[i].get(); }
 
-    [[nodiscard]] std::shared_ptr<Division> getDivisionByName(const std::string &name) const;
+    [[nodiscard]] Division *getDivisionByName(const std::string &name) const;
 
     [[nodiscard]] Sequencer& getSequencer() const noexcept { return *_sequencer.get(); }
 
@@ -149,7 +146,6 @@ private:
     [[nodiscard]] bool isKeySwitchBackward(int key) const;
     static void populateKeySwitchesVector(std::vector<int>& switches, const nlohmann::json& v);
 
-    const Configuration& configuration;
     float _sampleRate;
 
     std::shared_ptr<VoicePool> _voicePool;           ///< All the voices.
@@ -161,7 +157,7 @@ private:
     int _stopControlButton{};
 
     /// List of all divisions
-    std::vector<std::shared_ptr<Division>> _divisions{};
+    std::vector<std::unique_ptr<Division>> _divisions{};
 
     std::unique_ptr<Sequencer> _sequencer{};
 

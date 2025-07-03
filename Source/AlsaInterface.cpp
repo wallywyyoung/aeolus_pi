@@ -6,7 +6,6 @@
 #include "aeolus/globals.h"
 
 #include <asoundlib.h>
-#include <cassert>
 #include <vector>
 #include <thread>
 
@@ -61,22 +60,39 @@ void AlsaInterface::initMidi() {
     snd_seq_poll_descriptors(sequencer,pfd, npfd, POLLIN);
 }
 
-void AlsaInterface::initAudio(int channels, unsigned int sampleRate, size_t bufferSize) {
-    snd_pcm_format_t format = SND_PCM_FORMAT_FLOAT;
-    snd_pcm_hw_params_t* hwParams;
+void AlsaInterface::initAudio(const int channels, unsigned int sampleRate, size_t bufferSize) {
+    snd_pcm_hw_params_t* hwParams{};
 
-    assert(0 > snd_pcm_hw_params_malloc(&hwParams));
-    assert(0 > snd_pcm_open(&playback, "default", SND_PCM_STREAM_PLAYBACK, 0));
-    assert(0 > snd_pcm_hw_params_any(playback, hwParams));
-    assert(0 > snd_pcm_hw_params_set_access(playback, hwParams, SND_PCM_ACCESS_RW_NONINTERLEAVED));
-    assert(0 > snd_pcm_hw_params_set_format(playback, hwParams, format));
-    assert(0 > snd_pcm_hw_params_set_rate_near(playback, hwParams, &sampleRate, 0));
-    assert(0 > snd_pcm_hw_params_set_channels(playback, hwParams, channels));
-    assert(0 > snd_pcm_hw_params(playback, hwParams));
+    if (snd_pcm_open(&playback, "sysdefault:CARD=Headphones", SND_PCM_STREAM_PLAYBACK, 0) < 0) {
+        throw std::runtime_error("Failed to open playback device");
+    }
+    if (snd_pcm_hw_params_malloc(&hwParams) < 0) {
+        throw std::runtime_error("Failed to allocate hardware parameters");
+    }
+    if (snd_pcm_hw_params_any(playback, hwParams) < 0) {
+        throw std::runtime_error("Failed to initialize hardware parameters");
+    }
+    if (snd_pcm_hw_params_set_access(playback, hwParams, SND_PCM_ACCESS_RW_NONINTERLEAVED) < 0) {
+        throw std::runtime_error("Failed to set access type");
+    }
+    if (snd_pcm_hw_params_set_format(playback, hwParams, SND_PCM_FORMAT_FLOAT) < 0) {
+        throw std::runtime_error("Failed to set sample format");
+    }
+    if (snd_pcm_hw_params_set_rate_near(playback, hwParams, &sampleRate, nullptr) < 0) {
+        throw std::runtime_error("Failed to set sample rate");
+    }
+    if (snd_pcm_hw_params_set_channels(playback, hwParams, channels) < 0) {
+        throw std::runtime_error("Failed to set number of channels");
+    }
+    if (snd_pcm_hw_params(playback, hwParams) < 0) {
+        throw std::runtime_error("Failed to set hardware parameters");
+    }
 
     snd_pcm_hw_params_free(hwParams);
 
-    assert(snd_pcm_prepare(playback));
+    if (snd_pcm_prepare(playback) < 0) {
+        throw std::runtime_error("Failed to prepare playback device");
+    }
 }
 
 void AlsaInterface::beginPlayback() {
@@ -88,11 +104,7 @@ void AlsaInterface::beginPlayback() {
                 break;
             }
             if ((frames = snd_pcm_avail_update(playback)) < 0) {
-                if (frames == -EPIPE) {
-                    break;
-                } else {
-                    break;
-                }
+                throw std::runtime_error("Failed to update available frames");
             }
             char buffer[4096];
             if (snd_pcm_writei(playback, buffer, frames) < 0) {

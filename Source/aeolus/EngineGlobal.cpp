@@ -9,8 +9,8 @@
 
 
 
-EngineGlobal::EngineGlobal() : engine(*this), _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _tuningFrequency(TUNING_FREQUENCY_DEFAULT),
-                               _sampleRate(SAMPLE_RATE_F) {
+EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _sampleRate(SAMPLE_RATE_F),
+                               _tuningFrequency(TUNING_FREQUENCY_DEFAULT) {
     midiManager.addListener(&engine);
     irs = IOManager::loadIRs();
     loadRankwaves();
@@ -45,7 +45,7 @@ std::vector<std::string> EngineGlobal::getAllStopNames() const
 void EngineGlobal::updateStops() const {
     dp::thread_pool pool(_rankwavesByName.size());
     for (auto& rw : _rankwavesByName) {
-        auto rwp = rw.second;
+        auto rwp = rw.second.get();
         pool.enqueue_detach([rwp]() {
             rwp->prepareToPlay(SAMPLE_RATE_F);
         });
@@ -102,10 +102,13 @@ void EngineGlobal::rebuildRankwaves()
     updateStops();
 }
 
+void EngineGlobal::audioCallback(char *buffer, const size_t size) {
+
+}
+
 void EngineGlobal::loadRankwaves() {
     for (int i = 0; i <  model.getStopsCount(); ++i) {
-        auto rankwave = Rankwave(model[i], *_scale, _tuningFrequency, *this);
-        _rankwavesByName.emplace(rankwave.getStopName(),std::make_shared<Rankwave>(rankwave));
+        _rankwavesByName.emplace(model[i].getStopName(),std::make_unique<Rankwave>(model[i], *_scale, _tuningFrequency));
     }
 }
 

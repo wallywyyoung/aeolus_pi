@@ -31,10 +31,7 @@
 #include <atomic>
 #include <vector>
 #include <bitset>
-#include <nlohmann/json.hpp>
 
-
-class Configuration;
 class Engine;
 
 /**
@@ -49,18 +46,18 @@ public:
     enum Params { GAIN = 0, NUM_PARAMS };
     /// Link with another division.
     struct Link {
-        std::shared_ptr<Division> division;
+        Division* division;
         bool enabled = false;
     };
 
-    explicit Division(const Engine& engine, const Configuration& config, const std::string& name = std::string());
+    explicit Division(const Engine& engine, const std::string& name = std::string());
 
     /**
      * @brief Load the division configuration from a JSON object.
      *
      * This will configure the division from an organ configuration data.
      */
-    void initFromJson(const nlohmann::json& v);
+    // void initFromJson(const nlohmann::json& v);
 
     const Engine& getEngine() const noexcept { return _engine; }
 
@@ -87,8 +84,7 @@ public:
 
 
     void clear();
-    Stop& addRankwave(const std::shared_ptr<Rankwave> &ptr, bool ena = false, const std::string& name = std::string());
-    Stop& addRankwaves(const std::vector<std::shared_ptr<Rankwave>> &rw, bool ena = false, const std::string& name = std::string());
+    Stop& addRankwave(Rankwave *ptr, bool ena = false, const std::string& name = std::string());
 
     void setParamGain(const std::shared_ptr<AudioParameter> &param) noexcept { _paramGain = param; }
 
@@ -147,7 +143,6 @@ public:
     void clearTriggerFlag() noexcept { _triggerFlag = false; }
 
 private:
-    const Configuration&  configuration;
     /**
      * This will construct the keys aggregated state from the division's keys state
      * and all the coupled from divisions.
@@ -202,6 +197,8 @@ private:
     /// for linked divisions.
     bool _triggerFlag;
     const Engine& _engine;
+
+    friend class DivisionFactory;
 };
 
 

@@ -4,7 +4,7 @@
 
 #include "IOManager.h"
 #include "aeolus/Addsynth.h"
-#include "aeolus/division.h"
+#include "aeolus/Division.h"
 #include "aeolus/EngineGlobal.h"
 #include "aeolus/dsp/convolver.h"
 #include <fstream>
@@ -35,12 +35,12 @@ IRs IOManager::loadIRs() {
     return irs;
 }
 
-std::vector<std::byte> IOManager::readBinaryFile(std::string path) {
+std::vector<std::byte> IOManager::readBinaryFile(const std::string &path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + path);
     }
-    std::streamsize size = file.tellg();
+    const std::streamsize size = file.tellg();
     std::vector<std::byte> binary(size);
     if (!file.read(reinterpret_cast<char*>(binary.data()), size)) {
         throw std::runtime_error("Failed to read file: " + path);
@@ -57,17 +57,128 @@ std::vector<Addsynth> IOManager::loadPipes() {
         auto extension = entry.path().extension().string();
         auto synth = Addsynth();
         if (extension == ".ae0") {
-            auto binary = IOManager::readBinaryFile(entry.path());
-            std::string binaryString(reinterpret_cast<const char*>(binary.data()), binary.size());
-            std::istringstream stream(binaryString);
-            synth.fromStream(stream);
-            synths.push_back(synth);
+            addsynthFromBinary(entry, synth);
         } else if (extension == ".json") {
-            std::ifstream stream(entry.path());
-            auto json = nlohmann::json::parse(stream);
-            synth.fromJson(json);
-            synths.push_back(synth);
+            addsynthFromJson(entry, synth);
         }
+        synths.push_back(synth);
     }
     return synths;
+}
+
+
+void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, Addsynth &addsynth) {
+    std::ifstream stream(entry.path(), std::ios::in);
+    auto v = nlohmann::json::parse(stream);
+
+    addsynth._fileName = entry.path().filename();
+
+    int version = v["version"];
+
+    addsynth._noteMin = v["note_min"];
+    addsynth._noteMax = v["note_max"];
+
+    if (addsynth._noteMax == deprecated::NOTE_MAX)
+        addsynth._noteMax = NOTE_MAX;
+
+    addsynth._fn = v["fn"];
+    addsynth._fd = v["fd"];
+
+    addsynth._stopName = v["name"];
+    addsynth._copyright = v["copyright"];
+    addsynth._mnemonic = v["mnemonic"];
+    addsynth._comments = v["comments"];
+
+    addsynth._n_vol.fromJson(v["n_vol"]);
+    addsynth._n_off.fromJson(v["n_off"]);
+    addsynth._n_ran.fromJson(v["n_ran"]);
+
+    if (version >= Addsynth::defaultVersion) {
+        addsynth._n_ins.fromJson(v["n_ins"]);
+        addsynth._n_att.fromJson(v["n_att"]);
+        addsynth._n_atd.fromJson(v["n_atd"]);
+        addsynth._n_dct.fromJson(v["n_dct"]);
+        addsynth._n_dcd.fromJson(v["n_dcd"]);
+    }
+
+    addsynth._h_lev.reset(-100.0f);
+    addsynth._h_ran.reset(0.0f);
+    addsynth._h_att.reset(0.050f);
+    addsynth._h_atp.reset(0.0f);
+
+    addsynth._h_lev.fromJson(v["h_lev"]);
+    addsynth._h_ran.fromJson(v["h_ran"]);
+    addsynth._h_att.fromJson(v["h_att"]);
+    addsynth._h_atp.fromJson(v["h_atp"]);
+}
+
+void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry, Addsynth &addsynth)
+{
+    std::ifstream stream(entry.path(), std::ios::in | std::ios::binary);
+    addsynth._fileName = entry.path().filename();
+    char header[Addsynth::header_length] = {0};
+
+    stream.read(header, Addsynth::header_length);
+
+    if (strncmp(header, "AEOLUS", 6) != 0)
+        throw std::runtime_error("Invalid header signature");
+
+    int version = header[7];
+    int nHarm = header[26];
+
+    if (nHarm == 0)
+        nHarm = deprecated::N_HARM;
+
+    addsynth._noteMin = header[28];
+    addsynth._noteMax = header[29];
+
+    if (addsynth._noteMax == deprecated::NOTE_MAX)
+        addsynth._noteMax = NOTE_MAX;
+
+    addsynth._fn = header[30];
+    addsynth._fd = header[31];
+
+    char ch;
+    while (stream.get(ch) && ch != '\0') { // Read character by character until null or EOF
+        addsynth._stopName += ch;
+    }
+    while (stream.get(ch) && ch == '\0') { }
+    addsynth._copyright += ch;
+    while (stream.get(ch) && ch != '\0') { // Read character by character until null or EOF
+        addsynth._copyright += ch;
+    }
+    while (stream.get(ch) && ch == '\0') { }
+    addsynth._mnemonic += ch;
+    while (stream.get(ch) && ch != '\0') { // Read character by character until null or EOF
+        addsynth._mnemonic += ch;
+    }
+    while (stream.get(ch) && ch == '\0') { }
+    addsynth._comments += ch;
+    while (stream.get(ch) && ch != '\0') { // Read character by character until null or EOF
+        addsynth._comments += ch;
+    }
+
+    stream.seekg(Addsynth::data_offset, std::ios::beg);
+
+    addsynth._n_vol.read(stream);
+    addsynth._n_off.read(stream);
+    addsynth._n_ran.read(stream);
+
+    if (version >= Addsynth::defaultVersion) {
+        addsynth._n_ins.read(stream);
+        addsynth._n_att.read(stream);
+        addsynth._n_atd.read(stream);
+        addsynth._n_dct.read(stream);
+        addsynth._n_dcd.read(stream);
+    }
+
+    addsynth._h_lev.reset(-100.0f);
+    addsynth._h_ran.reset(0.0f);
+    addsynth._h_att.reset(0.050f);
+    addsynth._h_atp.reset(0.0f);
+
+    addsynth._h_lev.read(stream, nHarm);
+    addsynth._h_ran.read(stream, nHarm);
+    addsynth._h_att.read(stream, nHarm);
+    addsynth._h_atp.read(stream, nHarm);
 }

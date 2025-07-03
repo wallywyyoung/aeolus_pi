@@ -20,14 +20,10 @@
 #include "aeolus/stop.h"
 #include "aeolus/EngineGlobal.h"
 
-
-
-Stop::Stop(const Configuration& config) : configuration(config) { };
-
-std::vector<std::shared_ptr<Rankwave>> Stop::getRankwavesFromPipeVar(const nlohmann::json& v) const {
-    std::vector<std::shared_ptr<Rankwave>> rankwaves;
+std::vector<Rankwave *> Stop::getRankwavesFromPipeVar(const nlohmann::json &v) const {
+    std::vector<Rankwave*> rankwaves;
     auto addRankwave = [&](const std::string& name) {
-        if (const auto rankwave = configuration.getStopByName(name)) {
+        if (const auto rankwave = EngineGlobal::getInstance().getStopByName(name)) {
             rankwaves.push_back(rankwave);
         } else {
             throw std::runtime_error("Stop pipe " + name + " cannot be found.");
@@ -48,15 +44,14 @@ void Stop::initFromJson(const nlohmann::json& v) {
         _name = v["name"];
         _type = getTypeFromString(v["type"]);
 
-        if (!v["gain"].is_null())
+        if (v.contains("gain"))
             _gain = v["gain"];
 
-        if (!v["chiff"].is_null())
+        if (v.contains("chiff"))
             _chiffGain = v["chiff"];
 
-        if (!v["pipe"].is_null()) {
+        if (v.contains("pipe")) {
             const auto pipeObj = v["pipe"];
-
             if (const auto rankwaves{getRankwavesFromPipeVar(pipeObj)}; !rankwaves.empty())
                 addZone(rankwaves);
 
@@ -64,9 +59,8 @@ void Stop::initFromJson(const nlohmann::json& v) {
             for (auto &zoneDef: v["zones"]) {
                     Zone zone{};
                     zone.rankwaves = getRankwavesFromPipeVar(zoneDef["pipe"]);
-                    if (const auto range = zoneDef["range"]; range.is_array()) {
-                        if (range.size() >= 2)
-                            zone.keyRange = Range((int) range.front(), static_cast<int>(range.back()) + 1);
+                    if (zoneDef.contains("range") && zoneDef["range"].is_array()) {
+                        zone.keyRange = Range(zoneDef["range"][0], zoneDef["range"][1]);
                     }
                     if (!zone.rankwaves.empty())
                         _zones.push_back(zone);
@@ -77,7 +71,7 @@ void Stop::initFromJson(const nlohmann::json& v) {
 
 float Stop::getGain() const noexcept { return _gain; }
 
-void Stop::addZone(const std::shared_ptr<Rankwave> &ptr) {
+void Stop::addZone(Rankwave *ptr) {
     assert(ptr != nullptr);
 
     Zone zone{};
@@ -87,7 +81,7 @@ void Stop::addZone(const std::shared_ptr<Rankwave> &ptr) {
     _zones.push_back(zone);
 }
 
-void Stop::addZone(const std::vector<std::shared_ptr<Rankwave>> &rw)
+void Stop::addZone(const std::vector<Rankwave *> &rw)
 {
     if (rw.empty()) {
         return;

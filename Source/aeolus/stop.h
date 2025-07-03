@@ -40,11 +40,11 @@ public:
     // Zone - a grouping pipes for a range of keys.
     struct Zone {
         Range keyRange;
-        std::vector<std::shared_ptr<Rankwave>> rankwaves;
+        std::vector<Rankwave *> rankwaves;
         [[nodiscard]] bool isForKey(const int key) const noexcept { return keyRange.contains(key); }
     };
 
-    explicit Stop(const Configuration& config);
+    explicit Stop() = default;
 
     void initFromJson(const nlohmann::json& v);
 
@@ -70,12 +70,12 @@ public:
      * Add a zone that consists of a single rankwave (pipe)
      * that covers its entire range of keys.
      */
-    void addZone(const std::shared_ptr<Rankwave> &ptr);
+    void addZone(Rankwave *ptr);
 
     /**
      * Add a zone composed of multiple pipes.
      */
-    void addZone(const std::vector<std::shared_ptr<Rankwave>> &rw);
+    void addZone(const std::vector<Rankwave *> &rw);
 
     /**
      * Returns the range of keys this stop can be triggered by.
@@ -86,7 +86,7 @@ public:
     static Type getTypeFromString(const std::string& n);
 
 private:
-    std::vector<std::shared_ptr<Rankwave>> getRankwavesFromPipeVar(const nlohmann::json& v) const;
+    std::vector<Rankwave *> getRankwavesFromPipeVar(const nlohmann::json &v) const;
 
     Type _type{Type::Unknown};
     std::string _name{};
@@ -94,7 +94,6 @@ private:
     float _gain{1.0f};
     float _chiffGain{0.0f};
     bool _enabled{false};
-    const Configuration& configuration;
 };
 
 
