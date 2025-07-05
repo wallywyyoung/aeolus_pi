@@ -141,7 +141,7 @@ void Pipewave::play(State& state, float* out)
         int k = SUB_FRAME_LENGTH;
         float* q = out;
         float g = state.releaseGain;
-        int i = state.releaseCount - 1;
+        const int i = state.releaseCount - 1;
 
         float dg = g / SUB_FRAME_LENGTH;
 
@@ -158,7 +158,7 @@ void Pipewave::play(State& state, float* out)
         } else {
 
             float y = state.releaseInterpolation;
-            float dy = _releaseDetune;
+            const auto dy = _releaseDetune;
 
             while (k--) {
                 y += dy;
@@ -379,7 +379,7 @@ void Pipewave::looplen(const float f, const float sampleRate, const int lmax, in
         int j = i;
 
         while (j > 0) {
-            int t = a;
+            const int t = a;
             a = z[--j] * a + b;
             b = t;
         }

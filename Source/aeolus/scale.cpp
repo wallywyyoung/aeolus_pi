@@ -231,7 +231,7 @@ const Scale::Table& Scale::getTable() const
 float Scale::getFrequencyForMidiNote(const int midiNote, const float tuningFrequency) const
 {
     const auto& scaleTable{ getTable() };
-    float fbase{ tuningFrequency / scaleTable[9] };
+    const float fbase{ tuningFrequency / scaleTable[9] };
     return ldexp(fbase * scaleTable[midiNote % 12], midiNote / 12 - 5);
 }
 

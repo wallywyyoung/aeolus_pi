@@ -36,23 +36,23 @@ public:
     Interpolator(float ratio = 1.0f, size_t nChannels = 1);
 
     void setRatio(const float r) noexcept { _ratio = r; }
-    float getRatio() const noexcept { return _ratio; }
+    [[nodiscard]] float getRatio() const noexcept { return _ratio; }
 
     void setNumberOfChannels(size_t n);
-    size_t getNumberOfChannels() const noexcept { return _acc.size(); }
+    [[nodiscard]] size_t getNumberOfChannels() const noexcept { return _acc.size(); }
 
     void reset();
 
-    bool canRead() const noexcept;
+    [[nodiscard]] bool canRead() const noexcept;
     bool readAllChannels(float *x) noexcept;
-    float readUnchecked(size_t channel) const noexcept;
-    float readLinearUnchecked(size_t channel) const noexcept;
+    [[nodiscard]] float readUnchecked(size_t channel) const noexcept;
+    [[nodiscard]] float readLinearUnchecked(size_t channel) const noexcept;
     void readIncrement();
     bool read(float& l, float& r) noexcept;
 
 
-    bool canWrite() const noexcept;
-    bool writeAllChannels(const float* const x) noexcept;
+    [[nodiscard]] bool canWrite() const noexcept;
+    bool writeAllChannels(const float* x) noexcept;
     void writeUnchecked(float x, size_t channel);
     void writeIncrement();
     bool write(float l, float r) noexcept;

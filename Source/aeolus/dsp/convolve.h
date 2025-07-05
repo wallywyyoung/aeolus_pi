@@ -207,7 +207,7 @@ struct FFT : public ConvPart<L>
 
     inline float tick()
     {
-        float y = complexInputBuffer[tailIndex * 2];
+        const float y = complexInputBuffer[tailIndex * 2];
 
         // Feed from input buffer
         const size_t idx = (ConvPartBase::readIndex - tailIndex) % ConvPartBase::inputSize;
@@ -583,7 +583,7 @@ private:
 
         float tick()
         {
-            float y = outputBuffer[tailIndex];
+            const float y = outputBuffer[tailIndex];
             tailIndex = (tailIndex + 1) % Length;
 
             if (dephase && tailIndex == preconvolveIndex) {

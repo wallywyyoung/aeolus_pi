@@ -92,7 +92,7 @@ void Stop::addZone(const std::vector<Rankwave *> &rw)
     zone.keyRange = Range(rw[0]->getNoteMin(), rw[0]->getNoteMax() + 1);
 
     for (auto ptr : rw) {
-        Range range(ptr->getNoteMin(), ptr->getNoteMax() + 1);
+        const Range range(ptr->getNoteMin(), ptr->getNoteMax() + 1);
         zone.keyRange = zone.keyRange.getUnionWith(range);
         zone.rankwaves.push_back(ptr);
     }

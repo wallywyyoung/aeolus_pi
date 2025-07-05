@@ -60,7 +60,7 @@ struct AlignedMemory
             const offset_t offset = *(static_cast<offset_t *>(ptr) - 1);
 
             // Once we have the offset, we can get our original pointer and call free
-            auto p = static_cast<void *>(static_cast<uint8_t *>(ptr) - offset);
+            const auto p = static_cast<void *>(static_cast<uint8_t *>(ptr) - offset);
             ::free (p);
         }
     }

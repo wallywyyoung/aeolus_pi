@@ -62,7 +62,7 @@ void Fft::direct(Array& x, const Window win)
 
         for (unsigned int l = 0; l < k; l++) {
             for (unsigned int a = l; a < N; a += n) {
-                unsigned int b = a + k;
+                const unsigned int b = a + k;
                 Complex t = x[a] - x[b];
                 x[a] += x[b];
                 x[b] = t * T;
@@ -85,7 +85,7 @@ void Fft::direct(Array& x, const Window win)
         b = ((b >> 16) | (b << 16)) >> (32 - m);
 
         if (b > a) {
-            Complex t = x[a];
+            const Complex t = x[a];
             x[a] = x[b];
             x[b] = t;
         }

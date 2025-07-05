@@ -48,8 +48,8 @@ void AudioBuffer::applyGain(const float& gain) {
 }
 
 void AudioBuffer::addFrom(const int toChannel, const int toStartOffset, const AudioBuffer &from, const int fromChannel, const int fromStartOffset, const int sampleCount) {
-    auto toChannelStart = audioBuffer[toChannel].data() + toStartOffset;
-    auto fromChannelStart = from.getReadPointer(fromChannel)  + fromStartOffset;
+    const auto toChannelStart = audioBuffer[toChannel].data() + toStartOffset;
+    const auto fromChannelStart = from.getReadPointer(fromChannel)  + fromStartOffset;
     std::transform(fromChannelStart, fromChannelStart + sampleCount, toChannelStart, toChannelStart, std::plus());
 }
 

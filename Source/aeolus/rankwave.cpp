@@ -40,7 +40,7 @@ auto Rankwave::createPipes(const Scale &scale, const float tuningFrequency) -> v
     const auto fn = model->getFn();
     const auto fd = model->getFd();
     const auto& s = scale.getTable();
-    float fbase = tuningFrequency * static_cast<float>(fn) / static_cast<float>(fd);
+    const float fbase = tuningFrequency * static_cast<float>(fn) / static_cast<float>(fd);
 
     for (int i = _noteMin; i <= _noteMax; ++i) {
         for (size_t j = 0; j < _pipes.size(); ++j) {

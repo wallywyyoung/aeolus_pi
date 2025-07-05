@@ -132,8 +132,8 @@ void Chiff::process(float* out, const int numFrames)
     }
 
     for (int i = 0; i < numFrames; ++i) {
-        float x0 = 2.0f * dist(gen) - 1.0f;
-        float x = x0 * _noiseEnvelope.next();
+        const float x0 = 2.0f * dist(gen) - 1.0f;
+        const float x = x0 * _noiseEnvelope.next();
         float y = _pipeResonator.read(_pipeDelay);
         y = BiquadFilter::tick(_lpSpec, _lpState, y);
         y += x;

@@ -51,7 +51,7 @@ void DelayLine::write (const float x)
 float DelayLine::read(const float delay) const
 {
     int index = static_cast<int>(std::floor(delay));
-    float frac = delay - static_cast<float>(index);
+    const float frac = delay - static_cast<float>(index);
 
     index = (index + _writeIndex) % static_cast<int>(_buffer.size());
     const auto a = _buffer[index];

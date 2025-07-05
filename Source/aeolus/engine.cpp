@@ -121,7 +121,7 @@ void Engine::process(float* outL, float* outR, int numFrames, const bool isNonRe
 
     float* origOutL = outL;
     float* origOutR = outR;
-    int origNumFrames = numFrames;
+    const int origNumFrames = numFrames;
 
     bool wasAudioGenerated = false;
 

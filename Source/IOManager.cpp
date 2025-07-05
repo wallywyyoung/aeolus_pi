@@ -90,7 +90,7 @@ void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, 
 
     addsynth._fileName = entry.path().filename();
 
-    int version = v["version"];
+    const int version = v["version"];
 
     addsynth._noteMin = v["note_min"];
     addsynth._noteMax = v["note_max"];
@@ -140,7 +140,7 @@ void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry
     if (strncmp(header, "AEOLUS", 6) != 0)
         throw std::runtime_error("Invalid header signature");
 
-    int version = header[7];
+    const int version = header[7];
     int nHarm = header[26];
 
     if (nHarm == 0)

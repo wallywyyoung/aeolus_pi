@@ -48,7 +48,7 @@ public:
 
     bool send (const T& obj) noexcept
     {
-        if (size_t nextIdx = writeIdx + 1 < Size ? writeIdx + 1 : 0; nextIdx != readIdx)
+        if (const size_t nextIdx = writeIdx + 1 < Size ? writeIdx + 1 : 0; nextIdx != readIdx)
         {
             data[writeIdx] = obj;
             writeIdx = nextIdx;
@@ -60,7 +60,7 @@ public:
 
     bool receive (T& obj) noexcept
     {
-        size_t nextIdx = readIdx + 1 < Size ? readIdx + 1 : 0;
+        const auto nextIdx = readIdx + 1 < Size ? readIdx + 1 : 0;
 
         if (readIdx != writeIdx)
         {

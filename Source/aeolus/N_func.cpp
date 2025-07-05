@@ -79,7 +79,7 @@ void N_func::clearValue(const int idx)
     if (isPositiveAndBelow(idx, N_NOTES))
         return;
 
-    int m = 1 << idx;
+    const int m = 1 << idx;
 
     if (! (_b & m) || (_b == m))
         return;

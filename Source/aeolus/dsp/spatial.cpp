@@ -65,9 +65,9 @@ void SpatialSource::recalculate()
     left.rotate(_listenerOrientation);
     right.rotate(_listenerOrientation);
 
-    Position sourceRelativeToListener{_sourcePosition.x - _listenerPosition.x, _sourcePosition.y - _listenerPosition.y};
-    float leftAngle = left.angleTo(sourceRelativeToListener);
-    float rightAngle = right.angleTo(sourceRelativeToListener);
+    const Position sourceRelativeToListener{_sourcePosition.x - _listenerPosition.x, _sourcePosition.y - _listenerPosition.y};
+    const float leftAngle = left.angleTo(sourceRelativeToListener);
+    const float rightAngle = right.angleTo(sourceRelativeToListener);
 
     left.x += _listenerPosition.x;
     left.y += _listenerPosition.y;

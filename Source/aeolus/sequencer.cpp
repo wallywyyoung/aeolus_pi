@@ -83,7 +83,7 @@ void Sequencer::initFromEngine()
         divisions.resize(numDivisions);
 
         for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
-            auto division = _engine.getDivisionByIndex(divIdx);
+            const auto division = _engine.getDivisionByIndex(divIdx);
             divisions[divIdx].stops.resize(division->getStopsCount());
             divisions[divIdx].links.resize(division->getLinksCount());
         }

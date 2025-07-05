@@ -108,7 +108,7 @@ struct Convolver::Impl
 
     void init ()
     {
-        size_t numBlocks = length < Convolver::BlockSize ? 1 : (length - 1) / Convolver::BlockSize + 1;
+        const size_t numBlocks = length < Convolver::BlockSize ? 1 : (length - 1) / Convolver::BlockSize + 1;
         inputSize = numBlocks * Convolver::BlockSize;
 
         convL.resize(numBlocks);

@@ -24,7 +24,7 @@ namespace math {
 
 float exp2ap(float x)
 {
-    int i = static_cast<int>(floor(x));
+    const int i = static_cast<int>(floor(x));
     x -= i;
     // return ldexp (1 + x * (0.66 + 0.34 * x), i);
     return ldexp(1 + x * (0.6930f + x * (0.2416f + x * (0.0517f + x * 0.0137f))), i);

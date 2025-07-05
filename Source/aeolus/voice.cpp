@@ -66,7 +66,7 @@ void Voice::trigger(const Pipewave::State& state)
     const float x = width * k * static_cast<float>(abs(note - 65));
 
     // Assuming notes range [36..96]
-    float n = k * static_cast<float>(abs(note - 65)); // ~[-30..30]
+    const float n = k * static_cast<float>(abs(note - 65)); // ~[-30..30]
     _panPosition = limitRange(0.0f, 1.0f, (n + 30.0f) / 60.0f);
 
     _spatialSource.setSampleRate(SAMPLE_RATE_F);

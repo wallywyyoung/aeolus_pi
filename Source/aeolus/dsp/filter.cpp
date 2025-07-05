@@ -35,21 +35,21 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
         A = sqrtf(powf(10.0f, spec.dbGain / 20.0f));
     }
 
-    float w0 = 2.0f * static_cast<float>(M_PI) * spec.freq / spec.sampleRate;
+    const float w0 = 2.0f * static_cast<float>(M_PI) * spec.freq / spec.sampleRate;
 
-    float cos_w0 = cos(w0);
-    float sin_w0 = sin(w0);
+    const float cos_w0 = cos(w0);
+    const float sin_w0 = sin(w0);
     float alpha = 0.0f;
 
     switch (spec.type) {
-    case Type::LowPass:
-    case Type::HighPass:
-    case Type::AllPass:
+    case LowPass:
+    case HighPass:
+    case AllPass:
         alpha = sin_w0 / (2.0f * spec.q);
         break;
-    case Type::BandPass:
-    case Type::Notch:
-    case Type::PeakingEq:
+    case BandPass:
+    case Notch:
+    case PeakingEq:
         alpha = sin_w0 * sinh(log(2.0f) / 2.0f * spec.q * w0 / sin_w0);
         break;
     case Type::LowShelf:

@@ -136,7 +136,7 @@ public:
             objects.insert(objects.begin() + offset, buffer.begin(), buffer.begin() + _writeIndexCached - 1);
         }
         // Buffer is cleared.
-        auto nextReadIndex = 0;
+        const auto nextReadIndex = 0;
         _readIndex.store(nextReadIndex, std::memory_order_release);
         return true;
     }
