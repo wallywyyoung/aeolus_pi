@@ -18,7 +18,9 @@
 // ----------------------------------------------------------------------------
 
 #include "AlsaInterface.h"
-#include "aeolus/globals.h"
+
+#include <fstream>
+
 #include "aeolus/EngineGlobal.h"
 
 #include <alsa/asoundlib.h>

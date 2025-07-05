@@ -18,9 +18,9 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/delay.h"
+
 #include <cstring>
-
-
+#include "aeolus/globals.h"
 
 namespace dsp {
 

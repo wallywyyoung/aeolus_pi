@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
+#include "aeolus/IR.h"
 #include <memory>
 
 

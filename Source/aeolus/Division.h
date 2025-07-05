@@ -41,8 +41,8 @@ class Engine;
  * A division may have multiple stops available, which can be enabled or
  * disabled individually.
  */
-class Division
-{
+class Division {
+
 public:
     enum Params { GAIN = 0, NUM_PARAMS };
     /// Link with another division.

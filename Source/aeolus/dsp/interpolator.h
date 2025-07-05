@@ -19,11 +19,9 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
 #include <array>
 #include <vector>
-
-
+#include <cstddef>
 
 namespace dsp {
 

@@ -20,6 +20,8 @@
 
 #include "aeolus/scale.h"
 
+#include <cmath>
+#include <stdexcept>
 
 
 const Scale::Map Scale::_scales = {
@@ -220,8 +222,9 @@ Scale::Scale(Scale::Type type)
 const Scale::Table& Scale::getTable() const
 {
     const auto it = _scales.find(_type);
-    assert(it != _scales.end());
-
+    if (it == _scales.end()) {
+        throw std::runtime_error("Scale type not found");
+    }
     return it->second;
 }
 
@@ -229,7 +232,7 @@ float Scale::getFrequencyForMidiNote(int midiNote, float tuningFrequency) const
 {
     const auto& scaleTable{ getTable() };
     float fbase{ tuningFrequency / scaleTable[9] };
-    return ldexpf(fbase * scaleTable[midiNote % 12], midiNote / 12 - 5);
+    return ldexp(fbase * scaleTable[midiNote % 12], midiNote / 12 - 5);
 }
 
 std::string Scale::getNameForType(Type type)

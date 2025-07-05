@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
 #include "aeolus/dsp/filter.h"
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/adsrenv.h"

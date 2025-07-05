@@ -17,10 +17,11 @@
 //
 // ----------------------------------------------------------------------------
 
-#include <cstring>
 #include "aeolus/dsp/filter.h"
 
-
+#include <stdexcept>
+#include <cmath>
+#include <cstring>
 
 namespace dsp {
 

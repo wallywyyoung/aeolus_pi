@@ -23,8 +23,6 @@
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/filter.h"
 
-
-
 namespace dsp {
 
 /**

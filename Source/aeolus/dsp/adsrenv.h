@@ -21,8 +21,6 @@
 
 #include "aeolus/globals.h"
 
-
-
 namespace dsp {
 
 /**

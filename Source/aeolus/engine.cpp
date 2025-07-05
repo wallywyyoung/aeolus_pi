@@ -19,6 +19,9 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/engine.h"
+
+#include <fstream>
+
 #include "IOManager.h"
 #include "aeolus/EngineGlobal.h"
 #include "DivisionFactory.h"

@@ -19,10 +19,7 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
-
-
-
+#include <cstddef>
 
 namespace dsp {
 

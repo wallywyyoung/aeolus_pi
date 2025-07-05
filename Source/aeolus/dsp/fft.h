@@ -27,8 +27,6 @@
 #include <complex>
 #include <valarray>
 
-
-
 namespace dsp {
 
 /**

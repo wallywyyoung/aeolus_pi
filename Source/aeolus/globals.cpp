@@ -20,8 +20,6 @@
 
 #include "aeolus/globals.h"
 
-//==============================================================================
-
 namespace math {
 
 float exp2ap(float x)
@@ -34,11 +32,9 @@ float exp2ap(float x)
 
 } // namespace math
 
-//==============================================================================
-
 namespace midi {
 
-int channelToMask(int channel)
+int midiChannelToMask(int channel)
 {
     // Zero means any MIDI channel.
     if (channel <= 0)
@@ -47,9 +43,9 @@ int channelToMask(int channel)
     return 1 << (channel - 1);
 }
 
-bool matchChannelToMask(int mask, int channel)
+bool matchMidiChannelToMask(int mask, int channel)
 {
-    return (mask & channelToMask(channel)) != 0;
+    return (mask & midiChannelToMask(channel)) != 0;
 }
 
 } // namespace midi

@@ -20,12 +20,7 @@
 
 #pragma once
 
-#include "aeolus/IR.h"
-
-#include <cstddef>
 #include <cmath>
-#include <cassert>
-#include <fstream>
 
 template <typename T> T limitRange(T min, T max, T value) {
     return std::max(min, std::min(max, value));
@@ -33,20 +28,13 @@ template <typename T> T limitRange(T min, T max, T value) {
 
 // TODO: Fix mixed comparison with large unsigned types.
 template <typename T1, typename T2> bool isPositiveAndBelow(T1 instance, T2 threshold) {
-    if (T1() <= instance && instance < static_cast<T1>(threshold)) {
-        return true;
-    } else {
-        throw std::runtime_error("isPositiveAndBelow - instance out of range");
-    }
-
+    return T1() <= instance && instance < static_cast<T1>(threshold);
 }
 
 /// Multibus output option (must be set in the project configuration)
 #ifndef AEOLUS_MULTIBUS_OUTPUT
 #   define AEOLUS_MULTIBUS_OUTPUT 0
 #endif
-
-
 
 #if AEOLUS_MULTIBUS_OUTPUT
     constexpr static int N_OUTPUT_CHANNELS = 8;
@@ -120,8 +108,6 @@ constexpr static float UI_SCALING_MAX = 150.0f;
 constexpr static float UI_SCALING_SETP = 1.0f;
 constexpr static float UI_SCALING_DEFAULT = 100.0f;
 
-//==============================================================================
-
 // MIDI controls
 enum {
     CC_MODULATION = 1,
@@ -130,23 +116,6 @@ enum {
     CC_STOP_BUTTONS = 98,
     CC_ALL_NOTES_OFF = 123
 };
-
-enum class StopControlMode {
-    Disabled,   // 0b00
-    SetOff,     // 0b01
-    SetOn,      // 0b10
-    Toggle      // 0b11
-};
-
-//==============================================================================
-
-/// Values used by previous version of the synth.
-namespace deprecated {
-
-    constexpr static int N_HARM = 48;
-
-    constexpr static int NOTE_MAX = 46;
-} // namespace deprecated
 
 namespace math {
 
@@ -230,10 +199,8 @@ constexpr bool isPowerOfTwo(T v)
 //----------------------------------------------------------
 
 namespace midi {
-
-    int channelToMask(int channel);
-    bool matchChannelToMask(int mask, int channel);
-
+    int midiChannelToMask(int channel);
+    bool matchMidiChannelToMask(int mask, int channel);
 } // namespace midi
 
 

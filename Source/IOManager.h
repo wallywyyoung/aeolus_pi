@@ -29,6 +29,11 @@ public:
     static IRs loadIRs();
     static std::vector<Addsynth> loadPipes();
 private:
+    /// Values used by previous version of the synth.
+    struct deprecated {
+        constexpr static int N_HARM = 48;
+        constexpr static int NOTE_MAX = 46;
+    }; // namespace deprecated
     static std::vector<std::byte> readBinaryFile(const std::string &path);
     static void addsynthFromJson(const std::filesystem::directory_entry& entry, Addsynth &adsynth);
     static void addsynthFromBinary(const std::filesystem::directory_entry& entry, Addsynth &addsynth);

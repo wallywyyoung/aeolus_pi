@@ -19,12 +19,8 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
-
 #include <mutex>
 #include <condition_variable>
-
-
 
 /**
  * @brief Semaphore imlementation based on conditional variable.

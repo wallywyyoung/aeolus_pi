@@ -20,13 +20,9 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
-
 #include <array>
 #include <map>
 #include <string>
-
-
 
 class Scale
 {

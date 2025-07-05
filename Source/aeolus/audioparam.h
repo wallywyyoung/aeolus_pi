@@ -20,8 +20,7 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
-
+#include <string>
 #include <vector>
 
 /**

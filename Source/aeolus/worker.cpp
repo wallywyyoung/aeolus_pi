@@ -54,7 +54,9 @@ struct Worker::Impl
             wait();
 
             if (running && jobsQueue.pop(job)) {
-                assert(job != nullptr);
+                if (job == nullptr) {
+                    throw std::runtime_error("Worker::run: job is null");
+                }
                 job->run();
             }
         }
@@ -62,7 +64,9 @@ struct Worker::Impl
 
     bool addJob (Job* job)
     {
-        assert(job != nullptr);
+        if (job == nullptr) {
+            throw std::runtime_error("Worker::run: job is null");
+        }
 
         const auto ok = jobsQueue.push(job);
         wakeUp();

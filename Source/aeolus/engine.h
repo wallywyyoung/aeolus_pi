@@ -41,6 +41,12 @@
  */
 class Engine final : public MidiListener
 {
+    enum class StopControlMode {
+        Disabled,   // 0b00
+        SetOff,     // 0b01
+        SetOn,      // 0b10
+        Toggle      // 0b11
+    };
 public:
     enum {
         VOLUME = 0,

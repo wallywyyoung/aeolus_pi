@@ -22,7 +22,6 @@
 #pragma once
 
 #include "aeolus/Addsynth.h"
-#include "aeolus/globals.h"
 
 #include <atomic>
 

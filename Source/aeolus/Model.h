@@ -21,7 +21,6 @@
 #pragma once
 
 #include "aeolus/Addsynth.h"
-#include "aeolus/globals.h"
 
 /**
  * @brief A collection of all available stops.

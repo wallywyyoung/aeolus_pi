@@ -179,7 +179,7 @@ void Division::getAvailableRange(int& minNote, int& maxNote) const noexcept
 bool Division::isForMIDIChannel(const int channel) const noexcept
 {
     const int mask{ _midiChannelsMask.load() };
-    return midi::matchChannelToMask(mask, channel);
+    return midi::matchMidiChannelToMask(mask, channel);
 }
 
 void Division::setTremulantEnabled(const bool ena) noexcept

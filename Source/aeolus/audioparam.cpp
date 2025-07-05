@@ -20,6 +20,7 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/audioparam.h"
+#include "aeolus/globals.h"
 
 AudioParameter::AudioParameter(float value, float min, float max, float smooth) : _currentValue{value}, _minValue{min}, _maxValue{max}, _targetValue{value}, _frac{smooth}, _smoothing{false} { }
 

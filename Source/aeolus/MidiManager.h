@@ -59,7 +59,7 @@ public:
     void processMidiEvent(const MidiMessage& message) {
 
         // Process global CCs
-        if (midi::matchChannelToMask(getMIDIControlChannelsMask(), message.getChannel())) {
+        if (midi::matchMidiChannelToMask(getMIDIControlChannelsMask(), message.getChannel())) {
 //            keyState[message.getChannel()][message.getNote()] = true;
             for (const auto listener : _listeners) {
                 listener->handleSequencerSwitch(message.getNote());

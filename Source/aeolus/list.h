@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
+#include <stdexcept>
 
 /**
  * Implementation of a double-linked list.
@@ -46,7 +46,9 @@ struct ListItem : public ListNode<ListItem<Item>>
 {
     void appendAfter (ListItem* item) noexcept
     {
-        assert (item != nullptr);
+        if (item == nullptr) {
+            throw std::runtime_error ("Item is null");
+        }
 
         this->_prev = item;
         this->_next = item->_next;
@@ -77,7 +79,9 @@ struct List
 
     void append(Item* item) noexcept
     {
-        assert (item != nullptr);
+        if (item == nullptr) {
+            throw std::runtime_error ("Item is null");
+        }
 
         if (_head == nullptr) {
             _head = item;
@@ -101,7 +105,9 @@ struct List
 
     void remove (Item* item) noexcept
     {
-        assert (item != nullptr);
+        if (item == nullptr) {
+            throw std::runtime_error ("Item is null");
+        }
 
         if (_head == item)
             _head = item->next();

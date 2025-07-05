@@ -30,8 +30,6 @@
 #include <vector>
 #include <cstring>
 
-
-
 namespace dsp {
 
 struct ConvPartBase

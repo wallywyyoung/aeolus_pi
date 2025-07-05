@@ -21,7 +21,6 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
 #include "aeolus/HN_func.h"
 
 #include <nlohmann/json.hpp>

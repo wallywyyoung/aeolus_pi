@@ -21,11 +21,6 @@
 
 #include "aeolus/Addsynth.h"
 
-template <typename T>
-static inline bool isPositiveAndBelow(T valueToTest, T upperLimit) {
-    return valueToTest >= 0 && valueToTest < upperLimit;
-}
-
 void Addsynth::reset()
 {
     _noteMin = NOTE_MIN;
