@@ -26,7 +26,7 @@
 
 namespace dsp {
 
-Interpolator::Interpolator(float ratio, size_t nChannels)
+Interpolator::Interpolator(const float ratio, const size_t nChannels)
     : _acc(nChannels)
     , _accIndex{0}
     , _accFrac{0.0f}
@@ -37,7 +37,7 @@ Interpolator::Interpolator(float ratio, size_t nChannels)
     }
 }
 
-void Interpolator::setNumberOfChannels(size_t n)
+void Interpolator::setNumberOfChannels(const size_t n)
 {
     if (n <= 0) {
         throw std::invalid_argument("Interpolator: number of channels must be greater than zero");
@@ -61,7 +61,7 @@ bool Interpolator::canRead() const noexcept
     return _accFrac < 1.0f;
 }
 
-bool Interpolator::readAllChannels(float* const x) noexcept
+bool Interpolator::readAllChannels(float* x) noexcept
 {
     if (x == nullptr) {
         throw std::invalid_argument("Interpolator: x cannot be null");
@@ -79,7 +79,7 @@ bool Interpolator::readAllChannels(float* const x) noexcept
     return true;
 }
 
-float Interpolator::readUnchecked(size_t channel) const noexcept
+float Interpolator::readUnchecked(const size_t channel) const noexcept
 {
     if (_accFrac >= 1.0f) {
         throw std::invalid_argument("Interpolator: _accFrac must be less than 1.0");
@@ -88,7 +88,7 @@ float Interpolator::readUnchecked(size_t channel) const noexcept
     return math::lagr(&_acc[channel].data()[_accIndex], _accFrac);
 }
 
-float Interpolator::readLinearUnchecked(size_t channel) const noexcept
+float Interpolator::readLinearUnchecked(const size_t channel) const noexcept
 {
     if (_accFrac >= 1.0f) {
         throw std::invalid_argument("Interpolator: _accFrac must be less than 1.0");
@@ -143,7 +143,7 @@ bool Interpolator::writeAllChannels(const float* const x) noexcept
     return true;
 }
 
-void Interpolator::writeUnchecked(float x, size_t channel)
+void Interpolator::writeUnchecked(const float x, const size_t channel)
 {
     if (_acc.size() <= 1) {
         throw std::invalid_argument("Interpolator: number of channels must be greater than one");
@@ -158,7 +158,7 @@ void Interpolator::writeIncrement()
     _accFrac -= 1.0f;
 }
 
-bool Interpolator::write(float l, float r) noexcept
+bool Interpolator::write(const float l, const float r) noexcept
 {
     if (_acc.size() <= 1) {
         throw std::invalid_argument("Interpolator: number of channels must be greater than one");

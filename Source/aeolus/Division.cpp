@@ -224,9 +224,9 @@ void Division::noteOn(const int note, const int midiChannel)
     }
 
     // Forward to the linked divisions
-    for (auto& link : _linkedDivisions) {
-        if (link.enabled) {
-            link.division->noteOn(note, 0);
+    for (auto&[division, enabled] : _linkedDivisions) {
+        if (enabled) {
+            division->noteOn(note, 0);
         }
     }
 }
@@ -428,12 +428,8 @@ void Division::releaseVoicesOfDisabledStops()
         bool shouldRelease{ false };
 
         if (voice->isActive()) {
-            const int stopIndex = voice->stopIndex();
-
-            if (isPositiveAndBelow(stopIndex, _stops.size())) {
-                const auto& stop = _stops[stopIndex];
-
-                if (!stop.isEnabled())
+            if (const int stopIndex = voice->stopIndex(); isPositiveAndBelow(stopIndex, _stops.size())) {
+                if (const auto& stop = _stops[stopIndex]; !stop.isEnabled())
                     shouldRelease = true;
 
                 if (voice->getNote() >= 0 && !_aggregatedKeysState[voice->getNote()])

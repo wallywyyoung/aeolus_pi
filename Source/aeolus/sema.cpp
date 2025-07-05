@@ -21,7 +21,7 @@
 
 
 
-Semaphore::Semaphore(unsigned initialCount)
+Semaphore::Semaphore(const unsigned initialCount)
     : _mutex()
     , _cv()
     , _counter{initialCount}

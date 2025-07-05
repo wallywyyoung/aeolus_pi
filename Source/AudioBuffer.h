@@ -30,7 +30,7 @@ protected:
     AudioBuffer() : channels{0}, bufferSize{0} { }
 
 public:
-    void setBuffer(std::vector<std::vector<float>> &newBuffer){
+    void setBuffer(const std::vector<std::vector<float>> &newBuffer){
         audioBuffer = newBuffer;
     }
 

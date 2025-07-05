@@ -39,7 +39,7 @@ EngineGlobal::~EngineGlobal() {
     }
 }
 
-const float EngineGlobal::getMTSNoteToFrequency(int midiNote, int midiChannel) const {
+const float EngineGlobal::getMTSNoteToFrequency(const int midiNote, const int midiChannel) const {
     if (_mtsClient == nullptr || !isConnectedToMTSMaster()) {
         return _scale->getFrequencyForMidiNote(midiNote);
     }
@@ -50,8 +50,8 @@ std::vector<std::string> EngineGlobal::getAllStopNames() const
 {
     auto names = std::vector<std::string>();
 
-    for (const auto &rankwave : _rankwavesByName) {
-        names.push_back(rankwave.first);
+    for (const auto &key: _rankwavesByName | std::views::keys) {
+        names.push_back(key);
     }
 
     return names;
@@ -59,17 +59,13 @@ std::vector<std::string> EngineGlobal::getAllStopNames() const
 
 void EngineGlobal::updateStops() const {
     dp::thread_pool pool(_rankwavesByName.size());
-    for (auto& rw : _rankwavesByName) {
-        auto rwp = rw.second.get();
+    for (const auto &val: _rankwavesByName | std::views::values) {
+        auto rwp = val.get();
         pool.enqueue_detach([rwp]() {
             rwp->prepareToPlay(SAMPLE_RATE_F);
         });
     }
     pool.wait_for_tasks();
-}
-
-void process(const std::vector<MidiMessage>& messages, AudioBuffer& buffer) {
-
 }
 
 void EngineGlobal::processMidi(const std::vector<MidiMessage>& messages) {
@@ -131,7 +127,7 @@ const int EngineGlobal::getMIDISwellChannelsMask() const{
     return midiManager.getMIDISwellChannelsMask();
 }
 
-const bool EngineGlobal::shouldMTSFilterNoteByChannel(int midiNote, int midiChannel) const {
+const bool EngineGlobal::shouldMTSFilterNoteByChannel(const int midiNote, const int midiChannel) const {
     if (nullptr == _mtsClient || !isConnectedToMTSMaster()) {
         return false;
     }
@@ -142,8 +138,7 @@ bool EngineGlobal::updateMTSTuningCache() {
     bool changed{};
 
     for (int midiNote = 0; midiNote < _mtsTuningCache.size(); ++midiNote) {
-        const float f{ getMTSNoteToFrequency(midiNote, -1) };
-        if (_mtsTuningCache[midiNote] != f) {
+        if (const float f{ getMTSNoteToFrequency(midiNote, -1) }; _mtsTuningCache[midiNote] != f) {
             _mtsTuningCache[midiNote] = f;
             changed = true;
         }

@@ -21,11 +21,11 @@
 
 #include <algorithm>
 
-float* AudioBuffer::getWritePointer(int channel) {
+float* AudioBuffer::getWritePointer(const int channel) {
     return audioBuffer[channel].data();
 }
 
-float* AudioBuffer::getReadPointer(int channel, int offset) const {
+float* AudioBuffer::getReadPointer(const int channel, const int offset) const {
     return const_cast<float*>(audioBuffer[channel].data() + offset);
 }
 
@@ -47,13 +47,13 @@ void AudioBuffer::applyGain(const float& gain) {
     }
 }
 
-void AudioBuffer::addFrom(int toChannel, int toStartOffset, const AudioBuffer &from, int fromChannel, int fromStartOffset, int sampleCount) {
+void AudioBuffer::addFrom(const int toChannel, const int toStartOffset, const AudioBuffer &from, const int fromChannel, const int fromStartOffset, const int sampleCount) {
     auto toChannelStart = audioBuffer[toChannel].data() + toStartOffset;
     auto fromChannelStart = from.getReadPointer(fromChannel)  + fromStartOffset;
     std::transform(fromChannelStart, fromChannelStart + sampleCount, toChannelStart, toChannelStart, std::plus());
 }
 
-AudioBuffer::AudioBuffer(int channels, int bufferSize) : bufferSize(bufferSize), channels(channels) {
+AudioBuffer::AudioBuffer(const int channels, const int bufferSize) : channels(channels), bufferSize(bufferSize) {
     audioBuffer.reserve(channels);
     for (auto& channel : audioBuffer) {
         channel.reserve(bufferSize);

@@ -48,9 +48,7 @@ public:
 
     bool send (const T& obj) noexcept
     {
-        size_t nextIdx = writeIdx + 1 < Size ? writeIdx + 1 : 0;
-
-        if (nextIdx != readIdx)
+        if (size_t nextIdx = writeIdx + 1 < Size ? writeIdx + 1 : 0; nextIdx != readIdx)
         {
             data[writeIdx] = obj;
             writeIdx = nextIdx;

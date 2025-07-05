@@ -39,7 +39,7 @@ struct ConvPartBase
     size_t inputSize = 0;
     size_t readIndex = 0;
 
-    void init(float* ir, float* input, size_t size)
+    void init(float* ir, float* input, const size_t size)
     {
         assert(input != nullptr);
         assert(ir != nullptr);
@@ -52,7 +52,7 @@ struct ConvPartBase
 };
 
 template<size_t L>
-struct ConvPart : public ConvPartBase
+struct ConvPart : ConvPartBase
 {
     constexpr static size_t Lendth = L;
     constexpr static size_t Delay = 0;
@@ -135,7 +135,7 @@ struct Conv<PrevLength, Part>
 //----------------------------------------------------------
 
 template <size_t L>
-struct FIR : public ConvPart<L>
+struct FIR : ConvPart<L>
 {
     constexpr static size_t Delay = 0;
     constexpr static size_t Length = L;
@@ -177,7 +177,7 @@ struct FFT : public ConvPart<L>
     float* tailBuffer{};
     size_t tailIndex{};
 
-    using FftImpl = GFFT<Length2, float>;
+    using FftImpl = GFFT<Length2>;
 
     FFT()
     {
@@ -504,8 +504,7 @@ private:
             tailBuffer        = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
         }
 
-        ~Block()
-        {
+        ~Block() override {
             AlignedMemory<32>::free(tailBuffer);
             AlignedMemory<32>::free(outputBuffer);
             AlignedMemory<32>::free(convolutionBuffer);

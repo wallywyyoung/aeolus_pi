@@ -273,10 +273,8 @@ struct MTSClient
             global.UseMultiChannelTuning(midichannel) &&
             global.multi_channel_esp_retuning[channel])
         {
-			double freq = global.multi_channel_esp_retuning[channel][note];
-
-            if (globalMultichannelTunings[channel][note].freq == freq &&
-				(globalMultichannelTunings[channel][note].flags & Tuning::eRatioValid))
+            if (const double freq = global.multi_channel_esp_retuning[channel][note]; globalMultichannelTunings[channel][note].freq == freq &&
+                                                                                (globalMultichannelTunings[channel][note].flags & Tuning::eRatioValid))
 			{
 				return globalMultichannelTunings[channel][note].ratio;
 			}
@@ -287,10 +285,8 @@ struct MTSClient
             return globalMultichannelTunings[channel][note].ratio;
         }
 
-		double freq = global.esp_retuning[note];
-
-		if (globalTunings[note].freq == freq &&
-			(globalTunings[note].flags & Tuning::eRatioValid))
+        if (const double freq = global.esp_retuning[note]; globalTunings[note].freq == freq &&
+                                                     (globalTunings[note].flags & Tuning::eRatioValid))
 		{
 			return globalTunings[note].ratio;
 		}
@@ -301,10 +297,10 @@ struct MTSClient
         return globalTunings[note].ratio;
     }
 
-    inline double semitones(char midinote, char midichannel)
+    inline double semitones(const char midinote, const char midichannel)
     {
-        int note = midinote & 127;
-        int channel = midichannel & 15;
+        const int note = midinote & 127;
+        const int channel = midichannel & 15;
 
         freqRequestReceived = true;
         supportsMultiChannelTuning = !(midichannel & ~15);
@@ -336,7 +332,7 @@ struct MTSClient
             global.UseMultiChannelTuning(midichannel) &&
             global.multi_channel_esp_retuning[channel])
 		{
-			double freq = global.multi_channel_esp_retuning[channel][note];
+			const double freq = global.multi_channel_esp_retuning[channel][note];
 
 			if (globalMultichannelTunings[channel][note].freq == freq)
             {
@@ -358,7 +354,7 @@ struct MTSClient
             return globalMultichannelTunings[channel][note].semitones;
         }
 
-        double freq = global.esp_retuning[note];
+        const double freq = global.esp_retuning[note];
 
 		if (globalTunings[note].freq == freq)
         {
@@ -380,7 +376,7 @@ struct MTSClient
         return globalTunings[note].semitones;
     }
 
-    inline bool shouldFilterNote(char midinote, char midichannel)
+    inline bool shouldFilterNote(const char midinote, const char midichannel)
     {
         supportsNoteFiltering = true;
         supportsMultiChannelNoteFiltering = !(midichannel & ~15);
@@ -541,11 +537,10 @@ struct MTSClient
                     return static_cast<char>(iLower & 127);
                 }
 
-                double fLower = global.multi_channel_esp_retuning[channelsInUse[iLower >> 7]][iLower & 127];
-                double fUpper = global.multi_channel_esp_retuning[channelsInUse[iUpper >> 7]][iUpper & 127];
-                double fmid = fLower * pow(2.0, 0.5 * (log(fUpper / fLower) / ln2));
+                const double fLower = global.multi_channel_esp_retuning[channelsInUse[iLower >> 7]][iLower & 127];
+                const double fUpper = global.multi_channel_esp_retuning[channelsInUse[iUpper >> 7]][iUpper & 127];
 
-                if (freq < fmid)
+                if (const double fmid = fLower * pow(2.0, 0.5 * (log(fUpper / fLower) / ln2)); freq < fmid)
                 {
                     *midichannel = static_cast<char>(channelsInUse[iLower >> 7]);
                     return static_cast<char>(iLower & 127);

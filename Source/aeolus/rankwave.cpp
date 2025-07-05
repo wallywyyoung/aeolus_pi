@@ -92,7 +92,7 @@ void Rankwave::prepareToPlay(const float sampleRate)
     _pipeSetIndex.store(nextPipeSetIndex);
 }
 
-Pipewave::State Rankwave::trigger(int note)
+Pipewave::State Rankwave::trigger(const int note)
 {
     if (note < _noteMin || note > _noteMax)
         return {};

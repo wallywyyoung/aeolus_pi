@@ -44,7 +44,7 @@ Envelope::Envelope()
 {
 }
 
-void Envelope::trigger(const Envelope::Trigger& trigger, float sampleRate)
+void Envelope::trigger(const Trigger& trigger, const float sampleRate)
 {
     sustainLevel = trigger.sustain;
 
@@ -70,7 +70,7 @@ void Envelope::release()
         currentState = Release;
 }
 
-void Envelope::release(float t, float sampleRate)
+void Envelope::release(const float t, const float sampleRate)
 {
     releaseRate = t * sampleRate;
     releaseCoef = calculate(releaseRate, DecayReleaseTargetRatio);
@@ -118,7 +118,7 @@ float Envelope::next()
     return currentLevel;
 }
 
-float Envelope::calculate(float rate, float targetRatio)
+float Envelope::calculate(const float rate, const float targetRatio)
 {
     return rate <= 0 ? 0.0f : std::exp(-std::log((1.0f + targetRatio) / targetRatio) / rate);
 }

@@ -103,12 +103,12 @@ public:
 
     int getMIDIChannelsMask() const noexcept { return _midiChannelsMask; }
     bool isForMIDIChannel(int channel) const noexcept;
-    void setMIDIChannelsMask(int channelsMask) noexcept { _midiChannelsMask = channelsMask; }
+    void setMIDIChannelsMask(const int channelsMask) noexcept { _midiChannelsMask = channelsMask; }
 
     bool hasSwell() const noexcept { return _hasSwell; }
-    void setHasSwell(bool v) noexcept { _hasSwell = v; }
+    void setHasSwell(const bool v) noexcept { _hasSwell = v; }
     bool hasTremulant() const noexcept { return _hasTremulant; }
-    void setHasTremulant(bool v) noexcept { _hasTremulant = v; }
+    void setHasTremulant(const bool v) noexcept { _hasTremulant = v; }
     bool isTremulantEnabled() const noexcept { return _tremulantEnabled; }
     void setTremulantEnabled(bool ena) noexcept;
 

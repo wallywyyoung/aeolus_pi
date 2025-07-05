@@ -21,13 +21,14 @@
 
 #include "aeolus/Pipewave.h"
 
+#include <cmath>
 #include <random>
 #include <cstring>
 #include <memory>
 #include <limits>
 #include <vector>
 
-Pipewave::Pipewave(std::shared_ptr<Addsynth> model, int note, float freq) : _model(model), _note(note), _freq(freq) , _needsToBeRebuilt(std::make_shared<std::atomic<bool>>(true)) { }
+Pipewave::Pipewave(const std::shared_ptr<Addsynth> &model, const int note, const float freq) : _model(model), _note(note), _freq(freq) , _needsToBeRebuilt(std::make_shared<std::atomic<bool>>(true)) { }
 
 Pipewave::Pipewave(const Pipewave& other)
         : _model{ other._model }
@@ -49,8 +50,7 @@ Pipewave::Pipewave(const Pipewave& other)
 {
     // Adjust pointers to the copied wavetable.
     // TODO: Added const_cast is undefined and this will probably break. FIX
-    float* wavetable{ const_cast<float*>(other._wavetable.data()) };
-
+    const auto wavetable{ const_cast<float*>(other._wavetable.data()) };
     const auto attackOffset = other._attackStartPtr - wavetable;
     const auto loopStartOffset = other._loopStartPtr - wavetable;
     const auto loopEndOffset = other._loopEndPtr - wavetable;
@@ -65,7 +65,7 @@ float Pipewave::getPipeFrequency() const noexcept
     return _freq * static_cast<float>(_model->getFn()) / static_cast<float>(_model->getFd());
 }
 
-void Pipewave::prepateToPlay(float sampleRate)
+void Pipewave::prepateToPlay(const float sampleRate)
 {
     if (_wavetable.empty() || _sampleRate != sampleRate || _needsToBeRebuilt->load()) {
         _sampleRate = sampleRate;
@@ -86,14 +86,14 @@ Pipewave::State Pipewave::trigger()
     return state;
 }
 
-void Pipewave::release(Pipewave::State& state)
+void Pipewave::release(State& state)
 {
     assert(state.env == Pipewave::Attack || state.env == Pipewave::Release);
     assert(state.pipewave == this);
     state.env = Pipewave::Release;
 }
 
-void Pipewave::play(Pipewave::State& state, float* out)
+void Pipewave::play(State& state, float* out)
 {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
@@ -119,13 +119,13 @@ void Pipewave::play(Pipewave::State& state, float* out)
     float* p = state.playPtr;
     float* r = state.releasePtr;
 
-    if (state.env == Pipewave::Attack) {
+    if (state.env == Attack) {
         if (p == nullptr) {
             p = _attackStartPtr;
             state.playInterpolation = 0.0f;
             state.playInterpolationSpeed = 0.0f;
         }
-    } else if (state.env == Pipewave::Release) {
+    } else if (state.env == Release) {
         if (r == nullptr) {
             r = p;
             p = nullptr;
@@ -187,7 +187,7 @@ void Pipewave::play(Pipewave::State& state, float* out)
             state.releaseCount = i;
         } else {
             r = nullptr;
-            state.env = Pipewave::Over;
+            state.env = Over;
         }
     }
 
@@ -202,7 +202,7 @@ void Pipewave::play(Pipewave::State& state, float* out)
         } else {
             float y = state.playInterpolation;
             state.playInterpolationSpeed += _instability * 0.0005f * (0.05f * _instability * (dist(gen) - 0.5f) - state.playInterpolationSpeed);
-            float dy = state.playInterpolationSpeed * static_cast<float>(_sampleStep);
+            const float dy = state.playInterpolationSpeed * static_cast<float>(_sampleStep);
 
             while (k--) {
                 y += dy;
@@ -227,7 +227,7 @@ void Pipewave::play(Pipewave::State& state, float* out)
     }
 
     if (p == nullptr && r == nullptr)
-        state.env = Pipewave::Over;
+        state.env = Over;
 
     state.playPtr = p;
     state.releasePtr = r;
@@ -238,7 +238,7 @@ void Pipewave::genwave()
     // TODO: Is this right?
     thread_local std::random_device rnd;
     std::mt19937 gen(rnd());
-    std::uniform_real_distribution<float> dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
+    std::uniform_real_distribution dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
 
     const float sampleRate_r = 1.0f / _sampleRate;
 
@@ -250,7 +250,7 @@ void Pipewave::genwave()
     }
 
     // Attack length aligned to the processing sub-frames
-    _attackLength = static_cast<int>(_sampleRate * m + 0.5f);
+    _attackLength = static_cast<int>(std::lround(_sampleRate * m + 0.5f));
     _attackLength = (_attackLength + SUB_FRAME_LENGTH - 1) & ~(SUB_FRAME_LENGTH - 1);
 
     // Target frequency
@@ -409,9 +409,8 @@ void Pipewave::looplen(const float f, const float sampleRate, const int lmax, in
     bb = std::max(1, b);
 }
 
-void Pipewave::attgain(float* att, int n, float p)
+void Pipewave::attgain(float* att, const int n, const float p)
 {
-    float w = 0.05f;
     float y = 0.6f;
 
     if (p > 0.0f)
@@ -422,6 +421,7 @@ void Pipewave::attgain(float* att, int n, float p)
 
     for (int i = 1; i <= 24; i++)
     {
+        constexpr float w = 0.05f;
         const int k = n * i / 24;
         const float x =  1.0f - z - 1.5f * y;
         y += w * x;

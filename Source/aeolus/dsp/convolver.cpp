@@ -122,7 +122,7 @@ struct Convolver::Impl
         reset();
     }
 
-    void updateRealtime(bool isNonRealtime)
+    void updateRealtime(const bool isNonRealtime)
     {
         // Run convolution on a side thread for real-time processing.
         if (isNonRealtime) {
@@ -149,7 +149,7 @@ struct Convolver::Impl
         framesProcessed = 0;
     }
 
-    void setDryWet(float dry, float wet, bool force)
+    void setDryWet(const float dry, const float wet, const bool force)
     {
         params[DRY].setValue(dry, force);
         params[WET].setValue(wet, force);
@@ -204,7 +204,7 @@ struct Convolver::Impl
         init();
     }
 
-    void process(const float *inL, const float *inR, float *outL, float *outR, size_t numFrames)
+    void process(const float *inL, const float *inR, float *outL, float *outR, const size_t numFrames)
     {
         if (state == Init)
             state = zeroDelay ? FeedHeadIR : ProcessWithIRStream;
@@ -241,7 +241,7 @@ struct Convolver::Impl
         }
     }
 
-    void processFrame(const float *inL, const float *inR, float *outL, float *outR, size_t numFrames)
+    void processFrame(const float *inL, const float *inR, float *outL, float *outR, const size_t numFrames)
     {
         if (zeroDelay) {
             for (size_t i = 0; i < numFrames; ++i) {
@@ -283,7 +283,7 @@ void Convolver::setIR(const IR& ir)
     d->setIR(ir);
 }
 
-void Convolver::setDryWet(float dry, float wet, bool force)
+void Convolver::setDryWet(const float dry, const float wet, const bool force)
 {
     d->setDryWet(dry, wet, force);
 }
@@ -293,7 +293,7 @@ bool Convolver::isAudible() const
     return d->isAudible();
 }
 
-void Convolver::prepareToPlay(float /* sampleRate */, size_t /* nFrames */)
+void Convolver::prepareToPlay()
 {
     d->prepareToPlay();
 }

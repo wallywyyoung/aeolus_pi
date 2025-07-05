@@ -88,7 +88,7 @@ CPUTraits CPUTraits::get()
 //------------------------------------------------------------------------------
 
 [[maybe_unused]]
-static inline bool is_aligned(const void *pointer, size_t byte_count)
+static inline bool is_aligned(const void *pointer, const size_t byte_count)
 {
     return reinterpret_cast<uintptr_t>(pointer) % byte_count == 0;
 }
@@ -96,32 +96,32 @@ static inline bool is_aligned(const void *pointer, size_t byte_count)
 //------------------------------------------------------------------------------
 
 namespace no_simd {
-    void add(float* out, const float* in, size_t size)
+    void add(float* out, const float* in, const size_t size)
     {
         for (size_t i = 0; i < size; ++i)
             out[i] += in[i];
     }
 
-    void mul_const_add(float* out, const float* in, const float k, size_t size)
+    void mul_const_add(float* out, const float* in, const float k, const size_t size)
     {
 
         for (size_t i = 0; i < size; ++i)
             out[i] += in[i] * k;
     }
 
-    void add_mul_const(float* out, const float* in, const float k, size_t size)
+    void add_mul_const(float* out, const float* in, const float k, const size_t size)
     {
         for (size_t i = 0; i < size; ++i)
             out[i] = k * (out[i] + in[i]);
     }
 
-    void mul_const(float* out, const float k, size_t size)
+    void mul_const(float* out, const float k, const size_t size)
     {
         for (size_t i = 0; i < size; ++i)
             out[i] *= k;
     }
 
-    float mul_reduce(const float* x, const float* y, size_t size)
+    float mul_reduce(const float* x, const float* y, const size_t size)
     {
         float sum = 0.0f;
 
@@ -131,7 +131,7 @@ namespace no_simd {
         return sum;
     }
 
-    void complex_mul(float* res, const float* a, const float* b, size_t size)
+    void complex_mul(float* res, const float* a, const float* b, const size_t size)
     {
         for (size_t i = 0; i < size; i += 2) {
             res[i] = a[i] * b[i] - a[i + 1]* b[i + 1];
@@ -139,7 +139,7 @@ namespace no_simd {
         }
     }
 
-    void complex_mul_conj(float* res, const float* a, const float* b, size_t size)
+    void complex_mul_conj(float* res, const float* a, const float* b, const size_t size)
     {
         for (size_t i = 0; i < size; i += 2) {
             const float x = a[i] * b[i] - a[i + 1] * b[i + 1];
@@ -149,7 +149,7 @@ namespace no_simd {
         }
     }
 
-    void fft_step(float* data, const float* w, size_t n)
+    void fft_step(float* data, const float* w, const size_t n)
     {
         for (unsigned i = 0; i < n; i += 2) {
             const float tempr = data[i + n] * w[i] - data[i + n + 1] * w[i + 1];
@@ -954,15 +954,15 @@ namespace avx {
 
 //------------------------------------------------------------------------------
 
-void  (*simd::add)(float*, const float*, size_t)                            = &no_simd::add;
-void  (*simd::mul_const_add)(float*, const float*, const float, size_t)     = &no_simd::mul_const_add;
-void  (*simd::add_mul_const)(float*, const float*, const float, size_t)     = &no_simd::add_mul_const;
-void  (*simd::mul_const)(float*, const float, size_t)                       = &no_simd::mul_const;
-float (*simd::mul_reduce)(const float*, const float*, size_t)               = &no_simd::mul_reduce;
-float (*simd::mul_reduce_unaligned)(const float*, const float*, size_t)     = &no_simd::mul_reduce;
-void  (*simd::complex_mul)(float*, const float*, const float*, size_t)      = &no_simd::complex_mul;
-void  (*simd::complex_mul_conj)(float*, const float*, const float*, size_t) = &no_simd::complex_mul_conj;
-void  (*simd::fft_step)(float*, const float*, size_t)                       = &no_simd::fft_step;
+void  (*simd::add)(float*, const float*, size_t)                             = &no_simd::add;
+void  (*simd::mul_const_add)(float*, const float*, float, size_t)            = &no_simd::mul_const_add;
+void  (*simd::add_mul_const)(float*, const float*, float, size_t)            = &no_simd::add_mul_const;
+void  (*simd::mul_const)(float*, float, size_t)                              = &no_simd::mul_const;
+float (*simd::mul_reduce)(const float*, const float*, size_t)                = &no_simd::mul_reduce;
+float (*simd::mul_reduce_unaligned)(const float*, const float*, size_t)      = &no_simd::mul_reduce;
+void  (*simd::complex_mul)(float*, const float*, const float*, size_t)       = &no_simd::complex_mul;
+void  (*simd::complex_mul_conj)(float*, const float*, const float*, size_t)  = &no_simd::complex_mul_conj;
+void  (*simd::fft_step)(float*, const float*, size_t)                        = &no_simd::fft_step;
 
 #ifdef SIMD
 

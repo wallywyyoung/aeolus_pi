@@ -49,11 +49,9 @@ struct Worker::Impl
     void run()
     {
         while (running) {
-            Worker::Job* job = nullptr;
-
             wait();
 
-            if (running && jobsQueue.pop(job)) {
+            if (Job* job = nullptr; running && jobsQueue.pop(job)) {
                 if (job == nullptr) {
                     throw std::runtime_error("Worker::run: job is null");
                 }

@@ -138,12 +138,12 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
     spec.b[2] /= spec.a[0];
 }
 
-void BiquadFilter::resetState(const BiquadFilter::Spec&, BiquadFilter::State& state)
+void BiquadFilter::resetState(const Spec&, State& state)
 {
     ::memset(&state, 0, sizeof(state));
 }
 
-float BiquadFilter::tick(const Spec& spec, State& state, float in)
+float BiquadFilter::tick(const Spec& spec, State& state, const float in)
 {
     const float x = in;
     const float y = spec.b[0] * x + spec.b[1] * state.x[0] + spec.b[2] * state.x[1]
@@ -173,7 +173,6 @@ void BiquadFilter::process(const Spec& spec, State& state, const float* in, floa
         out[i] = y;
     }
 }
-
 
 } // namespace dsp
 

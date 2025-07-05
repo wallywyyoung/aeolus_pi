@@ -142,7 +142,7 @@ bool Voice::isActive() const noexcept
     return _state.env == Pipewave::Attack;
 }
 
-bool Voice::isForNote(int note) const noexcept
+bool Voice::isForNote(const int note) const noexcept
 {
     if (_state.pipewave != nullptr)
         return _state.pipewave->getNote() == note;
@@ -165,7 +165,7 @@ void Voice::resetAndReturnToPool()
 
 //==============================================================================
 
-VoicePool::VoicePool(Engine& engine, int maxVoices)
+VoicePool::VoicePool(Engine& engine, const int maxVoices)
     : _engine{engine}
     , _voices(maxVoices, Voice(engine))
     , _voiceCount{0}

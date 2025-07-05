@@ -43,8 +43,8 @@
         [[nodiscard]] float getValue(int harm, int idx) const;    // vs(h, i);
         [[nodiscard]] bool isSet(int harm, int idx) const;        // st(h, i)
 
-        N_func& operator[](int harm) { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }
-        const N_func& operator[](int harm) const { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }
+        N_func& operator[](const int harm) { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }
+        const N_func& operator[](const int harm) const { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }
 
         void fromJson(const nlohmann::json& v);
 

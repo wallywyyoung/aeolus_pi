@@ -68,7 +68,7 @@ public:
     };
 
     Pipewave() = delete;
-    Pipewave(std::shared_ptr<Addsynth> model, int note, float freq);
+    Pipewave(const std::shared_ptr<Addsynth> &model, int note, float freq);
     Pipewave(const Pipewave& other);
     ~Pipewave() = default;
 
@@ -77,8 +77,8 @@ public:
 
     // After changing the frequency of the pipe, the wavetable must be regenerated
     // by calling prepareToPlay() method.
-    void setFrequency(float f) noexcept { _freq = f; }
-    void setNeedsToBeRebuilt(bool v) noexcept { _needsToBeRebuilt->store(v); }
+    void setFrequency(const float f) noexcept { _freq = f; }
+    void setNeedsToBeRebuilt(const bool v) noexcept { _needsToBeRebuilt->store(v); }
     [[nodiscard]] bool doesNeedToBeRebuilt() const noexcept { return _needsToBeRebuilt->load(); }
 
     [[nodiscard]] int getNote() const noexcept { return _note + _model->getNoteMin(); }

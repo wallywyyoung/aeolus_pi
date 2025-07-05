@@ -35,7 +35,7 @@ class Interpolator
 public:
     Interpolator(float ratio = 1.0f, size_t nChannels = 1);
 
-    void setRatio(float r) noexcept { _ratio = r; }
+    void setRatio(const float r) noexcept { _ratio = r; }
     float getRatio() const noexcept { return _ratio; }
 
     void setNumberOfChannels(size_t n);
@@ -44,7 +44,7 @@ public:
     void reset();
 
     bool canRead() const noexcept;
-    bool readAllChannels(float* const x) noexcept;
+    bool readAllChannels(float *x) noexcept;
     float readUnchecked(size_t channel) const noexcept;
     float readLinearUnchecked(size_t channel) const noexcept;
     void readIncrement();

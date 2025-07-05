@@ -64,9 +64,9 @@ public:
     [[nodiscard]] int getLongestIRLength() const noexcept { return _longestIRLength; }
     void updateStops() const;
     [[nodiscard]] float getTuningFrequency() const noexcept { return _tuningFrequency; }
-    void setTuningFrequency(float f) noexcept { _tuningFrequency = f; }
+    void setTuningFrequency(const float f) noexcept { _tuningFrequency = f; }
     [[nodiscard]] const Scale& getScale() const noexcept { return *_scale; }
-    void setScaleType(Scale::Type type) noexcept { _scale->setType(type); }
+    void setScaleType(const Scale::Type type) noexcept { _scale->setType(type); }
     void process(const std::vector<MidiMessage>& messages, AudioBuffer& buffer);
     void processMidi(const std::vector<MidiMessage>& messages);
     [[nodiscard]] bool isConnectedToMTSMaster() const;

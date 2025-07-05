@@ -50,7 +50,7 @@ public:
     [[nodiscard]] bool isForNote(int note) const noexcept;
     [[nodiscard]] int getNote() const;
 
-    void setStopIndex(int idx) noexcept { _stopIndex = idx; }
+    void setStopIndex(const int idx) noexcept { _stopIndex = idx; }
     [[nodiscard]] int stopIndex() const noexcept { return _stopIndex; }
 
     void resetAndReturnToPool();
@@ -99,7 +99,7 @@ public:
     Voice* trigger(const Pipewave::State& state);
     void resetAndReturnToPool(Voice* voice);
 
-    int getNumberOfActiveVoices() const noexcept { return _voiceCount; }
+    [[nodiscard]] int getNumberOfActiveVoices() const noexcept { return _voiceCount; }
 
     // Non-copyable
     VoicePool (const VoicePool&) = delete;

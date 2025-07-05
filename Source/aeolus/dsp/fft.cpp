@@ -28,23 +28,23 @@
 
 namespace dsp {
 
-static float hann(int i, int n)
+static float hann(const int i, const int n)
 {
     return 0.5f * (1.0f - std::cos (M_PI * 2.0f * i / (n - 1)));
 }
 
-static float hamming(int i, int n)
+static float hamming(const int i, const int n)
 {
     return 0.53836f + 0.46164f * std::cos (M_PI * 2.0f * i / (n - 1));
 }
 
-static float blackman(int i, int n)
+static float blackman(const int i, const int n)
 {
     const auto x = M_PI * 2.0f * i / (n - 1);
     return 0.42659f - 0.49656f * std::cos (x) + 0.076849f * std::cos (2.0f * x);
 }
 
-void Fft::direct(Fft::Array& x, const Fft::Window win)
+void Fft::direct(Array& x, const Window win)
 {
     applyWindow(x, win);
 
@@ -109,20 +109,20 @@ void Fft::inverse(Array &x)
     // x /= static_cast<float>(x.size());
 }
 
-void Fft::applyWindow(Fft::Array&x, Fft::Window win)
+void Fft::applyWindow(Array&x, const Window win)
 {
     switch (win) {
-    case Fft::Window::None:
+    case Window::None:
         break;
-    case Fft::Window::Hann:
+    case Window::Hann:
         for (int i = 0; i < x.size(); ++i)
             x[i] *= hann(i, static_cast<int>(x.size()));
         break;
-    case Fft::Window::Hamming:
+    case Window::Hamming:
         for (int i = 0; i < x.size(); ++i)
             x[i] *= hamming(i, static_cast<int>(x.size()));
         break;
-    case Fft::Window::Blackman:
+    case Window::Blackman:
         for (int i = 0; i < x.size(); ++i)
             x[i] *= blackman(i, static_cast<int>(x.size()));
         break;

@@ -33,7 +33,7 @@ Engine::Engine() : _sampleRate{SAMPLE_RATE_F}, _voicePool(std::make_shared<Voice
     _sequencer = std::make_unique<Sequencer>(*this, SEQUENCER_N_STEPS);
 }
 
-void Engine::prepareToPlay(float sampleRate)
+void Engine::prepareToPlay(const float sampleRate)
 {
     // Select the first IR for reverb by default
     setReverbIR(_selectedIR);
@@ -45,12 +45,12 @@ void Engine::prepareToPlay(float sampleRate)
     _sampleRate = sampleRate;
 }
 
-void Engine::setReverbIR(int num)
+void Engine::setReverbIR(const int num)
 {
     if (const auto&[irs, longestIRLength] = EngineGlobal::getInstance().getIRs(); num >= 0 && num < irs.size()) {
         const auto& ir = irs[num];
         _convolver.setLength(static_cast<int>(ir.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
-        _convolver.prepareToPlay(SAMPLE_RATE_F, SUB_FRAME_LENGTH); // these parameters are irrelevant
+        _convolver.prepareToPlay(); // these parameters are irrelevant
         _convolver.setZeroDelay(ir.zeroDelay);
         _convolver.setIR(ir);
         _reverbTailCounter = _convolver.length();
@@ -312,7 +312,7 @@ void Engine::applyVolume(AudioBuffer& out)
     }
 }
 
-void Engine::applyVolume(float* outL, float* outR, int numFrames)
+void Engine::applyVolume(float* outL, float* outR, const int numFrames)
 {
     if (_params[VOLUME].isSmoothing()) {
         for (int i = 0; i < numFrames; ++i) {
@@ -374,9 +374,7 @@ void Engine::processStopControlMessage() const {
 
     isPositiveAndBelow(_stopControlGroup, _divisions.size());
 
-    const auto mode{ *_stopControlMode };
-
-    switch (mode) {
+    switch (*_stopControlMode) {
         case StopControlMode::Disabled:
             _divisions[_stopControlGroup]->disableAllStops();
             break;

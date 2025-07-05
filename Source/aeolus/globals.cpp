@@ -34,7 +34,7 @@ float exp2ap(float x)
 
 namespace midi {
 
-int midiChannelToMask(int channel)
+int midiChannelToMask(const int channel)
 {
     // Zero means any MIDI channel.
     if (channel <= 0)
@@ -43,7 +43,7 @@ int midiChannelToMask(int channel)
     return 1 << (channel - 1);
 }
 
-bool matchMidiChannelToMask(int mask, int channel)
+bool matchMidiChannelToMask(const int mask, const int channel)
 {
     return (mask & midiChannelToMask(channel)) != 0;
 }

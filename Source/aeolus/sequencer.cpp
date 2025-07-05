@@ -24,7 +24,7 @@
 
 
 
-Sequencer::Sequencer(Engine& engine, int numSteps)
+Sequencer::Sequencer(Engine& engine, const int numSteps)
     : _engine{engine}
     , _steps(numSteps)
     , _currentStep{0}

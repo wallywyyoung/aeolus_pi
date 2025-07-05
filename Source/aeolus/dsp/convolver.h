@@ -58,7 +58,7 @@ public:
     void setDryWet(float dry, float wet, bool force = false);
     bool isAudible() const;
 
-    void prepareToPlay(float sampleRate, size_t nFrames);
+    void prepareToPlay();
 
     void process(const float *inL, const float *inR, float *outL, float *outR, size_t numFrames) const;
 

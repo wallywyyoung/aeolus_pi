@@ -26,7 +26,7 @@ namespace dsp {
 
 DelayLine::DelayLine(const size_t size) : _buffer(size, 0.0f), _writeIndex(0) { }
 
-void DelayLine::resize (size_t size)
+void DelayLine::resize (const size_t size)
 {
     _buffer.resize(size);
     reset();

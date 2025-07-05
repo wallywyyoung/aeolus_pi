@@ -29,13 +29,13 @@ N_func::N_func()
     reset(0.0f);
 }
 
-void N_func::reset(float v)
+void N_func::reset(const float v)
 {
     _b = 16;
     _v.fill(v);
 }
 
-void N_func::setValue(int idx, float v)
+void N_func::setValue(const int idx, const float v)
 {
     if (! isPositiveAndBelow(idx, N_NOTES))
         return;
@@ -74,7 +74,7 @@ void N_func::setValue(int idx, float v)
     }
 }
 
-void N_func::clearValue(int idx)
+void N_func::clearValue(const int idx)
 {
     if (isPositiveAndBelow(idx, N_NOTES))
         return;
@@ -114,19 +114,19 @@ void N_func::clearValue(int idx)
     }
 }
 
-float N_func::getValue(int idx) const
+float N_func::getValue(const int idx) const
 {
     isPositiveAndBelow(idx, _v.size());
     return _v[idx];
 }
 
-bool N_func::isSet(int idx) const
+bool N_func::isSet(const int idx) const
 {
     isPositiveAndBelow(idx, _v.size());
     return (_b & (1 << idx)) != 0;
 }
 
-float N_func::operator[](int note) const
+float N_func::operator[](const int note) const
 {
     const int i = note / NOTES_GAP;
     const int k = note - NOTES_GAP * i;
@@ -146,8 +146,7 @@ void N_func::fromJson(const nlohmann::json& v)
 {
     _b = v["mask"];
 
-    auto varr = v["values"];
-    if (varr.is_array()) {
+    if (auto varr = v["values"]; varr.is_array()) {
         if (varr.size() >= _v.size()) {
             for (int i = 0; i < _v.size(); ++i)
                 _v[i] = varr[i];

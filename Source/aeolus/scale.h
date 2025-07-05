@@ -49,7 +49,7 @@ public:
 
     Scale(Type type = EqualTemp);
     Type getType() const noexcept { return _type; }
-    void setType(Type t) noexcept { _type = t; }
+    void setType(const Type t) noexcept { _type = t; }
 
     const Table& getTable() const;
 

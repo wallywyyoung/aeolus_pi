@@ -214,7 +214,7 @@ const Scale::Map Scale::_scales = {
     }
 };
 
-Scale::Scale(Scale::Type type)
+Scale::Scale(const Scale::Type type)
     : _type(type)
 {
 }
@@ -228,14 +228,14 @@ const Scale::Table& Scale::getTable() const
     return it->second;
 }
 
-float Scale::getFrequencyForMidiNote(int midiNote, float tuningFrequency) const
+float Scale::getFrequencyForMidiNote(const int midiNote, const float tuningFrequency) const
 {
     const auto& scaleTable{ getTable() };
     float fbase{ tuningFrequency / scaleTable[9] };
     return ldexp(fbase * scaleTable[midiNote % 12], midiNote / 12 - 5);
 }
 
-std::string Scale::getNameForType(Type type)
+std::string Scale::getNameForType(const Type type)
 {
     static const std::map<Type, std::string> names {
         { Pythagorean, "Pythagorean" },
@@ -251,9 +251,7 @@ std::string Scale::getNameForType(Type type)
         { Pure,        "Just intonation / C" }
     };
 
-    const auto it = names.find(type);
-
-    if (it != names.end())
+    if (const auto it = names.find(type); it != names.end())
         return it->second;
 
     return {};

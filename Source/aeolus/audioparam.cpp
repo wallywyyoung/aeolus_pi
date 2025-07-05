@@ -22,9 +22,9 @@
 #include "aeolus/audioparam.h"
 #include "aeolus/globals.h"
 
-AudioParameter::AudioParameter(float value, float min, float max, float smooth) : _currentValue{value}, _minValue{min}, _maxValue{max}, _targetValue{value}, _frac{smooth}, _smoothing{false} { }
+AudioParameter::AudioParameter(const float value, const float min, const float max, const float smooth) : _currentValue{value}, _minValue{min}, _maxValue{max}, _targetValue{value}, _frac{smooth}, _smoothing{false} { }
 
-void AudioParameter::setValue(float v, float s, bool force)
+void AudioParameter::setValue(const float v, const float s, const bool force)
 {
     _targetValue = limitRange(_minValue, _maxValue, v);
 
@@ -38,7 +38,7 @@ void AudioParameter::setValue(float v, float s, bool force)
     }
 }
 
-void AudioParameter::setValue(float v, bool force)
+void AudioParameter::setValue(const float v, const bool force)
 {
     _targetValue = limitRange(_minValue, _maxValue, v);
 
@@ -50,18 +50,18 @@ void AudioParameter::setValue(float v, bool force)
     }
 }
 
-void AudioParameter::setSmoothing(float s) noexcept
+void AudioParameter::setSmoothing(const float s) noexcept
 {
     _frac = limitRange(0.0f, 1.0f, s);
 }
 
-void AudioParameter::setRange(float min, float max)
+void AudioParameter::setRange(const float min, const float max)
 {
     _minValue = std::min<float>(min, max);
     _maxValue = std::max<float>(min, max);
 }
 
-AudioParameter& AudioParameter::operator = (float v)
+AudioParameter& AudioParameter::operator = (const float v)
 {
     setValue(v);
 

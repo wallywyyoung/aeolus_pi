@@ -27,8 +27,7 @@ std::unique_ptr<Division> DivisionFactory::initFromJson(nlohmann::json& v, const
     division->_mnemonic = v["mnemonic"];
 
     if (v.contains("link")) {
-        const auto link = v["link"];
-        if (link.is_array()) {
+        if (const auto link = v["link"]; link.is_array()) {
             for (const auto& item : link)
                 division->_linkedDivisionNames.push_back(item);
         }
@@ -38,8 +37,7 @@ std::unique_ptr<Division> DivisionFactory::initFromJson(nlohmann::json& v, const
     division->_hasTremulant = v.contains("tremulant") && v["tremulant"];
     division->_tremulantMaxLevel = division->_hasTremulant ? static_cast<float>(v["tremulant_level"]) : 0.0f;
 
-    const auto arr = v["stops"];
-    if (arr.is_array()) {
+    if (const auto arr = v["stops"]; arr.is_array()) {
         auto stop = Stop();
         for (const auto& item : arr) {
             stop.initFromJson(item);

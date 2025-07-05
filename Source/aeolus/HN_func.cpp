@@ -23,7 +23,7 @@
 
 HN_func::HN_func() : _h{} { }
 
-void HN_func::reset(float v)
+void HN_func::reset(const float v)
 {
     for (auto& h : _h) {
         h.reset(v);
@@ -88,7 +88,7 @@ void HN_func::fromJson(const nlohmann::json& v)
     }
 }
 
-void HN_func::read(std::istream& stream, int n)
+void HN_func::read(std::istream& stream, const int n)
 {
     const auto m = std::min(_h.size(), static_cast<size_t>(n));
 

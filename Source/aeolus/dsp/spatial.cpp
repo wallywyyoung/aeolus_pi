@@ -36,7 +36,7 @@ void SpatialSource::reset()
     BiquadFilter::resetState(_filterSpec[1], _filterState[1]);
 }
 
-void SpatialSource::tick(float x, float& l, float& r)
+void SpatialSource::tick(const float x, float& l, float& r)
 {
     _delayLine.write(x);
 
@@ -44,14 +44,14 @@ void SpatialSource::tick(float x, float& l, float& r)
     r = BiquadFilter::tick(_filterSpec[1], _filterState[1], _delayLine.readNearest(_rightDelay) * _rightAttenuation);
 }
 
-void SpatialSource::process(float* in, float* outL, float* outR, int numFrames)
+void SpatialSource::process(const float* in, float* outL, float* outR, const int numFrames)
 {
     for (int i = 0; i < numFrames; ++i) {
         tick(in[i], outL[i], outR[i]);
     }
 }
 
-static float distanceToCutOffFrequency(float d)
+static float distanceToCutOffFrequency(const float d)
 {
     return 22.0e3f * expf(-0.09f * d);
 }

@@ -56,10 +56,10 @@ public:
 
     [[nodiscard]] float getGain() const noexcept;
 
-    void setGain(float g) noexcept { _gain = g; }
+    void setGain(const float g) noexcept { _gain = g; }
 
     [[nodiscard]] float getChiffGain() const noexcept { return _chiffGain; }
-    void setChiffGain(float g) noexcept { _chiffGain = g; }
+    void setChiffGain(const float g) noexcept { _chiffGain = g; }
 
     [[nodiscard]] bool isEnabled() const noexcept { return _enabled; }
     void setEnabled(const bool shouldBeEnabled) noexcept { _enabled = shouldBeEnabled; }

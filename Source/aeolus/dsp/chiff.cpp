@@ -41,32 +41,32 @@ Chiff::Chiff()
     _lpSpec.q = 0.7071f;
 }
 
-void Chiff::setAttack(float v)
+void Chiff::setAttack(const float v)
 {
     _envelopeTrigger.attack = v;
 }
 
-void Chiff::setRelease(float v)
+void Chiff::setRelease(const float v)
 {
     _envelopeTrigger.release = v;
 }
 
-void Chiff::setDecay(float v)
+void Chiff::setDecay(const float v)
 {
     _envelopeTrigger.decay = v;
 }
 
-void Chiff::setSustain(float v)
+void Chiff::setSustain(const float v)
 {
     _envelopeTrigger.sustain = v;
 }
 
-void Chiff::setGain(float v)
+void Chiff::setGain(const float v)
 {
     _gain = v;
 }
 
-void Chiff::setFrequency(float f)
+void Chiff::setFrequency(const float f)
 {
     _pipeDelay = SAMPLE_RATE / f;
     _lpSpec.freq = fmin(0.45f * SAMPLE_RATE, f * 4.0f);
@@ -101,7 +101,7 @@ bool Chiff::isActive() const noexcept
     return _envelope.state() != Envelope::Off;
 }
 
-void Chiff::process(float* out, int numFrames)
+void Chiff::process(float* out, const int numFrames)
 {
     static std::random_device rnd;
     std::mt19937 gen(rnd());

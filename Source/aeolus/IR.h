@@ -29,8 +29,8 @@ class IR : public AudioBuffer {
     std::string name;
 
 public:
-    IR() : name{}, AudioBuffer() { }
-    IR(std::string name, int channels, int bufferSize) : name(name), AudioBuffer(channels, bufferSize)  { }
+    IR() = default;
+    IR(const std::string &name, const int channels, const int bufferSize) : AudioBuffer(channels, bufferSize), name(name), zeroDelay(false) { }
     IR(const IR& other) = default;
     bool zeroDelay;
 
@@ -41,6 +41,6 @@ public:
 };
 
 struct IRs {
-    std::vector<IR> irs;
-    int longestIRLength;
+    std::vector<IR> irs{};
+    int longestIRLength{};
 };
