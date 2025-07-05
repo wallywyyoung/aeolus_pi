@@ -29,6 +29,9 @@
 
 #include <unordered_map>
 
+#include "MidiData.h"
+#include "ObjectBuffer.h"
+
 
 /**
  * @brief A global shared instance of the organ engine.
@@ -71,7 +74,9 @@ public:
     [[nodiscard]] std::string getMTSScaleName();
     void setMTSEnabled(bool shouldBeEnabled);
     void rebuildRankwaves();
-    void audioCallback (char* buffer, size_t size);
+    void audioCallback (float *bufferL, float *bufferR, size_t bufferSize);
+
+    ObjectBuffer<MidiData> midiBuffer;
 private:
 
     EngineGlobal();
@@ -88,12 +93,12 @@ private:
     Model model;
     Engine engine;
     MidiManager midiManager;
-    std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName;
-    std::vector<IR> _irs;
+    std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName{};
+    std::vector<IR> _irs{};
     IRs irs;
     MTSClient* _mtsClient{};
     std::shared_ptr<Scale> _scale;
-    int _longestIRLength;   ///< Longest IR length in samples
+    int _longestIRLength{};   ///< Longest IR length in samples
 
     float _sampleRate;
     float _tuningFrequency;

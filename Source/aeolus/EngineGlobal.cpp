@@ -5,6 +5,7 @@
 #include "IOManager.h"
 #include "aeolus/EngineGlobal.h"
 #include "aeolus/engine.h"
+
 #include <thread_pool/thread_pool.h>
 
 
@@ -102,8 +103,8 @@ void EngineGlobal::rebuildRankwaves()
     updateStops();
 }
 
-void EngineGlobal::audioCallback(char *buffer, const size_t size) {
-
+void EngineGlobal::audioCallback(float *bufferL, float *bufferR, const size_t bufferSize) {
+    engine.process(bufferL, bufferR, bufferSize);
 }
 
 void EngineGlobal::loadRankwaves() {
