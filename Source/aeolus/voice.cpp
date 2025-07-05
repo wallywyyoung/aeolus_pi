@@ -72,7 +72,7 @@ void Voice::trigger(const Pipewave::State& state)
     _spatialSource.setSampleRate(SAMPLE_RATE_F);
     _spatialSource.setSourcePosition(x, 5.0f);
     _spatialSource.recalculate();
-    _postReleaseCounter = _spatialSource.getPostFxSamplesCount() + 2 * _delay + static_cast<int>(TREMULANT_DELAY_LENGTH);
+    _postReleaseCounter = _spatialSource.getPostFxSamplesCount() + 2 * _delay + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
 }
 
 void Voice::release()

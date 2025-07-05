@@ -20,6 +20,7 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/N_func.h"
+#include "aeolus/globals.h"
 
 N_func::N_func()
         : _b{}

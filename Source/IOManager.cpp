@@ -96,7 +96,7 @@ void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, 
     addsynth._noteMax = v["note_max"];
 
     if (addsynth._noteMax == deprecated::NOTE_MAX)
-        addsynth._noteMax = NOTE_MAX;
+        addsynth._noteMax = Addsynth::NOTE_MAX;
 
     addsynth._fn = v["fn"];
     addsynth._fd = v["fd"];
@@ -150,7 +150,7 @@ void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry
     addsynth._noteMax = header[29];
 
     if (addsynth._noteMax == deprecated::NOTE_MAX)
-        addsynth._noteMax = NOTE_MAX;
+        addsynth._noteMax = Addsynth::NOTE_MAX;
 
     addsynth._fn = header[30];
     addsynth._fd = header[31];

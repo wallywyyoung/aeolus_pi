@@ -45,6 +45,9 @@ class Division {
 
 public:
     enum Params { GAIN = 0, NUM_PARAMS };
+
+    constexpr static size_t TREMULANT_DELAY_LENGTH = 32; // Frequency modulation delay line length (in samples).
+
     /// Link with another division.
     struct Link {
         Division* division;
@@ -144,6 +147,13 @@ public:
     void clearTriggerFlag() noexcept { _triggerFlag = false; }
 
 private:
+    /// Total number of MIDI notes.
+    constexpr static int TOTAL_NOTES = 128;
+
+    /// Tremulant OSC wavetable amplitude.
+    constexpr static float TREMULANT_TARGET_LEVEL = 0.5f; // Amplitude modulation level.
+    constexpr static float TREMULANT_DELAY_MODULATION_LEVEL = 0.9f; // Frequency modulation level.
+
     /**
      * This will construct the keys aggregated state from the division's keys state
      * and all the coupled from divisions.

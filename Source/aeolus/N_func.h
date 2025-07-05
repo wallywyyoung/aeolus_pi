@@ -21,8 +21,6 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
-
 #include <array>
 #include <nlohmann/json.hpp>
 
@@ -36,6 +34,9 @@
 class N_func final
 {
 public:
+    /// Number of notes used in parameters look-up table.
+    constexpr static int N_NOTES = 11;
+
     N_func();
     void reset(float v);
     void setValue(int idx, float v);    // setv(i, v)
@@ -45,12 +46,13 @@ public:
 
     /// Returns interpolated value for a note number (starting from 0).
     float operator[](int note) const;   // vi(n)
-
-//    std::map<std::string, std::any> toVar() const;
     void fromJson(const nlohmann::json& v);
     void read(std::istream& stream);
 
 private:
+    /// Gap between the N_NOTES notes within the look-up tables.
+    constexpr static int NOTES_GAP = 6;
+
     int _b;
     std::array<float, N_NOTES> _v;
 };

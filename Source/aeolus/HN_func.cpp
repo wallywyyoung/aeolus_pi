@@ -32,7 +32,7 @@ void HN_func::reset(float v)
 
 void HN_func::setValue(const int idx, const float v)
 {
-    isPositiveAndBelow(idx, N_NOTES);
+    isPositiveAndBelow(idx, N_func::N_NOTES);
 
     for (auto& h: _h) {
         h.setValue(idx, v);
@@ -42,14 +42,14 @@ void HN_func::setValue(const int idx, const float v)
 void HN_func::setValue(const int harm, const int idx, const float v)
 {
     isPositiveAndBelow(harm, _h.size());
-    isPositiveAndBelow(idx, N_NOTES);
+    isPositiveAndBelow(idx, N_func::N_NOTES);
 
     _h[harm].setValue(idx, v);
 }
 
 void HN_func::clearValue(const int idx)
 {
-    isPositiveAndBelow(idx, N_NOTES);
+    isPositiveAndBelow(idx, N_func::N_NOTES);
 
     for (auto& h : _h) {
         h.clearValue(idx);
@@ -59,7 +59,7 @@ void HN_func::clearValue(const int idx)
 void HN_func::clearValue(const int harm, const int idx)
 {
     isPositiveAndBelow(harm, _h.size());
-    isPositiveAndBelow(idx, N_NOTES);
+    isPositiveAndBelow(idx, N_func::N_NOTES);
 
     _h[harm].clearValue(idx);
 }
@@ -67,7 +67,7 @@ void HN_func::clearValue(const int harm, const int idx)
 float HN_func::getValue(const int harm, const int idx) const
 {
     isPositiveAndBelow(harm, _h.size());
-    isPositiveAndBelow(idx, N_NOTES);
+    isPositiveAndBelow(idx, N_func::N_NOTES);
 
     return _h[harm].getValue(idx);
 }
@@ -75,7 +75,7 @@ float HN_func::getValue(const int harm, const int idx) const
 bool HN_func::isSet(const int harm, const int idx) const
 {
     isPositiveAndBelow(harm, _h.size());
-    isPositiveAndBelow(idx, N_NOTES);
+    isPositiveAndBelow(idx, N_func::N_NOTES);
 
     return _h[harm].isSet(idx);
 }

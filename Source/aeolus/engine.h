@@ -41,6 +41,22 @@
  */
 class Engine final : public MidiListener
 {
+    /// Global volume gain.
+    constexpr static float VOLUME_GAIN = 4.0f;
+
+    /// Tremulant modulation frequency.
+    constexpr static float TREMULANT_FREQUENCY = 6.283184f;
+    constexpr static float TREMULANT_PHASE_INCREMENT = static_cast<float>(M_PI) * 2.0f * TREMULANT_FREQUENCY / SAMPLE_RATE;
+
+    /// Tremulant OSC wavetable amplitude.
+    constexpr static float TREMULANT_LEVEL = 1.0f;
+
+    /// Number of steps in the sequencer.
+    constexpr static int SEQUENCER_N_STEPS = 32;
+
+    constexpr static int SEQUENCER_BACKWARD_MIDI_KEY = 22;
+    constexpr static int SEQUENCER_FORWARD_MIDI_KEY = 23;
+
     enum class StopControlMode {
         Disabled,   // 0b00
         SetOff,     // 0b01

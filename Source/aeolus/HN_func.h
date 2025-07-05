@@ -31,14 +31,17 @@
     class HN_func final
     {
     public:
+        /// Number of harmonics used.
+        constexpr static int N_HARM = 64;
+
         HN_func();
         void reset(float v);
         void setValue(int idx, float v);            // setv(i, v)
         void setValue(int harm, int idx, float v);  // setv(h, i, v)
         void clearValue(int idx);                   // clrv(i)
         void clearValue(int harm, int idx);         // clrv(h, i);
-        float getValue(int harm, int idx) const;    // vs(h, i);
-        bool isSet(int harm, int idx) const;        // st(h, i)
+        [[nodiscard]] float getValue(int harm, int idx) const;    // vs(h, i);
+        [[nodiscard]] bool isSet(int harm, int idx) const;        // st(h, i)
 
         N_func& operator[](int harm) { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }
         const N_func& operator[](int harm) const { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }

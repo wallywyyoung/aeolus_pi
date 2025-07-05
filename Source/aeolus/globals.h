@@ -53,60 +53,8 @@ constexpr static float SAMPLE_RATE_F = (float) SAMPLE_RATE;
 constexpr static float SAMPLE_RATE_R = 1.0f / SAMPLE_RATE_F;
 constexpr static size_t BPS_RATE = SAMPLE_RATE * 2 /* 16-bit */ * N_OUTPUT_CHANNELS;
 
-/// Global volume gain.
-constexpr static float VOLUME_GAIN = 4.0f;
-
-/// Number of notes used in parameters look-up table.
-constexpr static int N_NOTES = 11;
-
-/// Gap between the N_NOTES notes within the look-up tables.
-constexpr static int NOTES_GAP = 6;
-
-/// Number of harmonics used.
-constexpr static int N_HARM = 64;
-
-/// Lowest possible note.
-constexpr static int NOTE_MIN = 36;
-
-/// Highest possible note.
-constexpr static int NOTE_MAX = 96;
-
-/// Total number of MIDI notes.
-constexpr static int TOTAL_NOTES = 128;
-
-/// Maxumim number of pipes in combined stops (like mixtures)
-constexpr static int MAX_RANK = 5;
-
 /// Length of a processing frame (in samples).
 constexpr static int SUB_FRAME_LENGTH = 64;
-
-/// Tremulant modulation frequency.
-constexpr static float TREMULANT_FREQUENCY = 6.283184f;
-constexpr static float TREMULANT_PHASE_INCREMENT = static_cast<float>(M_PI) * 2.0f * TREMULANT_FREQUENCY / SAMPLE_RATE;
-
-/// Tremulant OSC wavetable amplitude.
-constexpr static float TREMULANT_LEVEL = 1.0f;
-constexpr static float TREMULANT_TARGET_LEVEL = 0.5f; // Amplitude modulation level.
-constexpr static size_t TREMULANT_DELAY_LENGTH = 32; // Frequency modulation delay line length (in samples).
-constexpr static float TREMULANT_DELAY_MODULATION_LEVEL = 0.9f; // Frequency modulation level.
-
-/// Number of steps in the sequencer.
-constexpr static int SEQUENCER_N_STEPS = 32;
-
-constexpr static int SEQUENCER_BACKWARD_MIDI_KEY = 22;
-constexpr static int SEQUENCER_FORWARD_MIDI_KEY = 23;
-
-/// mid-A tuning frequency.
-constexpr static float TUNING_FREQUENCY_MIN = 350.0f;
-constexpr static float TUNING_FREQUENCY_MAX = 550.0f;
-constexpr static float TUNING_FREQUENCY_STEP = 1.0f;
-constexpr static float TUNING_FREQUENCY_DEFAULT = 440.0f;
-
-/// Global UI scaling factor (percent)
-constexpr static float UI_SCALING_MIN = 25.0f;
-constexpr static float UI_SCALING_MAX = 150.0f;
-constexpr static float UI_SCALING_SETP = 1.0f;
-constexpr static float UI_SCALING_DEFAULT = 100.0f;
 
 // MIDI controls
 enum {

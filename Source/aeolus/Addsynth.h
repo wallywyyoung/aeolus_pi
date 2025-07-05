@@ -25,8 +25,6 @@
 
 #include <nlohmann/json.hpp>
 
-
-
 class Addsynth final
 {
 public:
@@ -69,6 +67,10 @@ public:
     [[nodiscard]] int getFd() const noexcept { return _fd; }
 
 private:
+    /// Lowest possible note.
+    constexpr static int NOTE_MIN = 36;
+    /// Highest possible note.
+    constexpr static int NOTE_MAX = 96;
 
     constexpr static int defaultVersion = 2;
 

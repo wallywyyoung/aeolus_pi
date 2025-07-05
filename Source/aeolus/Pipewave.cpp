@@ -244,7 +244,7 @@ void Pipewave::genwave()
 
     float m = _model->getNoteAttack(_note);
 
-    for (int h = 0; h < N_HARM; ++h) {
+    for (int h = 0; h < HN_func::N_HARM; ++h) {
         if (const float t = _model->getHarmonicAttack(h, _note); t > m)
             m = t;
     }
@@ -261,7 +261,7 @@ void Pipewave::genwave()
 
     float f = 0.0f;
 
-    for (int h = N_HARM - 1; h >= 0; --h) {
+    for (int h = HN_func::N_HARM - 1; h >= 0; --h) {
         f = (h + 1) * f1;
 
         if (f < 0.45f && _model->getHarmonicLevel(h, _note) >= -40.0f)
@@ -326,7 +326,7 @@ void Pipewave::genwave()
 
     const float v0 = math::exp2ap(0.1661f * _model->getNoteVolume(_note));
 
-    for (int h = 0; h < N_HARM; ++h) {
+    for (int h = 0; h < HN_func::N_HARM; ++h) {
         if (static_cast<float>(h + 1) * f1 > 0.45f)
             break;
 
