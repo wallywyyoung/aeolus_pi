@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //  Copyright (C) 2003-2013 Fons Adriaensen <fons@linuxaudio.org>
 //
@@ -16,7 +17,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
 #pragma once
 

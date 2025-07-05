@@ -20,10 +20,6 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/Addsynth.h"
-#include <fstream>
-#include <cassert>
-#include <map>
-#include <cstring>
 
 template <typename T>
 static inline bool isPositiveAndBelow(T valueToTest, T upperLimit) {

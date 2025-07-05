@@ -21,8 +21,6 @@
 
 #include "aeolus/globals.h"
 
-
-
 /**
  * Implementation of a double-linked list.
  * The list chain pointers get embedded into the items objects,

@@ -19,14 +19,8 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
-
 #include <atomic>
 #include <vector>
-#include <map>
-#include <any>
-
-
 
 class Engine;
 
@@ -61,9 +55,6 @@ public:
 
     [[nodiscard]] int getStepsCount() const noexcept { return (int)_steps.size(); }
     [[nodiscard]] int getCurrentStep() const noexcept { return _currentStep; }
-
-//    std::map<std::string, std::any> getPersistentState() const;
-//    void setPersistentState(const std::map<std::string, std::any>& v);
 
     /**
      * Capture the organ state from the engine into the current step.

@@ -21,8 +21,6 @@
 
 #include "aeolus/audioparam.h"
 
-
-
 AudioParameter::AudioParameter(float value, float min, float max, float smooth) : _currentValue{value}, _minValue{min}, _maxValue{max}, _targetValue{value}, _frac{smooth}, _smoothing{false} { }
 
 void AudioParameter::setValue(float v, float s, bool force)

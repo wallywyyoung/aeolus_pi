@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -15,16 +16,12 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
 #pragma once
 
-#include "aeolus/globals.h"
-
 #include <memory>
 #include <functional>
-
-
 
 /**
  * @brief Schedule jobs run on a separate thread.
@@ -63,7 +60,6 @@ public:
      * @note This must be called from audio thread only.
      */
     bool addJob(Job* job);
-//    bool hasPendingJobs() noexcept;
     [[nodiscard]] bool isRunning() const noexcept;
 
     void purge();

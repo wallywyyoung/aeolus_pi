@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify

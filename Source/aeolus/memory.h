@@ -22,10 +22,7 @@
 #include <memory>
 
 #include "aeolus/globals.h"
-#include "aeolus/list.h"
 #include "aeolus/ringbuffer.h"
-
-
 
 /**
  * Allocate memory with predefined alignment.

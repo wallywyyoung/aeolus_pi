@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -15,7 +16,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
 #include "ObjectBuffer.h"
 #include "aeolus/sema.h"
@@ -24,13 +25,9 @@
 #include <atomic>
 #include <thread>
 
-
-
-
-
 struct Worker::Impl
 {
-    ObjectBuffer<Worker::Job*> jobsQueue;
+    ObjectBuffer<Job*> jobsQueue;
 
     Semaphore sema;
     std::atomic_bool running;
@@ -147,11 +144,6 @@ bool Worker::addJob(Job* job)
 {
     return d->addJob (job);
 }
-
-//bool Worker::hasPendingJobs() noexcept
-//{
-//    return d->hasPendingJobs();
-//}
 
 bool Worker::isRunning() const noexcept
 {
