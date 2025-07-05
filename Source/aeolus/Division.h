@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
 #include "aeolus/rankwave.h"
 #include "aeolus/stop.h"
 #include "aeolus/voice.h"

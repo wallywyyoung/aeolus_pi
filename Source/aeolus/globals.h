@@ -73,16 +73,6 @@ float exp2ap(float x);
 template <typename T>
 T lerp (T a, T b, T frac) { return a + (b - a) * frac; }
 
-/// Lagrange polynomial interpolation
-template <typename T>
-T lagr (T x_1, T x0, T x1, T x2, T frac) noexcept
-{
-    const T c1 = x1 - (1.0f / 3.0f) * x_1 - 0.5f * x0 - (1.0f / 6.0f) * x2;
-    const T c2 = 0.5f * (x_1 + x1) - x0;
-    const T c3 = (1.0f / 6.0f) * (x2 - x_1) + 0.5f * (x0 - x1);
-    return ((c3 * frac + c2) * frac + c1) * frac + x0;
-}
-
 template <typename T>
 T lagr (const T* const x, T frac) noexcept
 {
@@ -91,8 +81,6 @@ T lagr (const T* const x, T frac) noexcept
     const T c3 = (1.0f / 6.0f) * (x[3] - x[0]) + 0.5f * (x[1] - x[2]);
     return ((c3 * frac + c2) * frac + c1) * frac + x[1];
 }
-
-//----------------------------------------------------------
 
 template<unsigned M, unsigned N, unsigned B, unsigned A>
 struct SinCosSeries
@@ -119,21 +107,6 @@ struct Sin<B, A, float>
 template<unsigned B, unsigned A>
 struct Sin<B, A, double> {
     constexpr static double value = (A * static_cast<float>(M_PI) / B) * SinCosSeries<2, 34, B, A>::value;
-};
-
-template<unsigned B, unsigned A, typename T = double>
-struct Cos;
-
-template<unsigned B, unsigned A>
-struct Cos<B, A, float>
-{
-    constexpr static float value = float (SinCosSeries<1, 23, B, A>::value);
-};
-
-template<unsigned B, unsigned A>
-struct Cos<B, A, double>
-{
-    constexpr static double value = SinCosSeries<1, 33, B, A>::value;
 };
 
 template <typename T>
