@@ -99,12 +99,21 @@ void Pipewave::play(State& state, float* out)
     std::mt19937 gen(rnd());
     std::uniform_real_distribution<float> dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
 
-
-    assert(out != nullptr);
-    assert(state.env != Pipewave::Idle);
-    assert(_attackStartPtr != nullptr);
-    assert(_loopStartPtr != nullptr);
-    assert(_loopEndPtr != nullptr);
+    if (out == nullptr) {
+        throw std::invalid_argument("Pipewave::play: out is nullptr");
+    }
+    if (state.env == Idle) {
+        throw std::invalid_argument("Pipewave::play: env is Idle");
+    }
+    if (_attackStartPtr == nullptr) {
+        throw std::invalid_argument("Pipewave::play: _attackStartPtr is nullptr");
+    }
+    if (_loopStartPtr == nullptr) {
+        throw std::invalid_argument("Pipewave::play: _loopStartPtr is nullptr");
+    }
+    if (_loopEndPtr == nullptr) {
+        throw std::invalid_argument("Pipewave::play: _loopEndPtr is nullptr");
+    }
 
     if (_needsToBeRebuilt->load()) {
         // Drastic measures - pipe has been retuned while playing.
@@ -320,7 +329,7 @@ void Pipewave::genwave()
 
     // Generate phase steps of the sustained loop
     for (int i = 1; i < _loopLength; ++i) {
-        const float t = arg[_attackLength] + (float)i * static_cast<float>(nc) / static_cast<float>(_loopLength);
+        const float t = arg[_attackLength] + static_cast<float>(i) * static_cast<float>(nc) / static_cast<float>(_loopLength);
         arg[i + _attackLength] = t - floorf(t + 0.5f);
     }
 

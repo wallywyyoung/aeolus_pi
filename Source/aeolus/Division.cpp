@@ -282,13 +282,13 @@ void Division::handleControlMessage(const MidiMessage& msg)
     if (cc != CC_MODULATION && cc != CC_VOLUME && cc != CC_ALL_NOTES_OFF)
         return;
 
-    const int swellCh{ EngineGlobal::getInstance().getMIDISwellChannelsMask() };
-    const float value{ float(msg.getControllerValue()) / 127.0f };
+    const int swellCh{ EngineGlobal::getInstance()->getMIDISwellChannelsMask() };
+    const float value{ static_cast<float>(msg.getControllerValue()) / 127.0f };
 
     if (msg.getChannel() == 0 || (swellCh & (msg.getChannel() - 1)) != 0) {
         if (_hasSwell && cc == CC_VOLUME) {
 //            *_paramGain = value;
-            _params[Division::GAIN].setValue(value);
+            _params[GAIN].setValue(value);
         }
     }
 
@@ -464,7 +464,7 @@ void Division::triggerVoicesOfEnabledStops()
         while (voice != nullptr) {
             if (const int voiceNote{ voice->getNote() }; voice->stopIndex() == stopIndex && voiceNote >= 0 && _aggregatedKeysState[voiceNote]) {
                 hasVoices = true;
-                missingNotes[voiceNote] = 0;
+                missingNotes[voiceNote] = false;
                 break;
             }
 

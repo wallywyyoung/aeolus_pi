@@ -53,7 +53,7 @@ public:
     Sequencer() = delete;
     Sequencer(Engine& engine, int numSteps);
 
-    [[nodiscard]] int getStepsCount() const noexcept { return (int)_steps.size(); }
+    [[nodiscard]] int getStepsCount() const noexcept { return static_cast<int>(_steps.size()); }
     [[nodiscard]] int getCurrentStep() const noexcept { return _currentStep; }
 
     /**

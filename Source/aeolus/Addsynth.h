@@ -37,6 +37,7 @@ public:
     void setStopName(const std::string& n) { _stopName = n; }
 
     [[nodiscard]] const std::string& getStopName() const { return _stopName; }
+    [[nodiscard]] const std::string& getFileName() const { return _fileName; }
     [[nodiscard]] const std::string& getCopyright() const { return _copyright; }
     [[nodiscard]] const std::string& getMnemonic() const { return _mnemonic; }
     [[nodiscard]] const std::string& getComments() const { return _comments; }

@@ -21,16 +21,15 @@
 
 #include <atomic>
 #include <vector>
-#include <new>
 
 template <typename T>
 class ObjectBuffer {
 private:
-    // Should be 64 on Raspberry Pi 4B.
-    alignas(std::hardware_destructive_interference_size) std::atomic<size_t> _readIndex{0};
-    alignas(std::hardware_destructive_interference_size) std::atomic<size_t> _writeIndex{0};
-    alignas(std::hardware_destructive_interference_size) size_t _readIndexCached{0};
-    alignas(std::hardware_destructive_interference_size) size_t _writeIndexCached{0};
+    // Should be 64 on Raspberry Pi 4B. Also consider std::hardware_destructive_interference_size
+    alignas(64) std::atomic<size_t> _readIndex{0};
+    alignas(64) std::atomic<size_t> _writeIndex{0};
+    alignas(64) size_t _readIndexCached{0};
+    alignas(64) size_t _writeIndexCached{0};
     std::vector<T> buffer{};
 public:
     explicit ObjectBuffer(size_t bufferSize = 1024) : buffer(1024, T()) { }
@@ -39,6 +38,8 @@ public:
     ObjectBuffer& operator=(const ObjectBuffer&) = delete;
 
     bool push(T object) {
+        printf("ObjectBuffer::push - Begin logging event.\n");
+        fflush(stdout);
         auto const writeIndex = _writeIndex.load(std::memory_order_relaxed);
         auto nextWriteIndex = writeIndex + 1;
         if (nextWriteIndex == buffer.size()) {
@@ -48,11 +49,15 @@ public:
             _readIndexCached = _readIndex.load(std::memory_order_acquire);
             if (nextWriteIndex == _readIndexCached) {
                 // Buffer is full.
+                printf("ObjectBuffer::push - Fail logging event, buffer full.\n");
+                fflush(stdout);
                 return false;
             }
         }
         buffer[writeIndex] = object;
         _writeIndex.store(nextWriteIndex, std::memory_order_release);
+        printf("ObjectBuffer::push - Successfully logging event.\n");
+        fflush(stdout);
         return true;
     }
 

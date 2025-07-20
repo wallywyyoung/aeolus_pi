@@ -24,7 +24,7 @@
 std::vector<Rankwave *> Stop::getRankwavesFromPipeVar(const nlohmann::json &v) const {
     std::vector<Rankwave*> rankwaves;
     auto addRankwave = [&](const std::string& name) {
-        if (const auto rankwave = EngineGlobal::getInstance().getStopByName(name)) {
+        if (const auto rankwave = EngineGlobal::getInstance()->getStopByName(name)) {
             rankwaves.push_back(rankwave);
         } else {
             throw std::runtime_error("Stop pipe " + name + " cannot be found.");

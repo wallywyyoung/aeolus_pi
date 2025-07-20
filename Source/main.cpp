@@ -22,7 +22,6 @@
 #include <csignal>
 
 bool running = true;
-std::unique_ptr<AlsaInterface> midiInterface;
 intptr_t fpsr;
 
 // Using inline assembly for ARMv7/ARMv8 enabling of denormals
@@ -47,9 +46,15 @@ void signalHandler(const int signal) {
 int main (int argc, char* argv[]) {
     std::signal(SIGINT | SIGTERM | SIGSEGV | SIGABRT | SIGFPE | SIGILL | SIGBUS, signalHandler);
     enableFlushToZeroDenormalsAreZero();
-    midiInterface = std::make_unique<AlsaInterface>();
+
+    EngineGlobal::getInstance()->init();
+
+    auto* alsaInterface = new AlsaInterface();
 
     do {
         sleep(1);
     } while(running);
+
+    delete alsaInterface;
+
 }

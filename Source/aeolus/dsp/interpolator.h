@@ -33,7 +33,7 @@ namespace dsp {
 class Interpolator
 {
 public:
-    Interpolator(float ratio = 1.0f, size_t nChannels = 1);
+    explicit Interpolator(float ratio = 1.0f, size_t nChannels = 1);
 
     void setRatio(const float r) noexcept { _ratio = r; }
     [[nodiscard]] float getRatio() const noexcept { return _ratio; }

@@ -20,17 +20,26 @@
 
 #include "IOManager.h"
 #include "aeolus/EngineGlobal.h"
+
+#include <iostream>
+
 #include "aeolus/engine.h"
 
 #include <thread_pool/thread_pool.h>
 
+// EngineGlobal* EngineGlobal::instance = nullptr;
+// std::once_flag EngineGlobal::initOnce;
+
 EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _sampleRate(SAMPLE_RATE_F),
                                _tuningFrequency(TUNING_FREQUENCY_DEFAULT) {
-    midiManager.addListener(&engine);
+}
+void EngineGlobal::init() {
     irs = IOManager::loadIRs();
     loadRankwaves();
     updateStops();
-    engine.prepareToPlay(_sampleRate);
+    engine = new Engine();
+    midiManager.addListener(engine);
+    engine->prepareToPlay(_sampleRate);
 }
 
 EngineGlobal::~EngineGlobal() {
@@ -66,12 +75,6 @@ void EngineGlobal::updateStops() const {
         });
     }
     pool.wait_for_tasks();
-}
-
-void EngineGlobal::processMidi(const std::vector<MidiMessage>& messages) {
-    for (const auto& message : messages) {
-        midiManager.processMidiEvent(message);
-    }
 }
 
 bool EngineGlobal::isConnectedToMTSMaster() const {
@@ -114,12 +117,26 @@ void EngineGlobal::rebuildRankwaves()
 }
 
 void EngineGlobal::audioCallback(float *bufferL, float *bufferR, const size_t bufferSize) {
-    engine.process(bufferL, bufferR, bufferSize);
+    midiManager.processMidiBuffer();
+    engine->process(bufferL, bufferR, bufferSize);
+}
+
+void EngineGlobal::pushMidi(const MidiData &midi) {
+    printf("EnglineGlobal::pushMidi - Pushing event.\n");
+    fflush(stdout);
+    midiManager.push(midi);
+}
+
+void EngineGlobal::pushMidi(const std::vector<MidiData> &midi) {
+    midiManager.push(midi);
 }
 
 void EngineGlobal::loadRankwaves() {
     for (int i = 0; i <  model.getStopsCount(); ++i) {
-        _rankwavesByName.emplace(model[i].getStopName(),std::make_unique<Rankwave>(model[i], *_scale, _tuningFrequency));
+        // TODO: Fix this mapping in JSON.
+        std::cout << "Loading rankwave " << model[i].getFileName() << std::endl;
+        _rankwavesByName.emplace(model[i].getFileName(), std::make_unique<Rankwave>(model[i], *_scale, _tuningFrequency));
+        std::cout << "Rankwaves By Name Count: " << _rankwavesByName.size() << std::endl;
     }
 }
 

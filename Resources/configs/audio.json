@@ -1,4 +1,4 @@
 {
   "midiClientName" : "WIDI Master",
-  "playbackDeviceName" : "sysdefault:CARD=Headphones",
+  "playbackDeviceName" : "sysdefault:CARD=Headphones"
 }

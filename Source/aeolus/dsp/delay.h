@@ -30,8 +30,7 @@ namespace dsp {
 class DelayLine
 {
 public:
-
-    DelayLine(size_t size = 1024);
+    explicit DelayLine(size_t size = 1024);
     void resize(size_t size);
     void reset();
     void write(float x);

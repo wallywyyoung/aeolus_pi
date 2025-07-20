@@ -21,7 +21,7 @@
 #include "ObjectBuffer.h"
 #include "aeolus/sema.h"
 #include "aeolus/worker.h"
-
+#include <thread_pool/thread_safe_queue.h>
 #include <atomic>
 #include <thread>
 
@@ -29,25 +29,17 @@ struct Worker::Impl
 {
     ObjectBuffer<Job*> jobsQueue;
 
-    Semaphore sema;
+    Semaphore sema{};
     std::atomic_bool running;
-    std::unique_ptr<std::thread> thread;
+    std::unique_ptr<std::thread> thread{};
 
-    Impl()
-        : jobsQueue(DefaultCapacity)
-        , sema(0)
-        , running(false)
-        , thread(nullptr)
-    {
-    }
+    Impl() = default; //jobsQueue(DefaultCapacity), sema(0), running(false) { }
 
-    ~Impl()
-    {
+    ~Impl() {
         stop();
     }
 
-    void run()
-    {
+    void run() {
         while (running) {
             wait();
 
@@ -60,8 +52,7 @@ struct Worker::Impl
         }
     }
 
-    bool addJob (Job* job)
-    {
+    bool addJob (Job* job) {
         if (job == nullptr) {
             throw std::runtime_error("Worker::run: job is null");
         }
@@ -72,8 +63,7 @@ struct Worker::Impl
         return ok;
     }
 
-    void start()
-    {
+    void start() {
         purge();
 
         if (thread == nullptr) {
@@ -82,8 +72,7 @@ struct Worker::Impl
         }
     }
 
-    void stop()
-    {
+    void stop() {
         if (thread != nullptr) {
             running = false;
             wakeUp();
@@ -92,11 +81,6 @@ struct Worker::Impl
                 thread->join();
         }
     }
-
-//    bool hasPendingJobs() noexcept
-//    {
-//        return jobsQueue.count() > 0;
-//    }
 
     bool isRunning() const noexcept
     {
@@ -125,8 +109,7 @@ struct Worker::Impl
 
 //----------------------------------------------------------
 
-Worker::Worker()
-    : d(std::make_unique<Impl>())
+Worker::Worker() : d(std::make_unique<Impl>())
 {
 }
 

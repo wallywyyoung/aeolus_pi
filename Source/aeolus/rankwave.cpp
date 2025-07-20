@@ -27,8 +27,19 @@ Rankwave::Rankwave(Addsynth model, const Scale& scale, const float tuningFreq) :
     createPipes(scale, tuningFreq);
 }
 
-Rankwave::Rankwave(const Rankwave& other) : _noteMin(other._noteMin), _noteMax(other._noteMax), model(other.model), _pipes{2} {
+Rankwave::Rankwave(const Rankwave& other) : _noteMin(other._noteMin), _noteMax(other._noteMax), model(other.model), _pipes{2}, _pipeSetIndex(other._pipeSetIndex.load()) {
 
+}
+
+Rankwave & Rankwave::operator=(const Rankwave &other) {
+    if (this != &other) {
+        _noteMin = other._noteMin;
+        _noteMax = other._noteMax;
+        model = other.model;
+        _pipes = other._pipes;
+        _pipeSetIndex = other._pipeSetIndex.load();
+    }
+    return *this;
 }
 
 auto Rankwave::createPipes(const Scale &scale, const float tuningFrequency) -> void {
@@ -57,13 +68,13 @@ void Rankwave::retunePipes(const Scale& scale, const float tuningFrequency)
     const int pipeSetIndex{ _pipeSetIndex.load() };
     const int nextPipeSetIndex{ (pipeSetIndex + 1) % static_cast<int>(_pipes.size()) };
 
-    if (EngineGlobal::getInstance().isMTSEnabled()) {
+    if (EngineGlobal::getInstance()->isMTSEnabled()) {
         // Use MTS provided tuning
         for (int i = _noteMin; i <= _noteMax; ++i) {
             auto& pipe = _pipes[nextPipeSetIndex].at(i - _noteMin);
 
             // @note MTS tuning may return some weird frequencies, we need to clamp them
-            if (const float f{limitRange(0.1f, SAMPLE_RATE * 0.5f - 0.1f, EngineGlobal::getInstance().getMTSNoteToFrequency(i, -1) * fnd) }; pipe.getPipeFrequency() != f) {
+            if (const float f{limitRange(0.1f, SAMPLE_RATE * 0.5f - 0.1f, EngineGlobal::getInstance()->getMTSNoteToFrequency(i, -1) * fnd) }; pipe.getPipeFrequency() != f) {
                 pipe.setFrequency(f);
                 pipe.setNeedsToBeRebuilt(true);
             }

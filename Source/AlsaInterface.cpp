@@ -24,13 +24,13 @@
 #include "aeolus/EngineGlobal.h"
 
 #include <alsa/asoundlib.h>
-#include <vector>
 #include <thread>
 #include <nlohmann/json.hpp>
 
 AlsaInterface::AlsaInterface()  {
     const std::filesystem::path configFile = "./Resources/configs/audio.json";
-    const nlohmann::json config = nlohmann::json::parse(std::ifstream(configFile));
+    std::ifstream stream(configFile);
+    auto config = nlohmann::json::parse(stream);
     midiClientName = config["midiClientName"];
     playbackDeviceName = config["playbackDeviceName"];
 
@@ -46,79 +46,84 @@ AlsaInterface::~AlsaInterface() {
     endPlayback();
 }
 
-int AlsaInterface::getMidiClientId() const {
-    int clientStatus = 0, index = 0;
-    while (clientStatus >= 0) {
-        snd_seq_client_info_t* info = nullptr;
-        const int id = snd_seq_client_info_get_client(info);
-        if (char const* name = snd_seq_client_info_get_name(info); name == midiClientName.c_str()) {
+int AlsaInterface::getMidiClientId() {
+    int clientStatus = 0;
+    snd_seq_client_info_t* info = nullptr;
+    snd_seq_client_info_alloca(&info);
+    snd_seq_get_any_client_info(sequencer, 0, info);
+    do {
+        auto name = snd_seq_client_info_get_name(info);
+        auto id = snd_seq_client_info_get_client(info);
+        if (std::strcmp(name, midiClientName.c_str()) == 0) {
             return id;
         }
-        ++index;
         clientStatus = snd_seq_query_next_client(sequencer, info);
-    }
+    } while (clientStatus == 0);
     return -1;
 }
 
 void AlsaInterface::initMidi() {
-    if (snd_seq_open(&sequencer, "default", SND_SEQ_OPEN_INPUT, 0) < 0) {
+    if (snd_seq_open(&sequencer, "default", SND_SEQ_OPEN_INPUT, SND_SEQ_NONBLOCK) < 0) {
         throw std::runtime_error("Failed to open sequencer");
     }
 
     snd_seq_set_client_name(sequencer, "Aeolus");
 
-    if ((portID = snd_seq_create_simple_port(sequencer, "Midi Listener",SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE, SND_SEQ_PORT_TYPE_APPLICATION) < 0)) {
-        throw std::runtime_error("Failed to create MIDI port");
+    if ((portID = snd_seq_create_simple_port(sequencer, "Midi Listener",SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE, SND_SEQ_PORT_TYPE_APPLICATION | SND_SEQ_PORT_TYPE_MIDI_GM | SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_SYNTHESIZER) < 0)) {
+    	throw std::runtime_error("Failed to create MIDI port");
     }
 
-    {
-        snd_seq_addr_t sender, dest;
-        snd_seq_port_subscribe_t *subs;
-        sender.client = snd_seq_client_id(sequencer);
-        sender.port = 0;
-        dest.client = getMidiClientId();
-        dest.port = portID;
-        snd_seq_port_subscribe_alloca(&subs);
-        snd_seq_port_subscribe_set_sender(subs, &sender);
-        snd_seq_port_subscribe_set_dest(subs, &dest);
-        snd_seq_port_subscribe_set_queue(subs, 1);
-        snd_seq_port_subscribe_set_time_update(subs, 1);
-        snd_seq_port_subscribe_set_time_real(subs, 1);
-        if (snd_seq_subscribe_port(sequencer, subs) < 0) {
-            throw std::runtime_error("Failed to subscribe to MIDI port");
-        }
-    }
+	int err = snd_seq_connect_from(sequencer, 0, getMidiClientId(), 0);
 
-    npfd = snd_seq_poll_descriptors_count(sequencer, POLLIN);
-    pfd = static_cast<pollfd *>(malloc(sizeof(pollfd) * npfd));
-    snd_seq_poll_descriptors(sequencer,pfd, npfd, POLLIN);
+	npfd = snd_seq_poll_descriptors_count(sequencer, POLLIN);
+	pfd = std::make_unique<pollfd>();
+
+	err = snd_seq_nonblock(sequencer, 1);
 }
 
 void AlsaInterface::beginPollMidi() {
     runningMidi = true;
-    midiThread = std::make_unique<std::thread>([this]() {
-    auto transferBuffer = std::vector<MidiData>();
-    do {
-        if (::poll(pfd, npfd, 100000) <= 0) {
-            continue;
-        }
-        snd_seq_event_t *event;
-        int bytes = 0;
-        transferBuffer.clear();
-        bool next = false;
-        while (next || snd_seq_event_input_pending(sequencer, 1) > 0) {
-            bytes = snd_seq_event_input(sequencer, &event);
-            next = bytes > 0;
-            auto data = MidiData(*event);
-            if (data.eventType == MidiData::IGNORE) {
-                continue;
-            }
-            printf( std::to_string(data.channel).c_str());
-            transferBuffer.push_back(data);
-        };
-        EngineGlobal::getInstance().midiBuffer.push(transferBuffer);
-    } while (runningMidi);
-    });
+	midiThread = std::make_unique<std::thread>([this]() {
+   		do {
+   	 		// TODO: Poll doesn't work in debug for some reason.
+			// snd_seq_poll_descriptors(sequencer,pfd.get(), npfd, POLLIN);
+   			// if (poll(pfd.get(), npfd, -1) < 0) {
+			//	continue;
+   			// }
+			// do {
+				snd_seq_event_t *event;
+				if (const int err = snd_seq_event_input(sequencer, &event); err < 0) {
+    			    continue;
+    			}
+    			if (event) {
+				    MidiData midiData;
+				    midiData = *event;
+    				if (midiData.eventType == MidiData::IGNORE) {
+    					continue;
+    				}
+    			    printf("AlsaInterface::beginPollMidi - Event logged.\n");
+    			    fflush(stdout);
+    			    try {
+    			        auto engine = EngineGlobal::getInstance();
+    			        if (!engine) {
+    			            printf("ERROR: EngineGlobal instance is null!\n");
+                            fflush(stdout);
+                            continue;
+    			        }
+    			        engine->pushMidi(midiData);
+    			    } catch (const std::exception& e) {
+    			        printf("AlsaInterface::beginPollMidi - Exception thrown: %s\n", e.what());
+    			        fflush(stdout);
+    			    } catch (...) {
+    			        printf("Unknown exception in MIDI processing!\n");
+                        fflush(stdout);
+    			    }
+    			    snd_seq_free_event(event);
+    			}
+			// } while (runningMidi);
+    	    fflush(stdout);
+    	} while (runningMidi);
+	});
 }
 
 void AlsaInterface::endPollMidi() {
@@ -126,7 +131,6 @@ void AlsaInterface::endPollMidi() {
     if (midiThread && midiThread->joinable()) {
         midiThread->join();
     }
-
 }
 
 void AlsaInterface::initAudio(const int channels, unsigned int sampleRate, size_t bufferSize) {
@@ -176,7 +180,7 @@ void AlsaInterface::beginPlayback() {
                 throw std::runtime_error("Failed to update available frames");
             }
             float buffer[4096];
-            EngineGlobal::getInstance().audioCallback(&buffer[0], &buffer[2048], 4096);
+            EngineGlobal::getInstance()->audioCallback(&buffer[0], &buffer[2048], 2048);
             if (snd_pcm_writei(playback, buffer, frames) < 0) {
                 break;
             }

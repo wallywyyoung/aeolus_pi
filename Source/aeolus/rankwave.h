@@ -40,6 +40,7 @@ class Rankwave
 public:
     explicit Rankwave(Addsynth model, const Scale& scale, float tuningFreq);
     Rankwave(const Rankwave&);
+    Rankwave& operator=(const Rankwave& other);
 
     // Recalculate pipes tuning based on the current global scale and A4 frequency,
     // or global MTS tuning if enabed.
@@ -56,7 +57,6 @@ public:
 
 private:
     void createPipes(const Scale& scale, float tuningFrequency);
-
     int _noteMin;
     int _noteMax;
     std::shared_ptr<Addsynth> model;

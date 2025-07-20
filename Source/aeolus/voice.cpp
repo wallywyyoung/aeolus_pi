@@ -105,7 +105,7 @@ void Voice::process(float* outL, float* outR)
     const auto gain = _state.gain;
 
     if (_state.env == Pipewave::Over) {
-        _postReleaseCounter -= std::min((int)_postReleaseCounter, SUB_FRAME_LENGTH);
+        _postReleaseCounter -= std::min(static_cast<int>(_postReleaseCounter), SUB_FRAME_LENGTH);
 
         for (float & i : _buffer) {
             _delayLine.write(0.0f);

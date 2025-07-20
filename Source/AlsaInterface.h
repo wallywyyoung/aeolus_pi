@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <thread>
 #include <alsa/asoundlib.h>
@@ -29,14 +28,14 @@ class AlsaInterface {
     snd_seq_t *sequencer;
     int portID{};
     int npfd{};
-    pollfd* pfd;
+    std::unique_ptr<pollfd> pfd;
     std::string midiClientName;
     std::unique_ptr<std::thread> midiThread;
 
     void initMidi();
     void beginPollMidi();
     void endPollMidi();
-    [[nodiscard]] int getMidiClientId() const;
+    [[nodiscard]] int getMidiClientId();
 
 //    Audio
     snd_pcm_t* playback;

@@ -20,17 +20,16 @@
 
 #pragma once
 
+#include <iostream>
+#include <unordered_map>
+
 #include "aeolus/rankwave.h"
 #include "aeolus/scale.h"
-#include "aeolus/MidiMessage.h"
 #include "aeolus/MidiManager.h"
 #include "aeolus/engine.h"
 #include "aeolus/Model.h"
 #include "mts/libMTSClient.h"
 #include "MidiData.h"
-#include "ObjectBuffer.h"
-
-#include <unordered_map>
 
 /**
  * @brief A global shared instance of the organ engine.
@@ -40,12 +39,29 @@
 
 class EngineGlobal final {
 public:
-    static EngineGlobal& getInstance() {
-        static EngineGlobal instance;
-        return instance;
-    }
+    EngineGlobal();
+    void init();
+    // static EngineGlobal* instance;
+    // static std::once_flag initOnce;
+    // static void initInstance() noexcept {
+    //     EngineGlobal::instance = new EngineGlobal();
+    // }
     EngineGlobal(EngineGlobal const&) = delete;
     void operator=(EngineGlobal const&) = delete;
+
+    static EngineGlobal* getInstance() noexcept {
+        static EngineGlobal instance;
+        return &instance;
+        std::cout << "Instance address: " << &instance << std::endl;
+        // std::call_once(EngineGlobal::initOnce, []() {
+        //     printf("Initializing EngineGlobal singleton...\n");
+        //     fflush(stdout);
+        //     instance = new EngineGlobal();
+        //     printf("EngineGlobal singleton initialized\n");
+        //     fflush(stdout);
+        // });
+        // return EngineGlobal::instance;
+    }
 
     /**
      * Impulse response descriptor for IRs embedded as binary resources.
@@ -55,6 +71,8 @@ public:
     [[nodiscard]] const bool isMTSEnabled() const { return _mtsEnabled; }
     [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
     [[nodiscard]] Rankwave *getStopByName(const std::string &name) const {
+        std::cout << "Map address: " << &_rankwavesByName << std::endl;
+        std::cout << "Rankwaves By Name Count: " << _rankwavesByName.size() << std::endl;
         return _rankwavesByName.at(name).get();
     }
     [[nodiscard]] const float getMTSNoteToFrequency(int midiNote, int midiChannel) const;
@@ -67,19 +85,15 @@ public:
     void setTuningFrequency(const float f) noexcept { _tuningFrequency = f; }
     [[nodiscard]] const Scale& getScale() const noexcept { return *_scale; }
     void setScaleType(const Scale::Type type) noexcept { _scale->setType(type); }
-    void process(const std::vector<MidiMessage>& messages, AudioBuffer& buffer);
-    void processMidi(const std::vector<MidiMessage>& messages);
     [[nodiscard]] bool isConnectedToMTSMaster() const;
     [[nodiscard]] std::string getMTSScaleName();
     void setMTSEnabled(bool shouldBeEnabled);
     void rebuildRankwaves();
     void audioCallback (float *bufferL, float *bufferR, size_t bufferSize);
-
-    ObjectBuffer<MidiData> midiBuffer;
+    void pushMidi(const MidiData& midi);
+    void pushMidi(const std::vector<MidiData>& midi);
 private:
     constexpr static float TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
-
-    EngineGlobal();
     ~EngineGlobal();
     void loadRankwaves();
     /**
@@ -91,7 +105,7 @@ private:
     // juce::Timer
     void timerCallback();
     Model model;
-    Engine engine;
+    Engine *engine;
     MidiManager midiManager;
     std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName{};
     std::vector<IR> _irs{};

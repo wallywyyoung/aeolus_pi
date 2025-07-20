@@ -47,7 +47,7 @@ public:
     using Table = std::array<float, 12>;
     using Map = std::map<Type, Table>;
 
-    Scale(Type type = EqualTemp);
+    explicit Scale(Type type = EqualTemp);
     Type getType() const noexcept { return _type; }
     void setType(const Type t) noexcept { _type = t; }
 

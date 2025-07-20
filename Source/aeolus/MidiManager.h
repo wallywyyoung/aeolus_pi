@@ -22,11 +22,14 @@
 
 #include "aeolus/globals.h"
 #include "aeolus/utilities/Range.h"
+#include "ObjectBuffer.h"
+#include "MidiData.h"
 
 #include <algorithm>
 #include <atomic>
 
-class MidiListener {
+
+class MidiListener{
 public:
     virtual ~MidiListener() = default;
     virtual void handleNoteOn(const int& channel, const int& note) = 0;
@@ -37,9 +40,9 @@ public:
     virtual void handleSequencerSwitch(const int& note) = 0;
 };
 
-class MidiManager {
+class MidiManager : public ObjectBuffer<MidiData> {
 public:
-    MidiManager() : midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 }, keyState(), ccState(), _listeners(), range(){ }
+    MidiManager() : midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 }, range(){ }
 
     void addListener(MidiListener* listener) {
         if (std::ranges::find(_listeners, listener) == _listeners.end()) {
@@ -56,32 +59,11 @@ public:
         return range;
     }
 
-    void processMidiEvent(const MidiMessage& message) {
-
-        // Process global CCs
-        if (midi::matchMidiChannelToMask(getMIDIControlChannelsMask(), message.getChannel())) {
-//            keyState[message.getChannel()][message.getNote()] = true;
-            for (const auto listener : _listeners) {
-                listener->handleSequencerSwitch(message.getNote());
-            }
-            return;
-        }
-
-        switch (message.getEventType()) {
-            case MidiMessage::NOTE_ON:
-                noteOn(message.getChannel(), message.getNote());
-                break;
-            case MidiMessage::NOTE_OFF:
-                noteOff(message.getChannel(), message.getNote());
-                break;
-            case MidiMessage::CC:
-                cc(message.getChannel(), message.getControllerNumber(), message.getControllerValue());
-                break;
-            case MidiMessage::PC:
-                pc(message.getProgramNumber());
-                break;
-            case MidiMessage::IGNORE:
-                break;
+    void processMidiBuffer() {
+        std::vector<MidiData> midiBuffer{};
+        this->pop(midiBuffer);
+        for (const MidiData& event : midiBuffer) {
+            processMidiEvent(event);
         }
     }
 
@@ -90,6 +72,35 @@ public:
     [[nodiscard]] int getMIDISwellChannelsMask() const noexcept { return midiSwellChannelsMask; }
     void setMIDISwellChannelsMask(const int& mask) noexcept { midiSwellChannelsMask = mask; }
 private:
+    void processMidiEvent(const MidiData& event) {
+
+        // Process global CCs
+        if (midi::matchMidiChannelToMask(getMIDIControlChannelsMask(), event.channel)) {
+            //            keyState[message.getChannel()][message.getNote()] = true;
+            for (const auto listener : _listeners) {
+                listener->handleSequencerSwitch(event.note);
+            }
+            return;
+        }
+
+        switch (event.eventType) {
+            case MidiData::NOTE_ON:
+                noteOn(event.channel, event.note);
+                break;
+            case MidiData::NOTE_OFF:
+                noteOff(event.channel, event.note);
+                break;
+            case MidiData::CC:
+                cc(event.channel, event.change, event.value);
+                break;
+            case MidiData::PC:
+                pc(event.value);
+                break;
+            case MidiData::IGNORE:
+                break;
+        }
+    }
+
     void noteOn(const int channel, const int note) {
         keyState[channel][note] = true;
         for (const auto listener : _listeners) {

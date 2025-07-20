@@ -50,12 +50,12 @@ void Fft::direct(Array& x, const Window win)
 
     const auto N = static_cast<unsigned int>(x.size());
     // DFT
-    unsigned int k = N, n;
+    unsigned int k = N;
     const float thetaT = M_PI / N;
     Complex phiT = Complex (std::cos (thetaT), std::sin (thetaT)), T;
 
     while (k > 1) {
-        n = k;
+        const unsigned int n = k;
         k >>= 1;
         phiT = phiT * phiT;
         T = 1.0L;

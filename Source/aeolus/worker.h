@@ -66,7 +66,7 @@ public:
 
 private:
     struct Impl;
-    std::unique_ptr<Impl> d;
+    std::unique_ptr<Impl> d{};
 };
 
 

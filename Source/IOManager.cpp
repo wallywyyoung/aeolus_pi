@@ -31,17 +31,17 @@
 #include <nlohmann/json.hpp>
 
 IRs IOManager::loadIRs() {
-    std::ifstream stream("irs.json");
+    std::ifstream stream("./Resources/irs/irs.json");
     auto jsonIRs = nlohmann::json::parse(stream);
     IRs irs;
     irs.longestIRLength = dsp::Convolver::BlockSize;
     AudioFile<float> audioFile;
     IR ir;
     for (auto jsonIr: jsonIRs["irs"]){
-        audioFile.load(jsonIr["fileName"]);
+        audioFile.load("./Resources/irs/" + static_cast<std::string>(jsonIr["fileName"]));
         ir.setBufferSize(audioFile.getNumSamplesPerChannel());
         ir.setBuffer(audioFile.samples);
-        ir.zeroDelay = jsonIr["zeroDelay"];
+        ir.zeroDelay = jsonIr.contains("zeroDelay") ? static_cast<bool>(jsonIr["zeroDelay"]) : false;
         //TODO: This must be wrong.
         auto startOffset = ir.zeroDelay? 0 : static_cast<int>(jsonIr["startOffset"]);
         auto gain = static_cast<float>(jsonIr["gain"]);
@@ -69,9 +69,12 @@ std::vector<Addsynth> IOManager::loadPipes() {
     std::vector<Addsynth> synths;
     for (const auto& entry : std::filesystem::directory_iterator("./Resources/stops/")) {
         if (!std::filesystem::is_regular_file(entry)) {
+            std::cout << "Skipping rankwave file " << entry.path() << std::endl;
             continue;
         }
         auto extension = entry.path().extension().string();
+
+        std::cout << "Loading rankwave file " << entry.path() << std::endl;
         auto synth = Addsynth();
         if (extension == ".ae0") {
             addsynthFromBinary(entry, synth);
@@ -88,7 +91,9 @@ void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, 
     std::ifstream stream(entry.path(), std::ios::in);
     auto v = nlohmann::json::parse(stream);
 
-    addsynth._fileName = entry.path().filename();
+    //TODO: Fix this hack.
+    auto tempPath = entry.path().filename().stem().string();
+    addsynth._fileName = tempPath.substr(0, tempPath.length() - 4);
 
     const int version = v["version"];
 
@@ -132,7 +137,7 @@ void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, 
 void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry, Addsynth &addsynth)
 {
     std::ifstream stream(entry.path(), std::ios::in | std::ios::binary);
-    addsynth._fileName = entry.path().filename();
+    addsynth._fileName = entry.path().filename().stem();
     char header[Addsynth::header_length] = {0};
 
     stream.read(header, Addsynth::header_length);

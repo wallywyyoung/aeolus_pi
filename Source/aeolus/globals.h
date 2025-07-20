@@ -49,7 +49,7 @@ template <typename T1, typename T2> bool isPositiveAndBelow(T1 instance, T2 thre
 /// and thus we can get away without using an interpolation filter
 /// when upsampling only.
 constexpr static int SAMPLE_RATE = 44100;
-constexpr static float SAMPLE_RATE_F = (float) SAMPLE_RATE;
+constexpr static float SAMPLE_RATE_F = static_cast<float>(SAMPLE_RATE);
 constexpr static float SAMPLE_RATE_R = 1.0f / SAMPLE_RATE_F;
 constexpr static size_t BPS_RATE = SAMPLE_RATE * 2 /* 16-bit */ * N_OUTPUT_CHANNELS;
 
@@ -101,7 +101,7 @@ struct Sin;
 template<unsigned B, unsigned A>
 struct Sin<B, A, float>
 {
-    constexpr static float value = (A * static_cast<float>(M_PI) / B) * float (SinCosSeries<2, 24, B, A>::value);
+    constexpr static float value = (A * static_cast<float>(M_PI) / B) * static_cast<float>(SinCosSeries<2, 24, B, A>::value);
 };
 
 template<unsigned B, unsigned A>

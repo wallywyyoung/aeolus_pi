@@ -42,12 +42,12 @@ private:
 };
 
 template <class Item>
-struct ListItem : public ListNode<ListItem<Item>>
+struct ListItem : ListNode<ListItem<Item>>
 {
     void appendAfter (ListItem* item) noexcept
     {
         if (item == nullptr) {
-            throw std::runtime_error ("Item is null");
+            return;
         }
 
         this->_prev = item;
@@ -80,7 +80,7 @@ struct List
     void append(Item* item) noexcept
     {
         if (item == nullptr) {
-            throw std::runtime_error ("Item is null");
+            return;
         }
 
         if (_head == nullptr) {
@@ -94,7 +94,9 @@ struct List
 
     void prepend(Item* item) noexcept
     {
-        assert (item != nullptr);
+        if (item == nullptr) {
+            return;
+        }
 
         item->_next = _head;
         _head = item;
@@ -106,7 +108,7 @@ struct List
     void remove (Item* item) noexcept
     {
         if (item == nullptr) {
-            throw std::runtime_error ("Item is null");
+            return;
         }
 
         if (_head == item)

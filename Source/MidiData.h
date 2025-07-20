@@ -19,17 +19,18 @@
 
 #pragma once
 
-#include <asoundlib.h>
+#include <alsa/asoundlib.h>
 
 struct MidiData {
     enum EventType {
-        NOTE_ON, NOTE_OFF, CC, IGNORE
+        NOTE_ON, NOTE_OFF, CC, PC, IGNORE
     };
-    int channel, cc, value;
+    int channel, change, value;
     unsigned char note;
     EventType eventType;
     MidiData() = default;
-    MidiData(const snd_seq_event_t& event) {
+
+    MidiData &operator=(const snd_seq_event_t & event) {
         switch(event.type) {
             case SND_SEQ_EVENT_NOTEON:
                 eventType = NOTE_ON;
@@ -43,11 +44,18 @@ struct MidiData {
                 break;
             case SND_SEQ_EVENT_CONTROLLER:
                 eventType = CC;
-                cc = event.data.control.param;
+                channel = event.data.control.channel;
+                change = event.data.control.param;
+                value = event.data.control.value;
+                break;
+            case SND_SEQ_EVENT_PGMCHANGE:
+                eventType = PC;
+                channel = event.data.control.channel;
                 value = event.data.control.value;
                 break;
             default:
                 eventType = IGNORE;
         };
+        return *this;
     }
 };

@@ -47,12 +47,12 @@ void Engine::prepareToPlay(const float sampleRate)
 
 void Engine::setReverbIR(const int num)
 {
-    if (const auto&[irs, longestIRLength] = EngineGlobal::getInstance().getIRs(); num >= 0 && num < irs.size()) {
+    if (const auto&[irs, longestIRLength] = EngineGlobal::getInstance()->getIRs(); num >= 0 && num < irs.size()) {
         const auto& ir = irs[num];
         _convolver.setLength(static_cast<int>(ir.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
+        _convolver.setIR(ir);
         _convolver.prepareToPlay(); // these parameters are irrelevant
         _convolver.setZeroDelay(ir.zeroDelay);
-        _convolver.setIR(ir);
         _reverbTailCounter = _convolver.length();
         _selectedIR = num;
     }
@@ -183,7 +183,7 @@ void Engine::handleSequencerSwitch(const int& note) {
 void Engine::handleNoteOn(const int &channel, const int &note) {
     clearDivisionsTriggerFlag();
     // Ignore note-on event if filtered by MTS.
-    if (EngineGlobal::getInstance().shouldMTSFilterNoteByChannel(note, channel)) {
+    if (EngineGlobal::getInstance()->shouldMTSFilterNoteByChannel(note, channel)) {
         for (const auto &division: _divisions)
             division->noteOn(note, channel);
     }
@@ -416,7 +416,8 @@ auto Engine::populateDivisions() -> void {
         _divisions.push_back(std::move(division));
     }
 
-    if (auto sequencer = config["sequencer"]) {
+    if (config.contains("sequencer")) {
+        auto sequencer = config["sequencer"];
         if (sequencer.contains("backward_key")) {
             populateKeySwitchesVector(_sequencerStepBackwardKeySwitches, sequencer["backward_key"]);
         }
