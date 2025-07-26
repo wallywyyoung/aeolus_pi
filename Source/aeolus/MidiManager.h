@@ -78,25 +78,23 @@ private:
         if (midi::matchMidiChannelToMask(getMIDIControlChannelsMask(), event.channel)) {
             //            keyState[message.getChannel()][message.getNote()] = true;
             for (const auto listener : _listeners) {
-                listener->handleSequencerSwitch(event.note);
+                listener->handleSequencerSwitch(event.param);
             }
             return;
         }
 
         switch (event.eventType) {
             case MidiData::NOTE_ON:
-                noteOn(event.channel, event.note);
+                noteOn(event.channel, event.param);
                 break;
             case MidiData::NOTE_OFF:
-                noteOff(event.channel, event.note);
+                noteOff(event.channel, event.param);
                 break;
             case MidiData::CC:
-                cc(event.channel, event.change, event.value);
+                cc(event.channel, event.param, event.value);
                 break;
             case MidiData::PC:
                 pc(event.value);
-                break;
-            case MidiData::IGNORE:
                 break;
         }
     }

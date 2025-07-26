@@ -20,64 +20,52 @@
 #pragma once
 
 #include <atomic>
-#include <vector>
+#include <iostream>
+#include <array>
+#include <span>
 
-template <typename T>
+template <typename T, size_t SIZE = 1024>
 class ObjectBuffer {
-private:
-    // Should be 64 on Raspberry Pi 4B. Also consider std::hardware_destructive_interference_size
-    alignas(64) std::atomic<size_t> _readIndex{0};
-    alignas(64) std::atomic<size_t> _writeIndex{0};
-    alignas(64) size_t _readIndexCached{0};
-    alignas(64) size_t _writeIndexCached{0};
-    std::vector<T> buffer{};
+    static constexpr size_t CACHE_LINE_SIZE = 64; // Should be 64 on Raspberry Pi 4B. Also consider std::hardware_destructive_interference_size
+    alignas(CACHE_LINE_SIZE) std::atomic<size_t> _readIndex{0};
+    alignas(CACHE_LINE_SIZE) std::atomic<size_t> _writeIndex{0};
+    alignas(CACHE_LINE_SIZE) size_t _readIndexCached{0};
+    alignas(CACHE_LINE_SIZE) size_t _writeIndexCached{0};
+    std::array<T, SIZE> buffer{};
 public:
-    explicit ObjectBuffer(size_t bufferSize = 1024) : buffer(1024, T()) { }
+    ObjectBuffer() = default;
     ~ObjectBuffer() = default;
     ObjectBuffer(const ObjectBuffer&) = delete;
     ObjectBuffer& operator=(const ObjectBuffer&) = delete;
 
-    bool push(T object) {
-        printf("ObjectBuffer::push - Begin logging event.\n");
-        fflush(stdout);
+    bool push(const T& object) noexcept {
         auto const writeIndex = _writeIndex.load(std::memory_order_relaxed);
-        auto nextWriteIndex = writeIndex + 1;
-        if (nextWriteIndex == buffer.size()) {
-            nextWriteIndex = 0;
-        }
+        auto nextWriteIndex = (writeIndex + 1) % SIZE;
         if (nextWriteIndex == _readIndexCached) {
             _readIndexCached = _readIndex.load(std::memory_order_acquire);
             if (nextWriteIndex == _readIndexCached) {
                 // Buffer is full.
-                printf("ObjectBuffer::push - Fail logging event, buffer full.\n");
-                fflush(stdout);
+                std::cerr << "ObjectBuffer::push - Fail logging event, buffer full." << std::endl;
                 return false;
             }
         }
         buffer[writeIndex] = object;
         _writeIndex.store(nextWriteIndex, std::memory_order_release);
-        printf("ObjectBuffer::push - Successfully logging event.\n");
-        fflush(stdout);
+        std::cout << "ObjectBuffer::push - Successfully logging event." << std::endl;
         return true;
     }
 
-    bool push(std::vector<T> objects) {
+    bool push(std::span<const T> objects) noexcept {
         if (objects.size() > buffer.size()) {
             // Too many elements for buffer.
             return false;
         }
         auto const writeIndex = _writeIndex.load(std::memory_order_relaxed);
         auto nextWriteIndex = writeIndex + objects.size();
-        auto wrapAround = false;
+        bool const wrapAround = nextWriteIndex > SIZE;
 
-        if (nextWriteIndex > buffer.size()) {
-            // Buffer wrap around.
-            nextWriteIndex -= buffer.size();
-            wrapAround = true;
-        }
-
-        if (nextWriteIndex == buffer.size()) {
-            nextWriteIndex = 0;
+        if (wrapAround) {
+            nextWriteIndex %= SIZE;
         }
 
         if (nextWriteIndex == _readIndexCached || (wrapAround && nextWriteIndex > _readIndexCached)) {
@@ -89,18 +77,17 @@ public:
         }
 
         if (nextWriteIndex > writeIndex) {
-            buffer.insert(buffer.begin() + writeIndex, objects.begin(), objects.end());
+            std::copy(objects.begin(), objects.end(), buffer.begin() + writeIndex);
         } else {
-            size_t offset = objects.size() - nextWriteIndex - 1;
-            buffer.insert(buffer.begin() + writeIndex, objects.begin(), objects.begin() + offset);
-            ++offset;
-            buffer.insert(buffer.begin(), objects.begin() + offset, objects.end());
+            size_t offset = objects.size() - nextWriteIndex;
+            std::copy(objects.begin(), objects.begin() + offset, buffer.begin() + writeIndex);
+            std::copy(objects.begin() + offset, objects.end(), buffer.begin());
         }
         _writeIndex.store(nextWriteIndex, std::memory_order_release);
         return true;
     }
 
-    bool pop(T& object) {
+    bool pop(T& object) noexcept {
         auto const readIndex = _readIndex.load(std::memory_order_relaxed);
         if (readIndex == _writeIndexCached) {
             _writeIndexCached = _writeIndex.load(std::memory_order_acquire);
@@ -110,15 +97,12 @@ public:
             }
         }
         object = buffer[readIndex];
-        auto nextReadIndex = readIndex + 1;
-        if (nextReadIndex == buffer.size()) {
-            nextReadIndex = 0;
-        }
+        auto nextReadIndex = (readIndex + 1) % SIZE;
         _readIndex.store(nextReadIndex, std::memory_order_release);
         return true;
     }
 
-    bool pop(std::vector<T>& objects) {
+    bool pop(std::span<const T>& objects) noexcept {
         auto const readIndex = _readIndex.load(std::memory_order_relaxed);
         if (readIndex == _writeIndexCached) {
             _writeIndexCached = _writeIndex.load(std::memory_order_acquire);
@@ -129,20 +113,21 @@ public:
         }
         if (readIndex < _writeIndexCached) {
             // Inline
-            auto elements = readIndex - _writeIndexCached;
+            auto elements =  _writeIndexCached - readIndex;
             objects.resize(elements);
-            objects.insert(objects.begin(), buffer.begin() + readIndex, buffer.begin() + readIndex + elements - 1);
+            objects.insert(objects.begin(), buffer.begin() + readIndex, buffer.begin() + readIndex + elements);
         } else {
             // Wrap Around
             auto offset = buffer.size() - readIndex;
             auto elements = offset + _writeIndexCached;
             objects.resize(elements);
             objects.insert(objects.begin(), buffer.begin() + readIndex, buffer.end());
-            objects.insert(objects.begin() + offset, buffer.begin(), buffer.begin() + _writeIndexCached - 1);
+            objects.insert(objects.begin() + offset, buffer.begin(), buffer.begin() + _writeIndexCached);
         }
         // Buffer is cleared.
         const auto nextReadIndex = 0;
         _readIndex.store(nextReadIndex, std::memory_order_release);
+        std::cout << "ObjectBuffer::pop - Successfully popped events." << std::endl;
         return true;
     }
 };

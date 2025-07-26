@@ -64,7 +64,6 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/list.h
         Source/aeolus/memory.h
         Source/aeolus/MidiManager.h
-        Source/aeolus/MidiMessage.h
         Source/aeolus/Model.h
         Source/aeolus/Model.cpp
         Source/aeolus/rankwave.cpp
@@ -102,11 +101,12 @@ target_sources(aeolus_pi PRIVATE
         Source/IOManager.h
         Source/main.cpp)
 
+find_package(Crow CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)
 find_package(thread-pool CONFIG REQUIRED)
 find_package(ALSA REQUIRED)
-target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool ALSA::ALSA)
+target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool ALSA::ALSA Crow::Crow)
 
 file(COPY Resources DESTINATION ${CMAKE_BINARY_DIR})
 

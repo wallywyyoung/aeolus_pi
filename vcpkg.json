@@ -13,5 +13,8 @@
   }, {
     "name" : "dp-thread-pool",
     "version>=" : "0.7.0"
+  }, {
+    "name" : "crow",
+    "version>=" : "1.2.1.2"
   } ]
 }

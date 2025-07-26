@@ -24,25 +24,12 @@
 
 namespace dsp {
 
-using ConvHead = dsp::CascadeConvolver<
-                      dsp::FIR<32>,
-                      dsp::FFT<32>,
-                      dsp::FFT<64>,
-                      dsp::FFT<128>,
-                      dsp::FFT<256>,
-                      dsp::FFT<512>,
-                      dsp::FFT<1024>,
-                      dsp::FFT<2048>
-                  >;
+using ConvHead = CascadeConvolver<FIR<32>, FFT<32>, FFT<64>, FFT<128>, FFT<256>, FFT<512>, FFT<1024>, FFT<2048>>;
 
 static_assert(ConvHead::Length == Convolver::BlockSize, "Header block size is wrong");
 
-using ConvBlock = dsp::FFT<Convolver::BlockSize>;
-
-struct Convolver::Impl
-{
-    enum State
-    {
+struct Convolver::Impl {
+    enum State {
         Idle,
         Init,
         FeedHeadIR,
@@ -60,35 +47,21 @@ struct Convolver::Impl
     ConvHead headR;
     bool zeroDelay;
 
-    dsp::EquallyPartitionedConvolver<Convolver::BlockSize> convL;
-    dsp::EquallyPartitionedConvolver<Convolver::BlockSize> convR;
+    EquallyPartitionedConvolver<BlockSize> convL;
+    EquallyPartitionedConvolver<BlockSize> convR;
 
-    std::vector<ConvBlock> blocksL;
-    std::vector<ConvBlock> blocksR;
+    std::vector<FFT<BlockSize>> blocksL{};
+    std::vector<FFT<BlockSize>> blocksR{};
 
     // For zero-delay convolution
-    std::vector<float> input;
-    IR ir;
+    AudioBuffer input;
+    AudioBuffer ir;
     size_t irSamplesRead;
 
     size_t inputSize;
     size_t framesProcessed;
 
-    Impl ()
-        : params{Convolver::NUM_PARAMS}
-        , length{0}
-        , state{Idle}
-        , headL{}
-        , headR{}
-        , zeroDelay{true}
-        , convL{}
-        , convR{}
-        , input(2, ConvHead::Lenght)
-        , ir("",2,ConvHead::Lenght)
-        , irSamplesRead{0}
-        , inputSize{0}
-        , framesProcessed{0}
-    {
+    Impl () : params{NUM_PARAMS} , length{0} , state{Idle} , zeroDelay{true} , input(2, ConvHead::Lenght) , ir(2, ConvHead::Lenght) , irSamplesRead{0} , inputSize{0} , framesProcessed{0} {
         params[DRY].setName("dry");
         params[DRY].setValue(DefaultDry, true);
 
@@ -108,14 +81,14 @@ struct Convolver::Impl
 
     void init ()
     {
-        const size_t numBlocks = length < Convolver::BlockSize ? 1 : (length - 1) / Convolver::BlockSize + 1;
-        inputSize = numBlocks * Convolver::BlockSize;
+        const size_t numBlocks = length < BlockSize ? 1 : (length - 1) / BlockSize + 1;
+        inputSize = numBlocks * BlockSize;
 
         convL.resize(numBlocks);
         convR.resize(numBlocks);
 
-        headL.init(ir.getReadPointer(0), ir.getReadPointer(0), Convolver::BlockSize);
-        headR.init(ir.getReadPointer(1), ir.getReadPointer(1), Convolver::BlockSize);
+        headL.init(ir.getWritePointer(0), input.getWritePointer(0), BlockSize);
+        headR.init(ir.getWritePointer(1), input.getWritePointer(1), BlockSize);
 
         updateRealtime (false);
 
@@ -163,15 +136,15 @@ struct Convolver::Impl
 
     void setIR(const IR& newIr)
     {
-        ir = newIr;
+        ir = static_cast<AudioBuffer>(newIr);
 
         // Reset the convolver to the initial state
         irSamplesRead = 0;
         framesProcessed = 0;
         input.clear();
 
-        headL.init(this->ir.getReadPointer(0), ir.getReadPointer(0), Convolver::BlockSize);
-        headR.init(this->ir.getReadPointer(1), ir.getReadPointer(1), Convolver::BlockSize);
+        headL.init(this->ir.getWritePointer(0), input.getWritePointer(0), BlockSize);
+        headR.init(this->ir.getWritePointer(1), input.getWritePointer(1), BlockSize);
 
         headL.reset();
         headR.reset();
@@ -179,11 +152,11 @@ struct Convolver::Impl
         convL.reset();
         convR.reset();
 
-        int i = zeroDelay ? Convolver::BlockSize : 0;
+        int i = zeroDelay ? BlockSize : 0;
         const float* irL = ir.getReadPointer(0);
         const float* irR = ir.getReadPointer(1);
 
-        while (i < std::min(static_cast<int>(inputSize), ir.getNumSamples())) {
+        while (i < std::min(static_cast<int>(inputSize), static_cast<int>(ir.getNumSamples()))) {
             convL.feedIr(irL[i]);
             convR.feedIr(irR[i]);
             ++i;

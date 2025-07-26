@@ -22,12 +22,12 @@
 #include <alsa/asoundlib.h>
 
 struct MidiData {
-    enum EventType {
-        NOTE_ON, NOTE_OFF, CC, PC, IGNORE
+    enum EventType : unsigned char {
+        NOTE_ON = 0, NOTE_OFF = 1, CC = 2, PC = 3
     };
-    int channel, change, value;
-    unsigned char note;
-    EventType eventType;
+
+    EventType eventType : 2;
+    unsigned char channel : 7, param : 7, value : 7;
     MidiData() = default;
 
     MidiData &operator=(const snd_seq_event_t & event) {
@@ -35,17 +35,17 @@ struct MidiData {
             case SND_SEQ_EVENT_NOTEON:
                 eventType = NOTE_ON;
                 channel = event.data.note.channel;
-                note = event.data.note.note;
+                param = event.data.note.note;
                 break;
             case SND_SEQ_EVENT_NOTEOFF:
                 eventType = NOTE_OFF;
                 channel = event.data.note.channel;
-                note = event.data.note.note;
+                param = event.data.note.note;
                 break;
             case SND_SEQ_EVENT_CONTROLLER:
                 eventType = CC;
                 channel = event.data.control.channel;
-                change = event.data.control.param;
+                param = event.data.control.param;
                 value = event.data.control.value;
                 break;
             case SND_SEQ_EVENT_PGMCHANGE:
@@ -53,8 +53,6 @@ struct MidiData {
                 channel = event.data.control.channel;
                 value = event.data.control.value;
                 break;
-            default:
-                eventType = IGNORE;
         };
         return *this;
     }

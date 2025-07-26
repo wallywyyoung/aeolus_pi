@@ -36,14 +36,12 @@ IRs IOManager::loadIRs() {
     IRs irs;
     irs.longestIRLength = dsp::Convolver::BlockSize;
     AudioFile<float> audioFile;
-    IR ir;
     for (auto jsonIr: jsonIRs["irs"]){
+        auto zeroDelay = jsonIr.contains("zeroDelay") ? static_cast<bool>(jsonIr["zeroDelay"]) : false;
+        auto startOffset = zeroDelay? 0 : static_cast<int>(jsonIr["startOffset"]);
         audioFile.load("./Resources/irs/" + static_cast<std::string>(jsonIr["fileName"]));
-        ir.setBufferSize(audioFile.getNumSamplesPerChannel());
-        ir.setBuffer(audioFile.samples);
-        ir.zeroDelay = jsonIr.contains("zeroDelay") ? static_cast<bool>(jsonIr["zeroDelay"]) : false;
+        auto ir = IR(jsonIr["name"], audioFile, startOffset);
         //TODO: This must be wrong.
-        auto startOffset = ir.zeroDelay? 0 : static_cast<int>(jsonIr["startOffset"]);
         auto gain = static_cast<float>(jsonIr["gain"]);
         ir.applyGain(gain);
         irs.irs.push_back(ir);
@@ -73,8 +71,6 @@ std::vector<Addsynth> IOManager::loadPipes() {
             continue;
         }
         auto extension = entry.path().extension().string();
-
-        std::cout << "Loading rankwave file " << entry.path() << std::endl;
         auto synth = Addsynth();
         if (extension == ".ae0") {
             addsynthFromBinary(entry, synth);

@@ -90,38 +90,27 @@ void AlsaInterface::beginPollMidi() {
    			// if (poll(pfd.get(), npfd, -1) < 0) {
 			//	continue;
    			// }
-			// do {
 				snd_seq_event_t *event;
 				if (const int err = snd_seq_event_input(sequencer, &event); err < 0) {
     			    continue;
     			}
-    			if (event) {
+   		    if (event && event->type & (SND_SEQ_EVENT_NOTEON | SND_SEQ_EVENT_NOTEOFF| SND_SEQ_EVENT_CONTROLLER | SND_SEQ_EVENT_PGMCHANGE)) {
+    			    std::cout << "AlsaInterface::beginPollMidi - Event recieved." << std::endl;
 				    MidiData midiData;
 				    midiData = *event;
-    				if (midiData.eventType == MidiData::IGNORE) {
-    					continue;
-    				}
-    			    printf("AlsaInterface::beginPollMidi - Event logged.\n");
-    			    fflush(stdout);
+    			    std::cout << "AlsaInterface::beginPollMidi - Event logged." << std::endl;
     			    try {
-    			        auto engine = EngineGlobal::getInstance();
-    			        if (!engine) {
-    			            printf("ERROR: EngineGlobal instance is null!\n");
-                            fflush(stdout);
-                            continue;
-    			        }
-    			        engine->pushMidi(midiData);
+    			        EngineGlobal::getInstance()->pushMidi(midiData);
     			    } catch (const std::exception& e) {
-    			        printf("AlsaInterface::beginPollMidi - Exception thrown: %s\n", e.what());
+    			        std::cerr << "AlsaInterface::beginPollMidi - Exception thrown: " << e.what() << std::endl;
     			        fflush(stdout);
     			    } catch (...) {
+    			        std::cerr << "AlsaInterface::beginPollMidi - Unknown exception in MIDI processing!" << std::endl;
     			        printf("Unknown exception in MIDI processing!\n");
                         fflush(stdout);
     			    }
     			    snd_seq_free_event(event);
     			}
-			// } while (runningMidi);
-    	    fflush(stdout);
     	} while (runningMidi);
 	});
 }
@@ -181,7 +170,7 @@ void AlsaInterface::beginPlayback() {
             }
             float buffer[4096];
             EngineGlobal::getInstance()->audioCallback(&buffer[0], &buffer[2048], 2048);
-            if (snd_pcm_writei(playback, buffer, frames) < 0) {
+            if (snd_pcm_writei(playback, &buffer[0], frames) < 0) {
                 break;
             }
         } while (runningAudio);

@@ -21,41 +21,14 @@
 
 #include <algorithm>
 
-float* AudioBuffer::getWritePointer(const int channel) {
-    return audioBuffer[channel].data();
-}
-
-float* AudioBuffer::getReadPointer(const int channel, const int offset) const {
-    return const_cast<float*>(audioBuffer[channel].data() + offset);
-}
-
-void AudioBuffer::clear() {
-    for (auto& channel : audioBuffer) {
-        channel.assign(channel.size(), 0);
-    }
-}
-
-void AudioBuffer::zero() {
-    for (auto& channel : audioBuffer) {
-        channel.assign(channel.size(), 0.0f);
-    }
-}
+void AudioBuffer::clear() { audioBuffer.assign(audioBuffer.size(), 0.0f); }
 
 void AudioBuffer::applyGain(const float& gain) {
-    for (auto& channel : audioBuffer) {
-        std::ranges::transform(channel, channel.begin(), [&](float element) { return element * gain; });
-    }
+    std::ranges::transform(audioBuffer, audioBuffer.begin(), [&](float element) { return element * gain; });
 }
 
 void AudioBuffer::addFrom(const int toChannel, const int toStartOffset, const AudioBuffer &from, const int fromChannel, const int fromStartOffset, const int sampleCount) {
-    const auto toChannelStart = audioBuffer[toChannel].data() + toStartOffset;
+    const auto toChannelStart = &audioBuffer[toChannel * bufferSize + toStartOffset];
     const auto fromChannelStart = from.getReadPointer(fromChannel)  + fromStartOffset;
     std::transform(fromChannelStart, fromChannelStart + sampleCount, toChannelStart, toChannelStart, std::plus());
-}
-
-AudioBuffer::AudioBuffer(const int channels, const int bufferSize) : channels(channels), bufferSize(bufferSize) {
-    audioBuffer.reserve(channels);
-    for (auto& channel : audioBuffer) {
-        channel.reserve(bufferSize);
-    }
 }

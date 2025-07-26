@@ -190,10 +190,9 @@ private:
     AudioBuffer _subFrameBuffer;
     AudioBuffer _divisionFrameBuffer;
     AudioBuffer _voiceFrameBuffer;
+    AudioBuffer _tremulantBuffer;
 
     int _remainedSamples;
-
-    AudioBuffer _tremulantBuffer;
     float _tremulantPhase;
 
     dsp::Convolver _convolver;

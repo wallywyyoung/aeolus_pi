@@ -22,33 +22,26 @@
 #include <vector>
 
 class AudioBuffer {
-    int channels;
-    int bufferSize;
-
-    std::vector<std::vector<float>> audioBuffer;
 protected:
-    AudioBuffer() : channels{0}, bufferSize{0} { }
+    int channels;
+    std::size_t bufferSize{};
+    std::vector<float> audioBuffer{};
 
 public:
-    void setBuffer(const std::vector<std::vector<float>> &newBuffer){
-        audioBuffer = newBuffer;
-    }
+    explicit AudioBuffer() = delete;
+    AudioBuffer(const int channels, const int bufferSize) : channels(channels), bufferSize(bufferSize), audioBuffer(channels * bufferSize, 0.0f) { }
 
-    void setBufferSize(const std::size_t size) {
-        bufferSize = size;
-    }
-
-    void zero();
+    void setBuffer(const std::vector<float> &newBuffer){ audioBuffer = newBuffer; }
 
     void applyGain(const float& gain);
 
-    float* getWritePointer(int channel);
-    [[nodiscard]] float* getReadPointer(int channel, int offset = 0) const;
+    float* getWritePointer(const int channel) { return &audioBuffer[channel * bufferSize]; }
 
-    [[nodiscard]] int getNumSamples() const { return /*sampleRate * */ bufferSize; }
+    [[nodiscard]] const float *getReadPointer(const int channel, const int offset = 0) const  { return &audioBuffer[channel * bufferSize + offset]; }
+
+    [[nodiscard]] std::size_t getNumSamples() const { return bufferSize; }
+
     [[nodiscard]] int getNumChannels() const { return channels; }
-
-    AudioBuffer(int channels, int bufferSize);
 
     void addFrom(int toChannel, int toStartOffset, const AudioBuffer& from, int fromChannel, int fromStartOffset, int sampleCount);
 

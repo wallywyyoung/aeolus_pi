@@ -41,26 +41,12 @@ class EngineGlobal final {
 public:
     EngineGlobal();
     void init();
-    // static EngineGlobal* instance;
-    // static std::once_flag initOnce;
-    // static void initInstance() noexcept {
-    //     EngineGlobal::instance = new EngineGlobal();
-    // }
     EngineGlobal(EngineGlobal const&) = delete;
     void operator=(EngineGlobal const&) = delete;
 
     static EngineGlobal* getInstance() noexcept {
         static EngineGlobal instance;
         return &instance;
-        std::cout << "Instance address: " << &instance << std::endl;
-        // std::call_once(EngineGlobal::initOnce, []() {
-        //     printf("Initializing EngineGlobal singleton...\n");
-        //     fflush(stdout);
-        //     instance = new EngineGlobal();
-        //     printf("EngineGlobal singleton initialized\n");
-        //     fflush(stdout);
-        // });
-        // return EngineGlobal::instance;
     }
 
     /**
@@ -68,23 +54,18 @@ public:
      */
     [[nodiscard ]] const int getMIDISwellChannelsMask() const;
     [[nodiscard]] const bool shouldMTSFilterNoteByChannel(int midiNote, int midiChannel) const;
-    [[nodiscard]] const bool isMTSEnabled() const { return _mtsEnabled; }
+    [[nodiscard]] bool isMTSEnabled() const { return _mtsEnabled; }
     [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
-    [[nodiscard]] Rankwave *getStopByName(const std::string &name) const {
-        std::cout << "Map address: " << &_rankwavesByName << std::endl;
-        std::cout << "Rankwaves By Name Count: " << _rankwavesByName.size() << std::endl;
-        return _rankwavesByName.at(name).get();
-    }
+    [[nodiscard]] Rankwave *getStopByName(const std::string &name) const { return _rankwavesByName.at(name).get(); }
     [[nodiscard]] const float getMTSNoteToFrequency(int midiNote, int midiChannel) const;
-
-    int getStopsCount() const noexcept { return _rankwavesByName.size(); }
+    [[nodiscard]] int getStopsCount() const noexcept { return _rankwavesByName.size(); }
     [[nodiscard]] std::vector<std::string> getAllStopNames() const;
     [[nodiscard]] int getLongestIRLength() const noexcept { return _longestIRLength; }
     void updateStops() const;
     [[nodiscard]] float getTuningFrequency() const noexcept { return _tuningFrequency; }
     void setTuningFrequency(const float f) noexcept { _tuningFrequency = f; }
     [[nodiscard]] const Scale& getScale() const noexcept { return *_scale; }
-    void setScaleType(const Scale::Type type) noexcept { _scale->setType(type); }
+    void setScaleType(const Scale::Type type) const noexcept { _scale->setType(type); }
     [[nodiscard]] bool isConnectedToMTSMaster() const;
     [[nodiscard]] std::string getMTSScaleName();
     void setMTSEnabled(bool shouldBeEnabled);

@@ -134,9 +134,7 @@ void EngineGlobal::pushMidi(const std::vector<MidiData> &midi) {
 void EngineGlobal::loadRankwaves() {
     for (int i = 0; i <  model.getStopsCount(); ++i) {
         // TODO: Fix this mapping in JSON.
-        std::cout << "Loading rankwave " << model[i].getFileName() << std::endl;
         _rankwavesByName.emplace(model[i].getFileName(), std::make_unique<Rankwave>(model[i], *_scale, _tuningFrequency));
-        std::cout << "Rankwaves By Name Count: " << _rankwavesByName.size() << std::endl;
     }
 }
 

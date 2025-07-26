@@ -277,17 +277,9 @@ struct CascadeConvolver : public Conv<0, Parts...>
     size_t inputIndex;
     size_t inputSize;
 
-    CascadeConvolver()
-        : irBuffer{nullptr}
-        , irIndex{0}
-        , inputBuffer{nullptr}
-        , inputIndex{0}
-        , inputSize{0}
-    {
-    }
+    CascadeConvolver() : irBuffer{nullptr} , irIndex{0} , inputBuffer{nullptr} , inputIndex{0} , inputSize{0} { }
 
-    void init(float* ir, float* input, size_t size)
-    {
+    void init(float* ir, float* input, size_t size) {
         irBuffer    = ir;
         irIndex     = 0;
         inputBuffer = input;
