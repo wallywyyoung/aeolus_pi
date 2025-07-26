@@ -22,13 +22,13 @@ typedef void (WINAPI* CoTaskMemFreeFunc) (LPVOID);
 const static double ln2 = 0.693147180559945309417;
 const static double ratioToSemitones = 17.31234049066756088832; // 12.0 / log(2.0)
 
-typedef void (*mts_void__void)(void);
-typedef bool (*mts_bool__void)(void);
+typedef void (*mts_void__void)();
+typedef bool (*mts_bool__void)();
 typedef bool (*mts_bool__char_char)(char, char);
-typedef const double *(*mts_pConstDouble__void)(void);
+typedef const double *(*mts_pConstDouble__void)();
 typedef const double *(*mts_pConstDouble__char)(char);
 typedef bool (*mts_bool__char)(char);
-typedef const char *(*mts_pConstChar__void)(void);
+typedef const char *(*mts_pConstChar__void)();
 
 struct mtsclientglobal
 {
@@ -471,7 +471,7 @@ struct MTSClient
     inline char freqToNote(double freq, char *midichannel)
     {
         if (!midichannel)
-            return freqToNote(freq, static_cast<char>(-1));
+            return freqToNote(freq, -1);
 
         if (global.isOnline() && global.UseMultiChannelTuning)
         {

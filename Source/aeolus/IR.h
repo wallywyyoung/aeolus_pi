@@ -45,7 +45,7 @@ public:
     void clear() {
         name.clear();
         AudioBuffer::clear();
-    };
+    }
 };
 
 struct IRs {

@@ -21,7 +21,7 @@
 
 #include "aeolus/HN_func.h"
 
-HN_func::HN_func() : _h{} { }
+HN_func::HN_func() { }
 
 void HN_func::reset(const float v)
 {

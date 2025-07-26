@@ -19,18 +19,29 @@
 
 #pragma once
 
+#include "MemoryGlobal.h"
+
 #include <atomic>
 #include <iostream>
 #include <array>
-#include <span>
+#include <vector>
 
+// SPSC Lock-Free Ringbuffer
 template <typename T, size_t SIZE = 1024>
 class ObjectBuffer {
-    static constexpr size_t CACHE_LINE_SIZE = 64; // Should be 64 on Raspberry Pi 4B. Also consider std::hardware_destructive_interference_size
-    alignas(CACHE_LINE_SIZE) std::atomic<size_t> _readIndex{0};
-    alignas(CACHE_LINE_SIZE) std::atomic<size_t> _writeIndex{0};
-    alignas(CACHE_LINE_SIZE) size_t _readIndexCached{0};
-    alignas(CACHE_LINE_SIZE) size_t _writeIndexCached{0};
+    // TODO: Perf test and consider all vars in a single cacheline.
+    struct alignas(CACHE_LINE_SIZE) ConsumerFields {
+        std::atomic<size_t> readIndex{0};
+        size_t writeIndexCached{0};
+    };
+
+    struct alignas(CACHE_LINE_SIZE) ProducerFields {
+        std::atomic<size_t> writeIndex{0};
+        size_t readIndexCached{0};
+    };
+
+    ProducerFields producerFields{};
+    ConsumerFields consumerFields{};
     std::array<T, SIZE> buffer{};
 public:
     ObjectBuffer() = default;
@@ -39,28 +50,28 @@ public:
     ObjectBuffer& operator=(const ObjectBuffer&) = delete;
 
     bool push(const T& object) noexcept {
-        auto const writeIndex = _writeIndex.load(std::memory_order_relaxed);
+        auto const writeIndex = producerFields.writeIndex.load(std::memory_order_relaxed);
         auto nextWriteIndex = (writeIndex + 1) % SIZE;
-        if (nextWriteIndex == _readIndexCached) {
-            _readIndexCached = _readIndex.load(std::memory_order_acquire);
-            if (nextWriteIndex == _readIndexCached) {
+        if (nextWriteIndex == producerFields.readIndexCached) {
+            producerFields.readIndexCached = consumerFields.readIndex.load(std::memory_order_acquire);
+            if (nextWriteIndex == producerFields.readIndexCached) {
                 // Buffer is full.
                 std::cerr << "ObjectBuffer::push - Fail logging event, buffer full." << std::endl;
                 return false;
             }
         }
         buffer[writeIndex] = object;
-        _writeIndex.store(nextWriteIndex, std::memory_order_release);
+        producerFields.writeIndex.store(nextWriteIndex, std::memory_order_release);
         std::cout << "ObjectBuffer::push - Successfully logging event." << std::endl;
         return true;
     }
 
-    bool push(std::span<const T> objects) noexcept {
+    bool push(std::vector<T> objects) noexcept {
         if (objects.size() > buffer.size()) {
             // Too many elements for buffer.
             return false;
         }
-        auto const writeIndex = _writeIndex.load(std::memory_order_relaxed);
+        auto const writeIndex = producerFields.writeIndex.load(std::memory_order_relaxed);
         auto nextWriteIndex = writeIndex + objects.size();
         bool const wrapAround = nextWriteIndex > SIZE;
 
@@ -68,9 +79,9 @@ public:
             nextWriteIndex %= SIZE;
         }
 
-        if (nextWriteIndex == _readIndexCached || (wrapAround && nextWriteIndex > _readIndexCached)) {
-            _readIndexCached = _readIndex.load(std::memory_order_acquire);
-            if (nextWriteIndex == _readIndexCached || (wrapAround && nextWriteIndex > _readIndexCached)) {
+        if (nextWriteIndex == producerFields.readIndexCached || (wrapAround && nextWriteIndex > producerFields.readIndexCached)) {
+            producerFields.readIndexCached = consumerFields.readIndex.load(std::memory_order_acquire);
+            if (nextWriteIndex == producerFields.readIndexCached || (wrapAround && nextWriteIndex > producerFields.readIndexCached)) {
                 // Buffer is full.
                 return false;
             }
@@ -83,50 +94,56 @@ public:
             std::copy(objects.begin(), objects.begin() + offset, buffer.begin() + writeIndex);
             std::copy(objects.begin() + offset, objects.end(), buffer.begin());
         }
-        _writeIndex.store(nextWriteIndex, std::memory_order_release);
+        producerFields.writeIndex.store(nextWriteIndex, std::memory_order_release);
         return true;
     }
 
     bool pop(T& object) noexcept {
-        auto const readIndex = _readIndex.load(std::memory_order_relaxed);
-        if (readIndex == _writeIndexCached) {
-            _writeIndexCached = _writeIndex.load(std::memory_order_acquire);
-            if (readIndex == _writeIndexCached) {
+        auto const readIndex = consumerFields.readIndex.load(std::memory_order_relaxed);
+        if (readIndex == consumerFields.writeIndexCached) {
+            consumerFields.writeIndexCached = producerFields.writeIndex.load(std::memory_order_acquire);
+            if (readIndex == consumerFields.writeIndexCached) {
                 // Buffer is empty.
                 return false;
             }
         }
         object = buffer[readIndex];
         auto nextReadIndex = (readIndex + 1) % SIZE;
-        _readIndex.store(nextReadIndex, std::memory_order_release);
+        consumerFields.readIndex.store(nextReadIndex, std::memory_order_release);
         return true;
     }
 
-    bool pop(std::span<const T>& objects) noexcept {
-        auto const readIndex = _readIndex.load(std::memory_order_relaxed);
-        if (readIndex == _writeIndexCached) {
-            _writeIndexCached = _writeIndex.load(std::memory_order_acquire);
-            if (readIndex == _writeIndexCached) {
+    bool pop(std::vector<T>& objects) noexcept {
+        auto const readIndex = consumerFields.readIndex.load(std::memory_order_relaxed);
+        if (readIndex == consumerFields.writeIndexCached) {
+            consumerFields.writeIndexCached = producerFields.writeIndex.load(std::memory_order_acquire);
+            if (readIndex == consumerFields.writeIndexCached) {
                 // Buffer is empty.
                 return false;
             }
         }
-        if (readIndex < _writeIndexCached) {
+        objects.clear();
+        if (readIndex < consumerFields.writeIndexCached) {
             // Inline
-            auto elements =  _writeIndexCached - readIndex;
-            objects.resize(elements);
-            objects.insert(objects.begin(), buffer.begin() + readIndex, buffer.begin() + readIndex + elements);
+            auto elements =  consumerFields.writeIndexCached - readIndex;
+            objects.reserve(elements);
+            for (size_t i = readIndex; i < consumerFields.writeIndexCached; ++i) {
+                objects.push_back(buffer[i]);
+            }
         } else {
             // Wrap Around
             auto offset = buffer.size() - readIndex;
-            auto elements = offset + _writeIndexCached;
-            objects.resize(elements);
-            objects.insert(objects.begin(), buffer.begin() + readIndex, buffer.end());
-            objects.insert(objects.begin() + offset, buffer.begin(), buffer.begin() + _writeIndexCached);
+            auto elements = offset + consumerFields.writeIndexCached;
+            objects.reserve(elements);
+            for (size_t i = readIndex; i < SIZE; ++i) {
+                objects.push_back(buffer[i]);
+            }
+            for (size_t i = 0; i < consumerFields.writeIndexCached; ++i) {
+                objects.push_back(buffer[i]);
+            }
         }
         // Buffer is cleared.
-        const auto nextReadIndex = 0;
-        _readIndex.store(nextReadIndex, std::memory_order_release);
+        consumerFields.readIndex.store(consumerFields.writeIndexCached, std::memory_order_release);
         std::cout << "ObjectBuffer::pop - Successfully popped events." << std::endl;
         return true;
     }

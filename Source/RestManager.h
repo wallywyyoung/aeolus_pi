@@ -12,9 +12,9 @@
 class RestManager {
 crow::SimpleApp app;
     RestManager() {
-        CROW_ROUTE(app, "/stops")([]() {
+        CROW_ROUTE(app, "/stops")([] {
         });
-        CROW_ROUTE(app, "/stop/<int>/toggle")([](){
+        CROW_ROUTE(app, "/stop/<int>/toggle")([] {
             return "Hello world";
         });
     }

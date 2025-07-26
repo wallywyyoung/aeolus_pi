@@ -53,7 +53,7 @@ struct MidiData {
                 channel = event.data.control.channel;
                 value = event.data.control.value;
                 break;
-        };
+        }
         return *this;
     }
 };

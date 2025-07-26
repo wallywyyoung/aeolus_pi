@@ -163,7 +163,7 @@ struct FIR : ConvPart<L>
 };
 
 template <size_t L>
-struct FFT : public ConvPart<L>
+struct FFT : ConvPart<L>
 {
     constexpr static size_t Delay = L;
     constexpr static size_t Length = L;
@@ -197,9 +197,9 @@ struct FFT : public ConvPart<L>
 
     void reset()
     {
-        ::memset(complexInputBuffer, 0, sizeof(float) * Length4);
-        ::memset(complexIrBuffer,    0, sizeof(float) * Length4);
-        ::memset(tailBuffer,         0, sizeof(float) * Length);
+        memset(complexInputBuffer, 0, sizeof(float) * Length4);
+        memset(complexIrBuffer,    0, sizeof(float) * Length4);
+        memset(tailBuffer,         0, sizeof(float) * Length);
 
         tailIndex = 0;
         irReady = false;
@@ -240,7 +240,7 @@ struct FFT : public ConvPart<L>
             irReady = true;
         }
 
-        ::memset(&complexInputBuffer[Length2], 0, sizeof(float) * Length2);
+        memset(&complexInputBuffer[Length2], 0, sizeof(float) * Length2);
 
         FftImpl::fft_real_padded(complexInputBuffer);
 
@@ -265,7 +265,7 @@ struct FFT : public ConvPart<L>
 //----------------------------------------------------------
 
 template <class ...Parts>
-struct CascadeConvolver : public Conv<0, Parts...>
+struct CascadeConvolver : Conv<0, Parts...>
 {
     using Parent = Conv<0, Parts...>;
     constexpr static size_t Lenght = Parent::Length;
@@ -375,10 +375,10 @@ public:
     {
         inputIndex = 0;
 
-        ::memset(inputSpectrumBuffer, 0, sizeof(float) * inputSpectrumBufferSize);
+        memset(inputSpectrumBuffer, 0, sizeof(float) * inputSpectrumBufferSize);
         inputSpectrumIndex = 0;
 
-        ::memset(irSpectrumBuffer, 0, sizeof(float) * irSpectrumBufferSize);
+        memset(irSpectrumBuffer, 0, sizeof(float) * irSpectrumBufferSize);
         irInputIndex = 0;
 
         irInputBlockIndex = 0;
@@ -435,7 +435,7 @@ public:
     void inputFft()
     {
         // Clear padding
-        ::memset(&inputSpectrumBuffer[inputSpectrumIndex + Length2], 0, sizeof (float) * Length2);
+        memset(&inputSpectrumBuffer[inputSpectrumIndex + Length2], 0, sizeof (float) * Length2);
 
         FftImpl::fft_real_padded(&inputSpectrumBuffer[inputSpectrumIndex]);
 
@@ -451,8 +451,7 @@ public:
         blocks[0].inputSpectrumPtr = lastBlockInputSpectrumPtr;
 
         // Move input spectrum index to the next chunk
-        inputSpectrumIndex = inputSpectrumIndex == 0 ? inputSpectrumBufferSize - Length4
-            : inputSpectrumIndex - Length4;
+        inputSpectrumIndex = inputSpectrumIndex == 0 ? inputSpectrumBufferSize - Length4 : inputSpectrumIndex - Length4;
 
         // First block receives fresh input signal and cannot be dephased.
         blocks[0].dephase = false;
@@ -467,7 +466,7 @@ public:
 private:
     //------------------------------------------------------
 
-    struct Block final : public Worker::Job
+    struct Block final : Worker::Job
     {
         Worker* worker = nullptr;
         float* inputSpectrumPtr = nullptr;
@@ -490,7 +489,7 @@ private:
             tailBuffer        = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
         }
 
-        Block(const Block& other) : worker{other.worker}, inputSpectrumPtr{other.inputSpectrumPtr}, irSpectrumPtr{other.irSpectrumPtr}, preconvolved{false} {
+        Block(const Block& other) : worker{other.worker}, inputSpectrumPtr{other.inputSpectrumPtr}, irSpectrumPtr{other.irSpectrumPtr} {
             convolutionBuffer = static_cast<float *>(AlignedMemory<32>::alloc(Length4 * sizeof(float)));
             outputBuffer      = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
             tailBuffer        = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
@@ -504,9 +503,9 @@ private:
 
         void reset()
         {
-            ::memset(convolutionBuffer, 0, sizeof(float) * Length4);
-            ::memset(outputBuffer,      0, sizeof(float) * Length);
-            ::memset(tailBuffer,        0, sizeof(float) * Length);
+            memset(convolutionBuffer, 0, sizeof(float) * Length4);
+            memset(outputBuffer,      0, sizeof(float) * Length);
+            memset(tailBuffer,        0, sizeof(float) * Length);
             tailIndex = 0;
             irReady = false;
 

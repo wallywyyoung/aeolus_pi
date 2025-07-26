@@ -18,17 +18,12 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "IOManager.h"
 #include "aeolus/EngineGlobal.h"
-
-#include <iostream>
-
+#include "IOManager.h"
 #include "aeolus/engine.h"
 
 #include <thread_pool/thread_pool.h>
 
-// EngineGlobal* EngineGlobal::instance = nullptr;
-// std::once_flag EngineGlobal::initOnce;
 
 EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _sampleRate(SAMPLE_RATE_F),
                                _tuningFrequency(TUNING_FREQUENCY_DEFAULT) {
@@ -70,7 +65,7 @@ void EngineGlobal::updateStops() const {
     dp::thread_pool pool(_rankwavesByName.size());
     for (const auto &val: _rankwavesByName | std::views::values) {
         auto rwp = val.get();
-        pool.enqueue_detach([rwp]() {
+        pool.enqueue_detach([rwp] {
             rwp->prepareToPlay(SAMPLE_RATE_F);
         });
     }
@@ -103,8 +98,7 @@ void EngineGlobal::setMTSEnabled(const bool shouldBeEnabled) {
     }
 }
 
-void EngineGlobal::rebuildRankwaves()
-{
+void EngineGlobal::rebuildRankwaves() {
     // Prepare all the rankwaves to be retuned
     for (const auto &val: _rankwavesByName | std::views::values) {
         val->retunePipes(*_scale, _tuningFrequency);
@@ -117,6 +111,7 @@ void EngineGlobal::rebuildRankwaves()
 }
 
 void EngineGlobal::audioCallback(float *bufferL, float *bufferR, const size_t bufferSize) {
+    std::cout << "EngineGlobal::audioCallback" << std::endl;
     midiManager.processMidiBuffer();
     engine->process(bufferL, bufferR, bufferSize);
 }

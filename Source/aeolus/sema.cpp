@@ -19,25 +19,16 @@
 
 #include "aeolus/sema.h"
 
+Semaphore::Semaphore(const unsigned initialCount) : _counter{initialCount} { }
 
-
-Semaphore::Semaphore(const unsigned initialCount)
-    : _mutex()
-    , _cv()
-    , _counter{initialCount}
-{
-}
-
-void Semaphore::notify()
-{
-    std::unique_lock<decltype(_mutex)> lock(_mutex);
+void Semaphore::notify() {
+    std::unique_lock lock(_mutex);
     ++_counter;
     _cv.notify_one();
 }
 
-void Semaphore::wait()
-{
-    std::unique_lock<decltype(_mutex)> lock(_mutex);
+void Semaphore::wait() {
+    std::unique_lock lock(_mutex);
 
     while (_counter == 0)
         _cv.wait (lock);
@@ -45,9 +36,8 @@ void Semaphore::wait()
     --_counter;
 }
 
-bool Semaphore::tryWait()
-{
-    std::unique_lock<decltype(_mutex)> lock(_mutex);
+bool Semaphore::tryWait() {
+    std::unique_lock lock(_mutex);
 
     if (_counter != 0) {
         --_counter;
@@ -57,10 +47,7 @@ bool Semaphore::tryWait()
     return false;
 }
 
-unsigned Semaphore::count() const
-{
-    std::unique_lock<decltype(_mutex)> lock(_mutex);
+unsigned Semaphore::count() const {
+    std::unique_lock lock(_mutex);
     return _counter;
 }
-
-

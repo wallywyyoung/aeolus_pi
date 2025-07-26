@@ -99,7 +99,9 @@ target_sources(aeolus_pi PRIVATE
         Source/AlsaInterface.h
         Source/IOManager.cpp
         Source/IOManager.h
-        Source/main.cpp)
+        Source/main.cpp
+        Source/MemoryGlobal.h
+        Source/StaticAudioBuffer.h)
 
 find_package(Crow CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)

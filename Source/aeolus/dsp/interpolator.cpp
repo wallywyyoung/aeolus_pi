@@ -49,7 +49,7 @@ void Interpolator::setNumberOfChannels(const size_t n)
 void Interpolator::reset()
 {
     for (auto& buf : _acc) {
-        ::memset(buf.data(), 0, sizeof(float) * 8);
+        memset(buf.data(), 0, sizeof(float) * 8);
     }
 
     _accIndex = 0;

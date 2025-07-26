@@ -134,7 +134,7 @@ void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry
 {
     std::ifstream stream(entry.path(), std::ios::in | std::ios::binary);
     addsynth._fileName = entry.path().filename().stem();
-    char header[Addsynth::header_length] = {0};
+    char header[Addsynth::header_length]{};
 
     stream.read(header, Addsynth::header_length);
 

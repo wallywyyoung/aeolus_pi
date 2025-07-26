@@ -23,6 +23,8 @@
 #include <thread>
 #include <alsa/asoundlib.h>
 
+#include "StaticAudioBuffer.h"
+
 class AlsaInterface {
 //    Midi
     snd_seq_t *sequencer;
@@ -43,7 +45,7 @@ class AlsaInterface {
     std::string playbackDeviceName;
     std::unique_ptr<std::thread> audioThread;
 
-    void initAudio(int channels, unsigned int sampleRate, size_t bufferSize);
+    void initAudio();
     void beginPlayback();
     void endPlayback();
 

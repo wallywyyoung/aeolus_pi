@@ -111,11 +111,11 @@ Range Stop::getKeyRange() const {
 }
 
 Stop::Type Stop::getTypeFromString(const std::string& n) {
-    const static std::map<std::string, Stop::Type> nameToType {
-        { "principal", Stop::Type::Principal },
-        { "flute",     Stop::Type::Flute },
-        { "reed",      Stop::Type::Reed },
-        { "string",    Stop::Type::String }
+    const static std::map<std::string, Type> nameToType {
+        { "principal", Type::Principal },
+        { "flute",     Type::Flute },
+        { "reed",      Type::Reed },
+        { "string",    Type::String }
     };
 
     auto type = Type::Unknown;

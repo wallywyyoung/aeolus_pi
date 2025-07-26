@@ -49,11 +49,11 @@ int main (int argc, char* argv[]) {
 
     EngineGlobal::getInstance()->init();
 
-    auto* alsaInterface = new AlsaInterface();
+    const auto* alsaInterface = new AlsaInterface();
 
-    do {
-        sleep(1);
-    } while(running);
+    // do {
+    //     sleep(1);
+    // } while(running);
 
     delete alsaInterface;
 

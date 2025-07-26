@@ -275,25 +275,24 @@ void Division::allNotesOff()
     }
 }
 
-void Division::handleControlMessage(const MidiMessage& msg)
+void Division::handleControlMessage(const MidiData& msg)
 {
-    const int cc{ msg.getControllerNumber() };
+    const int cc{ msg.param };
 
     if (cc != CC_MODULATION && cc != CC_VOLUME && cc != CC_ALL_NOTES_OFF)
         return;
 
     const int swellCh{ EngineGlobal::getInstance()->getMIDISwellChannelsMask() };
-    const float value{ static_cast<float>(msg.getControllerValue()) / 127.0f };
+    const float value{ static_cast<float>(msg.value) / 127.0f };
 
-    if (msg.getChannel() == 0 || (swellCh & (msg.getChannel() - 1)) != 0) {
+    if (msg.channel == 0 || (swellCh & (msg.channel - 1)) != 0) {
         if (_hasSwell && cc == CC_VOLUME) {
-//            *_paramGain = value;
             _params[GAIN].setValue(value);
         }
     }
 
     // Hange manual channel specific controls
-    if (!isForMIDIChannel(msg.getChannel()))
+    if (!isForMIDIChannel(msg.channel))
         return;
 
     if (cc == CC_MODULATION && hasTremulant())
@@ -303,11 +302,7 @@ void Division::handleControlMessage(const MidiMessage& msg)
         allNotesOff();
 }
 
-bool Division::process(AudioBuffer& targetBuffer, AudioBuffer& voiceBuffer)
-{
-    assert(targetBuffer.getNumSamples() == SUB_FRAME_LENGTH);
-    assert(voiceBuffer.getNumSamples() == SUB_FRAME_LENGTH);
-
+bool Division::process(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& voiceBuffer) {
     updateAggregatedKeysState();
     releaseVoicesOfDisabledStops();
     triggerVoicesOfEnabledStops();
@@ -344,18 +339,15 @@ bool Division::process(AudioBuffer& targetBuffer, AudioBuffer& voiceBuffer)
     return true;
 }
 
-void Division::modulate(AudioBuffer& targetBuffer, const AudioBuffer& tremulantBuffer)
+void Division::modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<SUB_FRAME_LENGTH, 1>& tremulantBuffer)
 {
-    assert(targetBuffer.getNumSamples() == SUB_FRAME_LENGTH);
-    assert(tremulantBuffer.getNumSamples() == SUB_FRAME_LENGTH);
-
     const float* gain = tremulantBuffer.getReadPointer(0);
     assert(gain != nullptr);
 
     const float lvl = getTremulantLevel(true);
 
     // Update gain smoothly
-    auto& paramGain = _params[Division::GAIN];
+    auto& paramGain = _params[GAIN];
 //    paramGain.setValue(_paramGain->get());
 
 #if AEOLUS_MULTIBUS_OUTPUT
@@ -451,7 +443,7 @@ void Division::triggerVoicesOfEnabledStops()
         return;
     }
 
-    std::bitset<TOTAL_NOTES> missingNotes{ _aggregatedKeysState };
+    std::bitset missingNotes{ _aggregatedKeysState };
 
     for (int stopIndex = 0; stopIndex < _stops.size(); ++stopIndex) {
         if (auto& stop = _stops[stopIndex]; !stop.isEnabled())

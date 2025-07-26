@@ -45,7 +45,7 @@ public:
     };
 
     using Complex = std::complex<float>;
-    using Array = ::std::valarray<Complex>;
+    using Array = std::valarray<Complex>;
 
     static void direct(Array& x, Window win = Window::None);
 
@@ -66,7 +66,7 @@ struct DanielsonLanczos
 {
     using Next = DanielsonLanczos<N / 2, T>;
 
-    inline static std::array<float, N> w alignas(32) = []() {
+    inline static std::array<float, N> w alignas(32) = [] {
         std::array<float, N> w;
 
         w[0] = 1.0f;

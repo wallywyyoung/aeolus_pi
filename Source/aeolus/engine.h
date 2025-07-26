@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "AudioBuffer.h"
+#include "StaticAudioBuffer.h"
 #include "aeolus/globals.h"
 #include "aeolus/voice.h"
 #include "aeolus/Division.h"
@@ -187,10 +187,10 @@ private:
     std::vector<int> _sequencerStepBackwardKeySwitches{ SEQUENCER_BACKWARD_MIDI_KEY };
     std::vector<int> _sequencerStepForwardKeySwitches{ SEQUENCER_FORWARD_MIDI_KEY };
 
-    AudioBuffer _subFrameBuffer;
-    AudioBuffer _divisionFrameBuffer;
-    AudioBuffer _voiceFrameBuffer;
-    AudioBuffer _tremulantBuffer;
+    StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS> _subFrameBuffer;
+    StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS> _divisionFrameBuffer;
+    StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS> _voiceFrameBuffer;
+    StaticAudioBuffer<SUB_FRAME_LENGTH, 1> _tremulantBuffer;
 
     int _remainedSamples;
     float _tremulantPhase;

@@ -73,6 +73,7 @@ public:
     void audioCallback (float *bufferL, float *bufferR, size_t bufferSize);
     void pushMidi(const MidiData& midi);
     void pushMidi(const std::vector<MidiData>& midi);
+
 private:
     constexpr static float TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
     ~EngineGlobal();

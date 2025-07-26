@@ -19,13 +19,14 @@
 
 #pragma once
 
+#include "MemoryGlobal.h"
 #include <vector>
 
 class AudioBuffer {
 protected:
     int channels;
     std::size_t bufferSize{};
-    std::vector<float> audioBuffer{};
+    alignas (CACHE_LINE_SIZE) std::vector<float> audioBuffer{};
 
 public:
     explicit AudioBuffer() = delete;

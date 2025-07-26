@@ -26,7 +26,7 @@
 
 const Scale::Map Scale::_scales = {
     {
-        Scale::Pythagorean,
+        Pythagorean,
         {
             1.00000000f,
             1.06787109f,
@@ -43,7 +43,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::MeanQuart,
+        MeanQuart,
         {
             1.0000000f,
             1.0449067f,
@@ -60,7 +60,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::Werckm3,
+        Werckm3,
         {
             1.00000000f,
             1.05349794f,
@@ -77,7 +77,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::Kirnberg3,
+        Kirnberg3,
         {
             1.00000000f,
             1.05349794f,
@@ -94,7 +94,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::WellTemp,
+        WellTemp,
         {
             1.00000000f,
             1.05468828f,
@@ -111,7 +111,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::EqualTemp,
+        EqualTemp,
         {
             1.00000000f,
             1.05946309f,
@@ -128,7 +128,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::Ahrend,
+        Ahrend,
         {
             1.00000000f,
             1.05064661f,
@@ -145,7 +145,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::Vallotti,
+        Vallotti,
         {
             1.00000000f,
             1.05647631f,
@@ -162,7 +162,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::Kellner,
+        Kellner,
         {
             1.00000000f,
             1.05349794f,
@@ -179,7 +179,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::Lehman,
+        Lehman,
         {
             1.00000000f,
             1.05826737f,
@@ -196,7 +196,7 @@ const Scale::Map Scale::_scales = {
         }
     },
     {
-        Scale::Pure,
+        Pure,
         {
             1.00000000f,
             1.04166667f,
@@ -214,7 +214,7 @@ const Scale::Map Scale::_scales = {
     }
 };
 
-Scale::Scale(const Scale::Type type)
+Scale::Scale(const Type type)
     : _type(type)
 {
 }

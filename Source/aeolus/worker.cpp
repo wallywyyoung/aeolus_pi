@@ -89,7 +89,7 @@ struct Worker::Impl
 
     void purge()
     {
-        Worker::Job* job;
+        Job* job;
 
         while (jobsQueue.pop(job)) {
             // Do nothing.

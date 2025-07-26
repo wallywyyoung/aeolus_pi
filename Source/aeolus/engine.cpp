@@ -26,7 +26,7 @@
 #include "aeolus/EngineGlobal.h"
 #include "DivisionFactory.h"
 
-Engine::Engine() : _sampleRate{SAMPLE_RATE_F}, _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _subFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _divisionFrameBuffer{N_OUTPUT_CHANNELS, SUB_FRAME_LENGTH}, _voiceFrameBuffer{N_VOICE_CHANNELS, SUB_FRAME_LENGTH}, _remainedSamples{0}, _tremulantBuffer{1, SUB_FRAME_LENGTH}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}
+Engine::Engine() : _sampleRate{SAMPLE_RATE_F}, _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _remainedSamples{0}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}
 {
     populateDivisions();
     // Sequencer can be created only after the divisions have been populated.
@@ -116,6 +116,7 @@ void Engine::process(AudioBuffer &out)
 #else
 void Engine::process(float* outL, float* outR, int numFrames, const bool isNonRealtime)
 {
+    std::cout << "Engine::process" << std::endl;
     assert(outL != nullptr);
     assert(outR != nullptr);
 
@@ -252,9 +253,6 @@ void Engine::clearDivisionsTriggerFlag() const {
 }
 
 bool Engine::processSubFrame() {
-    assert(_subFrameBuffer.getNumChannels() == _divisionFrameBuffer.getNumChannels());
-    assert(_subFrameBuffer.getNumSamples() == _divisionFrameBuffer.getNumSamples());
-
     generateTremulant();
 
     _subFrameBuffer.clear();
@@ -285,7 +283,6 @@ bool Engine::processSubFrame() {
 void Engine::generateTremulant()
 {
     float* buf = _tremulantBuffer.getWritePointer(0);
-    assert(buf != nullptr);
 
     for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
         const float s = sinf(_tremulantPhase);

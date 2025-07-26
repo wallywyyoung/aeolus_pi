@@ -88,7 +88,7 @@ public:
     void prepateToPlay(float sampleRate);
 
     State trigger();
-    void release(Pipewave::State& state);
+    void release(State& state);
 
     void play(State& state, float* out);
 

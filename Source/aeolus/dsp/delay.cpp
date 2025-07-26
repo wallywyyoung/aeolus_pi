@@ -35,7 +35,7 @@ void DelayLine::resize (const size_t size)
 void DelayLine::reset()
 {
     _writeIndex = 0;
-    ::memset(_buffer.data(), 0, sizeof (float) * _buffer.size());
+    memset(_buffer.data(), 0, sizeof (float) * _buffer.size());
 }
 
 void DelayLine::write (const float x)

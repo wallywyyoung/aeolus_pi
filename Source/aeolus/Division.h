@@ -25,8 +25,8 @@
 #include "aeolus/voice.h"
 #include "aeolus/audioparam.h"
 #include "aeolus/dsp/filter.h"
-#include "aeolus/MidiMessage.h"
-#include "AudioBuffer.h"
+#include "StaticAudioBuffer.h"
+#include "MidiData.h"
 
 #include <atomic>
 #include <vector>
@@ -54,13 +54,6 @@ public:
     };
 
     explicit Division(const Engine& engine, const std::string& name = std::string());
-
-    /**
-     * @brief Load the division configuration from a JSON object.
-     *
-     * This will configure the division from an organ configuration data.
-     */
-    // void initFromJson(const nlohmann::json& v);
 
     const Engine& getEngine() const noexcept { return _engine; }
 
@@ -122,10 +115,10 @@ public:
     void noteOff(int note, int midiChannel);
     void allNotesOff();
 
-    void handleControlMessage(const MidiMessage& msg);
+    void handleControlMessage(const MidiData& msg);
 
-    bool process(AudioBuffer& targetBuffer, AudioBuffer& voiceBuffer);
-    void modulate(AudioBuffer& targetBuffer, const AudioBuffer& tremulantBuffer);
+    bool process(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& voiceBuffer);
+    void modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<SUB_FRAME_LENGTH, 1>& tremulantBuffer);
 
     void releaseVoicesOfDisabledStops();
     void triggerVoicesOfEnabledStops();

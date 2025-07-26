@@ -23,7 +23,7 @@
 
 namespace dsp {
 
-SpatialSource::SpatialSource() : _sampleRate{SAMPLE_RATE_F}, _sourcePosition{0.0f, 0.0f}, _listenerPosition{0.0f, 0.0f}, _listenerOrientation{0.0f}, _listenerLeftRightDistance{0.3f}, _delayLine{}, _leftDelay{}, _rightDelay{}, _filterSpec{}, _filterState{}
+SpatialSource::SpatialSource() : _sampleRate{SAMPLE_RATE_F}, _sourcePosition{0.0f, 0.0f}, _listenerPosition{0.0f, 0.0f}, _listenerOrientation{0.0f}, _listenerLeftRightDistance{0.3f}, _leftDelay{}, _rightDelay{}, _filterSpec{}, _filterState{}
 {
     recalculate();
 }

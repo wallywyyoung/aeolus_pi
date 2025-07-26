@@ -76,11 +76,11 @@ void Pipewave::prepateToPlay(const float sampleRate)
 
 Pipewave::State Pipewave::trigger()
 {
-    Pipewave::State state = {};
+    State state = {};
 
     if (!_needsToBeRebuilt->load()) {
         state.pipewave = this;
-        state.env = Pipewave::Attack;
+        state.env = Attack;
     }
 
     return state;
@@ -90,14 +90,14 @@ void Pipewave::release(State& state)
 {
     assert(state.env == Pipewave::Attack || state.env == Pipewave::Release);
     assert(state.pipewave == this);
-    state.env = Pipewave::Release;
+    state.env = Release;
 }
 
 void Pipewave::play(State& state, float* out)
 {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
-    std::uniform_real_distribution<float> dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
+    std::uniform_real_distribution dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
 
     if (out == nullptr) {
         throw std::invalid_argument("Pipewave::play: out is nullptr");
@@ -119,7 +119,7 @@ void Pipewave::play(State& state, float* out)
         // Drastic measures - pipe has been retuned while playing.
         // Data pointers may be invalid at this point - terminate the voice immediately.
         memset(out, 0, sizeof(float) * SUB_FRAME_LENGTH);
-        state.env = Pipewave::Over;
+        state.env = Over;
         state.playPtr = nullptr;
         state.releasePtr = nullptr;
         return;

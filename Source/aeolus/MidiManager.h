@@ -42,7 +42,7 @@ public:
 
 class MidiManager : public ObjectBuffer<MidiData> {
 public:
-    MidiManager() : midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 }, range(){ }
+    MidiManager() : ObjectBuffer(), midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 }, range(){ }
 
     void addListener(MidiListener* listener) {
         if (std::ranges::find(_listeners, listener) == _listeners.end()) {
@@ -60,9 +60,12 @@ public:
     }
 
     void processMidiBuffer() {
+        std::cout << "MidiManager::processMidiBuffer" << std::endl;
         std::vector<MidiData> midiBuffer{};
         this->pop(midiBuffer);
+        std::cout << "MidiManager::processMidiBuffer - Got Events: " << midiBuffer.size() << std::endl;
         for (const MidiData& event : midiBuffer) {
+            std::cout << "MidiManager::processMidiBuffer - Processing Event" << std::endl;
             processMidiEvent(event);
         }
     }

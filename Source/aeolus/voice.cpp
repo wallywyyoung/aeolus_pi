@@ -26,7 +26,7 @@
 Voice::Voice(Engine& engine)
     : _engine(engine)
       , _stopIndex{-1}
-      , _buffer{0}
+      , _buffer{}
       , _delayLine{SAMPLE_RATE}
       , _panPosition{0.0f}
       , _postReleaseCounter(0) {

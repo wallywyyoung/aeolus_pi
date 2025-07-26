@@ -185,11 +185,11 @@ struct Convolver::Impl {
         if (state == FeedHeadIR)
         {
             // ir buffer is ready at this point
-            if (ir.getNumSamples() <= Convolver::BlockSize) {
+            if (ir.getNumSamples() <= BlockSize) {
                 irSamplesRead = ir.getNumSamples();
                 state = Process;
             } else {
-                irSamplesRead = Convolver::BlockSize;
+                irSamplesRead = BlockSize;
                 state = ProcessWithIRStream;
             }
         }
@@ -209,8 +209,6 @@ struct Convolver::Impl {
 
         if (state == Process) {
             processFrame(inL, inR, outL, outR, numFrames);
-
-            return;
         }
     }
 
@@ -221,8 +219,8 @@ struct Convolver::Impl {
                 const float l = convL.tick(inL[i]) + headL.tick(inL[i]);
                 const float r = convR.tick(inR[i]) + headR.tick(inR[i]);
 
-                const float dry = params[Convolver::DRY].nextValue();
-                const float wet = params[Convolver::WET].nextValue();
+                const float dry = params[DRY].nextValue();
+                const float wet = params[WET].nextValue();
 
                 outL[i] = l * wet + inL[i] * dry;
                 outR[i] = r * wet + inR[i] * dry;
@@ -232,8 +230,8 @@ struct Convolver::Impl {
                 const float l = convL.tick(inL[i]);
                 const float r = convR.tick(inR[i]);
 
-                const float dry = params[Convolver::DRY].nextValue();
-                const float wet = params[Convolver::WET].nextValue();
+                const float dry = params[DRY].nextValue();
+                const float wet = params[WET].nextValue();
 
                 outL[i] = l * wet + inL[i] * dry;
                 outR[i] = r * wet + inR[i] * dry;

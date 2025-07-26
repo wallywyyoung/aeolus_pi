@@ -42,7 +42,7 @@ struct AlignedMemory
         if (alignment && size) {
             const uint32_t hdr_size = PTR_OFFSET_SIZE + (alignment - 1);
 
-            if (void* p = ::malloc (size + hdr_size)) {
+            if (void* p = malloc (size + hdr_size)) {
                 ptr = reinterpret_cast<void *>(alignUp((reinterpret_cast<uintptr_t>(p) + PTR_OFFSET_SIZE)));
 
                 //Calculate the offset and store it behind our aligned pointer

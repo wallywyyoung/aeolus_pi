@@ -61,9 +61,9 @@ const CPUTraits CPUID = CPUTraits::get();
 struct simd
 {
     static void  (*add)(float*, const float*, size_t);
-    static void  (*mul_const_add)(float*, const float*, const float, size_t);
-    static void  (*add_mul_const)(float*, const float*, const float, size_t);
-    static void  (*mul_const)(float*, const float, size_t);
+    static void  (*mul_const_add)(float*, const float*, float, size_t);
+    static void  (*add_mul_const)(float*, const float*, float, size_t);
+    static void  (*mul_const)(float*, float, size_t);
     static float (*mul_reduce)(const float*, const float*, size_t);
     static float (*mul_reduce_unaligned)(const float*, const float*, size_t);
     static void  (*complex_mul)(float*, const float*, const float*, size_t);

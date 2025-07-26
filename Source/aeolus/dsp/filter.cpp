@@ -25,11 +25,11 @@
 
 namespace dsp {
 
-void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
+void BiquadFilter::updateSpec(Spec& spec)
 {
     float A = 0.0f;
 
-    if (spec.type == Type::PeakingEq || spec.type == Type::LowShelf || spec.type == Type::HighShelf) {
+    if (spec.type == PeakingEq || spec.type == LowShelf || spec.type == HighShelf) {
         A = sqrt(powf(10.0f, spec.dbGain / 40.0f));
     } else {
         A = sqrtf(powf(10.0f, spec.dbGain / 20.0f));
@@ -52,8 +52,8 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
     case PeakingEq:
         alpha = sin_w0 * sinh(log(2.0f) / 2.0f * spec.q * w0 / sin_w0);
         break;
-    case Type::LowShelf:
-    case Type::HighShelf:
+    case LowShelf:
+    case HighShelf:
         alpha = sin_w0 / 2.0f * sqrt((A + 1.0f / A) * (1.0f / spec.q - 1.0f) + 2.0f);
         break;
     default:
@@ -61,7 +61,7 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
     }
 
     switch (spec.type) {
-        case Type::LowPass:
+        case LowPass:
             spec.b[0] = (1.0f - cos_w0) / 2.0f;
             spec.b[1] = 1.0f - cos_w0;
             spec.b[2] = (1.0f - cos_w0) / 2.0f;
@@ -69,7 +69,7 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
             spec.a[1] = -2.0f * cos_w0;
             spec.a[2] = 1.0f - alpha;
             break;
-        case Type::HighPass:
+        case HighPass:
             spec.b[0] = (1.0f + cos_w0) / 2.0f;
             spec.b[1] = -(1.0f + cos_w0);
             spec.b[2] = (1.0f + cos_w0) / 2.0f;
@@ -77,7 +77,7 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
             spec.a[1] = -2.0f * cos_w0;
             spec.a[2] = 1.0f - alpha;
             break;
-        case Type::BandPass:
+        case BandPass:
             // Constant 0 dB peak gain
             spec.b[0] = alpha;
             spec.b[1] = 0.0f;
@@ -86,7 +86,7 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
             spec.a[1] = -2.0f * cos_w0;
             spec.a[2] = 1.0f - alpha;
             break;
-        case Type::Notch:
+        case Notch:
             spec.b[0] = 1.0f;
             spec.b[1] = -2.0f * cos_w0;
             spec.b[2] = 1.0f;
@@ -94,7 +94,7 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
             spec.a[1] = -2.0f * cos_w0;
             spec.a[2] = 1.0f - alpha;
             break;
-        case Type::AllPass:
+        case AllPass:
             spec.b[0] = 1.0f - alpha;
             spec.b[1] = -2.0f * cos_w0;
             spec.b[2] = 1.0f + alpha;
@@ -102,7 +102,7 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
             spec.a[1] = -2.0f * cos_w0;
             spec.a[2] = 1.0f - alpha;
             break;
-        case Type::PeakingEq:
+        case PeakingEq:
             spec.b[0] = 1.0f + alpha * A;
             spec.b[1] = -2.0f * cos_w0;
             spec.b[2] = 1.0f - alpha * A;
@@ -110,7 +110,7 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
             spec.a[1] = -2.0f * cos_w0;
             spec.a[2] = 1.0f - alpha / A;
             break;
-        case Type::LowShelf:
+        case LowShelf:
             spec.b[0] = A * ((A + 1.0f) - (A - 1.0f) * cos_w0 + 2.0f * sqrt(A) * alpha);
             spec.b[1] = 2.0f * A * ((A - 1.0f) - (A + 1.0f) * cos_w0);
             spec.b[2] = A * ((A + 1.0f) - (A - 1.0f) * cos_w0 - 2.0f * sqrt(A) * alpha);
@@ -118,7 +118,7 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
             spec.a[1] = -2.0f * ((A - 1.0f) + (A + 1.0f) * cos_w0);
             spec.a[2] = (A + 1.0f) + (A - 1.0f) * cos_w0 - 2.0f * sqrt(A) * alpha;
             break;
-        case Type::HighShelf:
+        case HighShelf:
             spec.b[0] = A * ((A + 1.0f) + (A - 1.0f) * cos_w0 + 2.0f * sqrt(A) * alpha);
             spec.b[1] = -2.0f * A * ((A - 1.0f) + (A + 1.0f) * cos_w0);
             spec.b[2] = A * ((A + 1.0f) + (A - 1.0f) * cos_w0 - 2.0f * sqrt(A) * alpha);
@@ -140,7 +140,7 @@ void BiquadFilter::updateSpec(BiquadFilter::Spec& spec)
 
 void BiquadFilter::resetState(const Spec&, State& state)
 {
-    ::memset(&state, 0, sizeof(state));
+    memset(&state, 0, sizeof(state));
 }
 
 float BiquadFilter::tick(const Spec& spec, State& state, const float in)

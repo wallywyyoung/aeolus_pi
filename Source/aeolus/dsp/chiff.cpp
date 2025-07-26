@@ -24,17 +24,7 @@
 
 namespace dsp {
 
-Chiff::Chiff()
-    : _noiseEnvelope{}
-    , _envelope{}
-    , _envelopeTrigger{0.01f, 0.1f, 0.1f, 0.05f}
-    , _pipeResonator{SAMPLE_RATE}
-    , _pipeDelay{0.0f}
-    , _lpSpec{}
-    , _lpState{}
-    , _gain{1.0f}
-{
-
+Chiff::Chiff() : _envelopeTrigger{0.01f, 0.1f, 0.1f, 0.05f}, _pipeResonator{SAMPLE_RATE}, _pipeDelay{0.0f}, _lpSpec{}, _lpState{}, _gain{1.0f} {
     _lpSpec.type = BiquadFilter::LowPass;
     _lpSpec.sampleRate = SAMPLE_RATE;
     _lpSpec.dbGain = 0.0f;
@@ -105,12 +95,12 @@ void Chiff::process(float* out, const int numFrames)
 {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
-    std::uniform_real_distribution<float> dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
+    std::uniform_real_distribution dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
 
     if (!isActive())
         return;
 
-    if (_noiseEnvelope.state() == dsp::Envelope::Sustain && _envelope.state() == dsp::Envelope::Sustain) {
+    if (_noiseEnvelope.state() == Envelope::Sustain && _envelope.state() == Envelope::Sustain) {
         const float noiseLevel{ _noiseEnvelope.level() };
         const float envelopeLevel{ _envelope.level() * _gain };
 

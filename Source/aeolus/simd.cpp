@@ -63,7 +63,7 @@ CPUTraits CPUTraits::get()
         edx = 3
     };
 
-    uint32_t regs[4] = {0};
+    uint32_t regs[4]{};
 
     cpuid_func (regs, 1);
     cpu.sse3     = (regs[ecx] & (1 <<  0)) != 0;
@@ -83,7 +83,7 @@ CPUTraits CPUTraits::get()
     cpu.avx512cd = (regs[ebx] & (1 << 28)) != 0;
 
     return cpu;
-};
+}
 
 //------------------------------------------------------------------------------
 
