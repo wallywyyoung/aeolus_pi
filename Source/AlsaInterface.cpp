@@ -94,7 +94,7 @@ void AlsaInterface::beginPollMidi() {
     		    continue;
     		}
    		    if (event && event->type & (SND_SEQ_EVENT_NOTEON | SND_SEQ_EVENT_NOTEOFF| SND_SEQ_EVENT_CONTROLLER | SND_SEQ_EVENT_PGMCHANGE)) {
-				    MidiData midiData;
+   		            MidiData midiData;
 				    midiData = *event;
     			    try {
     			        EngineGlobal::getInstance()->pushMidi(midiData);
@@ -168,22 +168,41 @@ void AlsaInterface::beginPlayback() {
         const snd_pcm_channel_area_t* areas;
         do {
             if (snd_pcm_wait(playback, 1000) < 0) {
-                break;
-            }
-            if ((frames = snd_pcm_avail_update(playback)) < 0) {
-                throw std::runtime_error("Failed to update available frames");
-            }
-            if (frames <= 0) {
                 continue;
             }
-            snd_pcm_mmap_begin(playback, &areas, &offset, &frames);
-            float* left = static_cast<float*>(areas[0].addr) + (areas[0].first >> sizeof(float));
-            float* right = static_cast<float*>(areas[1].addr) + (areas[1].first >> sizeof(float));
+            if ((frames = snd_pcm_avail_update(playback)) < 0 || frames < 1) {
+                continue;
+            }
+            if (snd_pcm_mmap_begin(playback, &areas, &offset, &frames) < 0) {
+                throw std::runtime_error("Failed to mmap audio buffer");
+            }
 
-            std::cout << "AlsaInterface Playback - Frames: " << frames << " Offset: " << offset << std::endl;
-            EngineGlobal::getInstance()->audioCallback(left, right, frames);
-            if (snd_pcm_mmap_commit(playback, offset, frames) < 0) {
-                break;
+            uint8_t* left_base = static_cast<uint8_t*>(areas[0].addr) + (areas[0].first >> 3);
+            uint8_t* right_base = static_cast<uint8_t*>(areas[1].addr) + (areas[1].first >> 3);
+
+            float* left = reinterpret_cast<float*>(left_base + offset * (areas[0].step >> 3));
+            float* right = reinterpret_cast<float*>(right_base + offset * (areas[1].step >> 3));
+
+            auto processedFrames = EngineGlobal::getInstance()->audioCallback(left, right, frames);
+            // for (int i = 0; i < frames; i++) {
+            //     left[i] = sin(2 * M_PI * 440 * ((float)i / SAMPLE_RATE));
+            //     right[i] = sin(2 * M_PI * 440 * ((float)i / SAMPLE_RATE));
+            // }
+
+            if (auto committed = snd_pcm_mmap_commit(playback, offset, processedFrames); committed < 0) {
+                std::cerr << "AlsaInterface::beginPlayback - snd_pcm_mmap_commit error: " << snd_strerror(committed) << std::endl;
+                if (committed == -EPIPE) {
+                    std::cerr << "Underrun detected, recovering...\n";
+                    snd_pcm_prepare(playback);
+                }
+                continue;
+            }
+            snd_pcm_state_t state = snd_pcm_state(playback);
+
+            if (state == SND_PCM_STATE_PREPARED) {
+                if (int err = snd_pcm_start(playback); err < 0) {
+                    std::cerr << "AlsaInterface::beginPlayback - snd_pcm_start error: " << snd_strerror(err) << std::endl;
+                }
             }
         } while (runningAudio);
     });

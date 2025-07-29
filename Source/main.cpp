@@ -51,9 +51,10 @@ int main (int argc, char* argv[]) {
 
     const auto* alsaInterface = new AlsaInterface();
 
-    // do {
-    //     sleep(1);
-    // } while(running);
+    std::cout << "Aeolus is Ready" << std::endl;
+    do {
+        sleep(1);
+    } while(running);
 
     delete alsaInterface;
 

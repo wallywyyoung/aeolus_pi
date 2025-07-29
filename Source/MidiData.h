@@ -33,7 +33,7 @@ struct MidiData {
     MidiData &operator=(const snd_seq_event_t & event) {
         switch(event.type) {
             case SND_SEQ_EVENT_NOTEON:
-                eventType = NOTE_ON;
+                eventType = event.data.note.velocity ? NOTE_ON : NOTE_OFF;
                 channel = event.data.note.channel;
                 param = event.data.note.note;
                 break;

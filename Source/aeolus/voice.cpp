@@ -98,8 +98,7 @@ void Voice::reset()
     _spatialSource.reset();
 }
 
-void Voice::process(float* outL, float* outR)
-{
+void Voice::process(float* outL, float* outR) {
     memset(_buffer, 0, sizeof(float) * SUB_FRAME_LENGTH);
 
     const auto gain = _state.gain;

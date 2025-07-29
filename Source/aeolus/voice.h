@@ -78,7 +78,7 @@ private:
     float _panPosition;
 
     /// Stereo spatial modeller.
-    dsp::SpatialSource _spatialSource;
+    dsp::SpatialSource _spatialSource{};
 
     /// Counter to account for the delayed sound before recycling the voice.
     size_t _postReleaseCounter;

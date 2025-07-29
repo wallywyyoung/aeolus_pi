@@ -86,6 +86,7 @@ public:
 
     AudioParameterPool& parameters() noexcept { return _params; }
 
+    void enableAllStops();
     int getStopsCount() const noexcept;
     void enableStop(int i, bool ena);
     bool isStopEnabled(int i) const;

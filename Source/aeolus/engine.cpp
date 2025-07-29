@@ -26,7 +26,7 @@
 #include "aeolus/EngineGlobal.h"
 #include "DivisionFactory.h"
 
-Engine::Engine() : _sampleRate{SAMPLE_RATE_F}, _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _remainedSamples{0}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}
+Engine::Engine() : MidiManager(), _sampleRate{SAMPLE_RATE_F}, _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _remainedSamples{0}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}, _divisionGain(std::make_shared<AudioParameter>(1))
 {
     populateDivisions();
     // Sequencer can be created only after the divisions have been populated.
@@ -62,7 +62,7 @@ float Engine::getReverbLengthInSeconds() const { return static_cast<float>(_conv
 
 void Engine::setReverbWet(const float v) { _convolver.setDryWet(1.0f, v); }
 
-void Engine::setVolume(const float v) { _params[VOLUME].setValue(v); }
+void Engine::setVolume(const float v, const bool immediate) { _params[VOLUME].setValue(v, immediate); }
 
 #if AEOLUS_MULTIBUS_OUTPUT
 void Engine::process(AudioBuffer &out)
@@ -114,22 +114,15 @@ void Engine::process(AudioBuffer &out)
     applyVolume(out);
 }
 #else
-void Engine::process(float* outL, float* outR, int numFrames, const bool isNonRealtime)
-{
-    std::cout << "Engine::process" << std::endl;
-    assert(outL != nullptr);
-    assert(outR != nullptr);
-
+void Engine::process(float* outL, float* outR, size_t numFrames, const bool isNonRealtime) {
     float* origOutL = outL;
     float* origOutR = outR;
-    const int origNumFrames = numFrames;
-
+    const auto origNumFrames = numFrames;
     bool wasAudioGenerated = false;
 
     while (numFrames > 0)
     {
-        if (_remainedSamples > 0)
-        {
+        if (_remainedSamples > 0) {
             const int idx = SUB_FRAME_LENGTH - _remainedSamples;
             const float* subL = _subFrameBuffer.getReadPointer(0, idx);
             const float* subR = _subFrameBuffer.getReadPointer(1, idx);
@@ -140,7 +133,6 @@ void Engine::process(float* outL, float* outR, int numFrames, const bool isNonRe
                 subL += 1;
                 subR += 1;
             }
-
             while (numFrames > 0 && _interpolator.canRead()) {
                 _interpolator.read(*outL, *outR);
                 numFrames -= 1;
@@ -148,20 +140,19 @@ void Engine::process(float* outL, float* outR, int numFrames, const bool isNonRe
                 outR += 1;
             }
         }
-
-        if (_remainedSamples == 0 && numFrames > 0)
-        {
+        if (_remainedSamples == 0 && numFrames > 0) {
             wasAudioGenerated |= processSubFrame();
             assert(_remainedSamples > 0);
         }
     }
 
-    // When there is no audio generated we let the reverb tail to
-    // sound and stop the reverb processing to avoid convolving with silence.
-    if (wasAudioGenerated)
-        _reverbTailCounter = _convolver.length();
-    else
-        _reverbTailCounter = std::max(0, _reverbTailCounter - origNumFrames);
+    auto frames = numFrames;
+    while (numFrames > 0) {
+        wasAudioGenerated |= processSubFrame();
+    }
+
+    // When there is no audio generated we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
+    _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - static_cast<int>(origNumFrames));
 
     if (_reverbTailCounter > 0 && _convolver.isAudible()) {
         _convolver.setNonRealtime(isNonRealtime);
@@ -169,6 +160,50 @@ void Engine::process(float* outL, float* outR, int numFrames, const bool isNonRe
     }
 
     applyVolume(origOutL, origOutR, origNumFrames);
+}
+
+size_t Engine::processNoninterpolatedRealtime(float *outL, float *outR, size_t numFrames) {
+    processMidiBuffer();
+
+    float* origOutL = outL;
+    float* origOutR = outR;
+    const auto origNumFrames = numFrames;
+    bool wasAudioGenerated = false;
+
+    memset(outL, 0.0f, sizeof(float) * numFrames);
+    memset(outR, 0.0f, sizeof(float) * numFrames);
+
+    auto iterations = numFrames / SUB_FRAME_LENGTH;
+    for (int i = 0; i < iterations; ++i) {
+        generateTremulant();
+        for (const auto &division : _divisions) {
+            _divisionFrameBuffer.clear();
+            const bool hasVoices = division->process(_divisionFrameBuffer, _voiceFrameBuffer);
+            wasAudioGenerated |= hasVoices;
+            if (hasVoices) {
+                division->modulate(_divisionFrameBuffer, _tremulantBuffer);
+                const auto leftBuffer = _divisionFrameBuffer.getReadPointer(0);
+                const auto rightBuffer = _divisionFrameBuffer.getReadPointer(1);
+                for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
+                    outL[i] += leftBuffer[i];
+                    outR[i] += rightBuffer[i];
+                }
+            }
+        }
+        outL += SUB_FRAME_LENGTH;
+        outR += SUB_FRAME_LENGTH;
+    }
+
+    // When there is no audio generated we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
+    _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - static_cast<int>(origNumFrames));
+    if (_reverbTailCounter > 0 && _convolver.isAudible()) {
+        _convolver.setNonRealtime(false);
+        _convolver.process(origOutL, origOutR, origOutL, origOutR, origNumFrames);
+    }
+    auto framesProcessed = iterations * SUB_FRAME_LENGTH;
+    applyVolume(origOutL, origOutR, framesProcessed);
+
+    return framesProcessed;
 }
 #endif
 
@@ -185,8 +220,10 @@ void Engine::handleNoteOn(const int &channel, const int &note) {
     clearDivisionsTriggerFlag();
     // Ignore note-on event if filtered by MTS.
     if (EngineGlobal::getInstance()->shouldMTSFilterNoteByChannel(note, channel)) {
-        for (const auto &division: _divisions)
-            division->noteOn(note, channel);
+        return;
+    }
+    for (const auto &division: _divisions) {
+        division->noteOn(note, channel);
     }
 }
 
@@ -197,10 +234,10 @@ void Engine::handleNoteOff(const int &channel, const int &note) {
     }
 }
 
-void Engine::handleAllNotesOff()
-{
-    for (const auto &division : _divisions)
+void Engine::handleAllNotesOff() {
+    for (const auto &division : _divisions) {
         division->allNotesOff();
+    }
 }
 
 Range Engine::getMidiKeyboardRange() const
@@ -309,7 +346,7 @@ void Engine::applyVolume(AudioBuffer& out)
     }
 }
 
-void Engine::applyVolume(float* outL, float* outR, const int numFrames)
+void Engine::applyVolume(float* outL, float* outR, const size_t numFrames)
 {
     if (_params[VOLUME].isSmoothing()) {
         for (int i = 0; i < numFrames; ++i) {
@@ -319,7 +356,6 @@ void Engine::applyVolume(float* outL, float* outR, const int numFrames)
         }
     } else {
         const float g = _params[VOLUME].target() * VOLUME_GAIN;
-
         for (int i = 0; i < numFrames; ++i) {
             outL[i] *= g;
             outR[i] *= g;
@@ -365,6 +401,11 @@ void Engine::handleCC(const int& channel, const int& cc, const int& value) {
     }
 }
 
+void Engine::allStopsOn() {
+    for (auto& division : _divisions) {
+        division->enableAllStops();
+    }
+}
 void Engine::processStopControlMessage() const {
     if (!_stopControlMode.has_value())
         return;

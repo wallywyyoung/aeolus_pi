@@ -24,6 +24,7 @@
 #include <cmath>
 #include <random>
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <limits>
 #include <vector>
@@ -97,7 +98,7 @@ void Pipewave::play(State& state, float* out)
 {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
+    std::uniform_real_distribution dist(-0.5f, 0.5f);
 
     if (out == nullptr) {
         throw std::invalid_argument("Pipewave::play: out is nullptr");
@@ -210,7 +211,7 @@ void Pipewave::play(State& state, float* out)
             }
         } else {
             float y = state.playInterpolation;
-            state.playInterpolationSpeed += _instability * 0.0005f * (0.05f * _instability * (dist(gen) - 0.5f) - state.playInterpolationSpeed);
+            state.playInterpolationSpeed += _instability * 0.0005f * (0.05f * _instability * dist(gen) - state.playInterpolationSpeed);
             const float dy = state.playInterpolationSpeed * static_cast<float>(_sampleStep);
 
             while (k--) {
@@ -247,7 +248,7 @@ void Pipewave::genwave()
     // TODO: Is this right?
     thread_local std::random_device rnd;
     std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
+    std::uniform_real_distribution dist(0.0f, 2.0f);
 
     const float sampleRate_r = 1.0f / _sampleRate;
 
@@ -263,7 +264,7 @@ void Pipewave::genwave()
     _attackLength = (_attackLength + SUB_FRAME_LENGTH - 1) & ~(SUB_FRAME_LENGTH - 1);
 
     // Target frequency
-    const float f1 = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * (2.0f * (dist(gen)) + 1.0f)) * sampleRate_r;
+    const float f1 = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * (dist(gen) + 1.0f)) * sampleRate_r;
 
     // Attack frequency (detuned)
     const float f0 = f1 * math::exp2ap(_model->getNoteAttackDetune(_note) / 1200.0f);
@@ -344,7 +345,7 @@ void Pipewave::genwave()
         if (v < -80.0f)
             continue;
 
-        v = v0 * math::exp2ap(0.1661f * (v + _model->getHarmonicRandomisation(h, _note) * (2.0f * dist(gen) - 1.0f)));
+        v = v0 * math::exp2ap(0.1661f * (v + _model->getHarmonicRandomisation(h, _note) * (dist(gen) - 1.0f)));
         k = static_cast<int>(_sampleRate * _model->getHarmonicAttack(h, _note) + 0.5f);
 
         if (k > att.size())

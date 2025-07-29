@@ -25,7 +25,6 @@
 
 #include "aeolus/rankwave.h"
 #include "aeolus/scale.h"
-#include "aeolus/MidiManager.h"
 #include "aeolus/engine.h"
 #include "aeolus/Model.h"
 #include "mts/libMTSClient.h"
@@ -70,7 +69,8 @@ public:
     [[nodiscard]] std::string getMTSScaleName();
     void setMTSEnabled(bool shouldBeEnabled);
     void rebuildRankwaves();
-    void audioCallback (float *bufferL, float *bufferR, size_t bufferSize);
+
+    size_t audioCallback(float *bufferL, float *bufferR, size_t bufferSize);
     void pushMidi(const MidiData& midi);
     void pushMidi(const std::vector<MidiData>& midi);
 
@@ -88,7 +88,6 @@ private:
     void timerCallback();
     Model model;
     Engine *engine;
-    MidiManager midiManager;
     std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName{};
     std::vector<IR> _irs{};
     IRs irs;

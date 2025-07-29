@@ -33,8 +33,13 @@ void EngineGlobal::init() {
     loadRankwaves();
     updateStops();
     engine = new Engine();
-    midiManager.addListener(engine);
     engine->prepareToPlay(_sampleRate);
+    engine->allStopsOn();
+    engine->setVolume(0.05f, true);
+    // engine->handleNoteOn(0,60);
+    // engine->handleNoteOn(1,60);
+    // engine->handleNoteOn(2,60);
+    // engine->handleNoteOn(3,31);
 }
 
 EngineGlobal::~EngineGlobal() {
@@ -110,20 +115,16 @@ void EngineGlobal::rebuildRankwaves() {
     updateStops();
 }
 
-void EngineGlobal::audioCallback(float *bufferL, float *bufferR, const size_t bufferSize) {
-    std::cout << "EngineGlobal::audioCallback" << std::endl;
-    midiManager.processMidiBuffer();
-    engine->process(bufferL, bufferR, bufferSize);
+size_t EngineGlobal::audioCallback(float *bufferL, float *bufferR, const size_t bufferSize) {
+    return engine->processNoninterpolatedRealtime(bufferL, bufferR, bufferSize);
 }
 
 void EngineGlobal::pushMidi(const MidiData &midi) {
-    printf("EnglineGlobal::pushMidi - Pushing event.\n");
-    fflush(stdout);
-    midiManager.push(midi);
+    engine->push(midi);
 }
 
 void EngineGlobal::pushMidi(const std::vector<MidiData> &midi) {
-    midiManager.push(midi);
+    engine->push(midi);
 }
 
 void EngineGlobal::loadRankwaves() {
@@ -134,7 +135,7 @@ void EngineGlobal::loadRankwaves() {
 }
 
 const int EngineGlobal::getMIDISwellChannelsMask() const{
-    return midiManager.getMIDISwellChannelsMask();
+    return engine->getMIDISwellChannelsMask();
 }
 
 const bool EngineGlobal::shouldMTSFilterNoteByChannel(const int midiNote, const int midiChannel) const {

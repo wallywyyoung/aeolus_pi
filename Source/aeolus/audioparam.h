@@ -29,10 +29,7 @@
 class AudioParameter
 {
 public:
-    explicit AudioParameter(float value = 0.0f,
-                            float min = 0.0f,
-                            float max = 1.0f,
-                            float smooth = 0.5f);
+    explicit AudioParameter(float value = 0.0f, float min = 0.0f, float max = 1.0f, float smooth = 0.5f);
 
     void setName(const std::string& n) { _paramName = n; }
     const std::string& name() const noexcept { return _paramName; }

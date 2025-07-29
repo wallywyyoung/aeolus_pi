@@ -20,52 +20,29 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
-#include "aeolus/utilities/Range.h"
 #include "ObjectBuffer.h"
 #include "MidiData.h"
-
-#include <algorithm>
 #include <atomic>
 
-
-class MidiListener{
+class MidiManager : public ObjectBuffer<MidiData> {
 public:
-    virtual ~MidiListener() = default;
+    MidiManager() : ObjectBuffer(), midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 } { }
+
     virtual void handleNoteOn(const int& channel, const int& note) = 0;
     virtual void handleNoteOff(const int& channel, const int& note) = 0;
     virtual void handleAllNotesOff() = 0;
     virtual void handleCC(const int& channel, const int& cc, const int& value) = 0;
     virtual void handlePC(const int& pc) = 0;
     virtual void handleSequencerSwitch(const int& note) = 0;
-};
 
-class MidiManager : public ObjectBuffer<MidiData> {
-public:
-    MidiManager() : ObjectBuffer(), midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 }, range(){ }
-
-    void addListener(MidiListener* listener) {
-        if (std::ranges::find(_listeners, listener) == _listeners.end()) {
-            return;
-        }
-        _listeners.push_back(listener);
-    }
-
-    void removeListener(MidiListener* listener) {
-        std::ranges::remove(_listeners, listener);
-    }
-
-    [[nodiscard]] Range getMidiKeyboardRange() const {
-        return range;
-    }
+    // [[nodiscard]] Range getMidiKeyboardRange() const {
+    //     return range;
+    // }
 
     void processMidiBuffer() {
-        std::cout << "MidiManager::processMidiBuffer" << std::endl;
         std::vector<MidiData> midiBuffer{};
         this->pop(midiBuffer);
-        std::cout << "MidiManager::processMidiBuffer - Got Events: " << midiBuffer.size() << std::endl;
         for (const MidiData& event : midiBuffer) {
-            std::cout << "MidiManager::processMidiBuffer - Processing Event" << std::endl;
             processMidiEvent(event);
         }
     }
@@ -74,76 +51,33 @@ public:
     void setMIDIControlChannelsMask(const int& mask) noexcept { midiControlChannelsMask = mask; }
     [[nodiscard]] int getMIDISwellChannelsMask() const noexcept { return midiSwellChannelsMask; }
     void setMIDISwellChannelsMask(const int& mask) noexcept { midiSwellChannelsMask = mask; }
-private:
+protected:
     void processMidiEvent(const MidiData& event) {
-
         // Process global CCs
-        if (midi::matchMidiChannelToMask(getMIDIControlChannelsMask(), event.channel)) {
-            //            keyState[message.getChannel()][message.getNote()] = true;
-            for (const auto listener : _listeners) {
-                listener->handleSequencerSwitch(event.param);
-            }
+        if (event.channel == 15) {
+            handleSequencerSwitch(event.param);
             return;
         }
 
         switch (event.eventType) {
             case MidiData::NOTE_ON:
-                noteOn(event.channel, event.param);
+                handleNoteOn(event.channel, event.param);
                 break;
             case MidiData::NOTE_OFF:
-                noteOff(event.channel, event.param);
+                handleNoteOff(event.channel, event.param);
                 break;
             case MidiData::CC:
-                cc(event.channel, event.param, event.value);
+                handleCC(event.channel, event.param, event.value);
                 break;
             case MidiData::PC:
-                pc(event.value);
+                handlePC(event.value);
                 break;
         }
     }
 
-    void noteOn(const int channel, const int note) {
-        keyState[channel][note] = true;
-        for (const auto listener : _listeners) {
-            listener->handleNoteOff(channel, note);
-        }
-    }
-
-    void noteOff(const int& channel, const int& note) {
-        keyState[channel][note] = false;
-        for (const auto listener : _listeners) {
-            listener->handleNoteOn(channel, note);
-        }
-    }
-
-    void allNotesOff() const {
-        for (auto channel : keyState) {
-            channel.assign(channel.size(), false);
-        }
-        for (const auto listener : _listeners) {
-            listener->handleAllNotesOff();
-        }
-    }
-
-    void cc(const int& channel, const int& cc, const int& value) {
-        ccState[channel][cc] = value;
-        for (const auto listener : _listeners) {
-            listener->handleCC(channel, cc, value);
-        }
-    }
-
-    void pc(const int& pc) {
-        _pc = pc;
-        for (const auto listener : _listeners) {
-            listener->handlePC(pc);
-        }
-    }
-
-    int _pc{};
+    // int _pc{};
     std::atomic<int> midiControlChannelsMask;
     std::atomic<int> midiSwellChannelsMask;
-    std::vector<std::vector<bool>> keyState{};
-    std::vector<std::vector<int>> ccState{};
-    std::vector<MidiListener*> _listeners{};
-    Range range;
+    // std::vector<std::vector<bool>> keyState{};
+    // std::vector<std::vector<int>> ccState{};
 };

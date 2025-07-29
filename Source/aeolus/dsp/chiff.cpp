@@ -95,7 +95,7 @@ void Chiff::process(float* out, const int numFrames)
 {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(std::numeric_limits<float>::min(), std::numeric_limits<float>::max());
+    std::uniform_real_distribution dist(0.0f, 1.0f);
 
     if (!isActive())
         return;

@@ -39,10 +39,10 @@
  * This class defines the top-level organ engine that performs MIDI events processing
  * and audio generation.
  */
-class Engine final : public MidiListener
+class Engine final : public MidiManager
 {
     /// Global volume gain.
-    constexpr static float VOLUME_GAIN = 4.0f;
+    constexpr static float VOLUME_GAIN = 1.0f;
 
     /// Tremulant modulation frequency.
     constexpr static float TREMULANT_FREQUENCY = 6.283184f;
@@ -57,6 +57,7 @@ class Engine final : public MidiListener
     constexpr static int SEQUENCER_BACKWARD_MIDI_KEY = 22;
     constexpr static int SEQUENCER_FORWARD_MIDI_KEY = 23;
 
+
     enum class StopControlMode {
         Disabled,   // 0b00
         SetOff,     // 0b01
@@ -69,8 +70,11 @@ public:
         NUM_PARAMS
     };
 
+
+    std::shared_ptr<AudioParameter> _divisionGain;
+
     explicit Engine();
-    ~Engine() override = default;
+    ~Engine() = default;
 
     /**
      * This method returns external processing sample rate as mandated
@@ -115,7 +119,7 @@ public:
      * Set global output volume level (linear).
      * @note This must be called on the audio thread.
      */
-    void setVolume(float v);
+    void setVolume(float v, bool immediate = false);
 #if AEOLUS_MULTIBUS_OUTPUT
     /**
      * Multibus version of the processing (does not include the convolver).
@@ -125,12 +129,15 @@ public:
     /**
      * Generate audio.
      */
-    void process(float* outL, float* outR, int numFrames, bool isNonRealtime = false);
+    void process(float* outL, float* outR, size_t numFrames, bool isNonRealtime = false);
+
+    size_t processNoninterpolatedRealtime(float *outL, float *outR, size_t numFrames);
 #endif
     /**
      * Process incoming MIDI messages.
      */
 
+    void allStopsOn();
     void handleNoteOn(const int &channel, const int &note) override;
     void handleNoteOff(const int &channel, const int &note) override;
     void handleAllNotesOff() override;
@@ -138,7 +145,7 @@ public:
     void handlePC(const int& pc) override;
     void handleSequencerSwitch(const int& note) override;
 
-    MidiManager& getMidiKeyboardState() noexcept { return _midiKeyboardState; }
+    // MidiManager& getMidiKeyboardState() noexcept { return _midiKeyboardState; }
 
     [[nodiscard]] Range getMidiKeyboardRange() const;
 
@@ -161,7 +168,7 @@ private:
     void generateTremulant();
     /// Apply the gloval volume.
     void applyVolume(AudioBuffer& out);
-    void applyVolume(float* outL, float* outR, int numFrames);
+    void applyVolume(float* outL, float* outR, size_t numFrames);
     /// Process control MIDI messages: program change (sequencer) and stop buttons CC.
     /// Process stop buttons MIDI controls.
     void processStopControlMessage() const;
@@ -201,7 +208,7 @@ private:
 
     dsp::Interpolator _interpolator;
 
-    MidiManager _midiKeyboardState;
+    // MidiManager _midiKeyboardState;
 };
 
 

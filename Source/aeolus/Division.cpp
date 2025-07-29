@@ -131,6 +131,15 @@ int Division::getStopsCount() const noexcept
     return static_cast<int>(_stops.size());
 }
 
+void Division::enableAllStops() {
+    // for (auto& stop : _stops) {
+    //     stop.setEnabled(true);
+    //     _engine.getSequencer().setCurrentStepDirty();
+    // }
+    for (int i = 0; i < 2; ++i)
+        enableStop(i, true);
+}
+
 void Division::enableStop(const int i, const bool ena)
 {
     isPositiveAndBelow(i, _stops.size());
@@ -231,8 +240,7 @@ void Division::noteOn(const int note, const int midiChannel)
     }
 }
 
-void Division::noteOff(const int note, const int midiChannel)
-{
+void Division::noteOff(const int note, const int midiChannel) {
     if (hasBeenTriggered())
         return;
 
@@ -347,8 +355,7 @@ void Division::modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& 
     const float lvl = getTremulantLevel(true);
 
     // Update gain smoothly
-    auto& paramGain = _params[GAIN];
-//    paramGain.setValue(_paramGain->get());
+    _params[GAIN].setValue(_paramGain->value());
 
 #if AEOLUS_MULTIBUS_OUTPUT
 
@@ -390,7 +397,7 @@ void Division::modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& 
         _tremulantDelayL.write(outL[i]);
         _tremulantDelayR.write(outR[i]);
 
-        const float g = (1.0f + gain[i] * lvl) * paramGain.nextValue();
+        const float g = (1.0f + gain[i] * lvl) * _params[GAIN].nextValue();
 
         constexpr float freqModCenter = TREMULANT_DELAY_LENGTH * 0.5f;
         constexpr float freqModAmp = TREMULANT_DELAY_LENGTH * 0.5f * TREMULANT_DELAY_MODULATION_LEVEL;
@@ -403,7 +410,7 @@ void Division::modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& 
     // Apply swell filter
     if (hasSwell()) {
         // Close the filter along with the gain
-        const float k = powf(limitRange(0.0f, 1.0f, paramGain.target()), 1.3f);
+        const float k = powf(limitRange(0.0f, 1.0f, _params[GAIN].target()), 1.3f);
         _swellFilterSpec.freq = 400.0f + k * (18000.0f - 400.0f);
         dsp::BiquadFilter::updateSpec(_swellFilterSpec);
         dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateL, outL, outL, SUB_FRAME_LENGTH);
@@ -446,8 +453,9 @@ void Division::triggerVoicesOfEnabledStops()
     std::bitset missingNotes{ _aggregatedKeysState };
 
     for (int stopIndex = 0; stopIndex < _stops.size(); ++stopIndex) {
-        if (auto& stop = _stops[stopIndex]; !stop.isEnabled())
+        if (auto& stop = _stops[stopIndex]; !stop.isEnabled()) {
             continue;
+        }
 
         bool hasVoices = false;
 
@@ -459,22 +467,24 @@ void Division::triggerVoicesOfEnabledStops()
                 missingNotes[voiceNote] = false;
                 break;
             }
-
             voice = voice->next();
         }
 
         // Trigger voices for enabled stops
         if (!hasVoices) {
             for (int note = 0; note < missingNotes.size(); ++note) {
-                if (missingNotes[note])
+                if (missingNotes[note]) {
                     triggerVoicesForStop(stopIndex, note);
+                }
             }
         }
     }
 }
 
-void Division::updateAggregatedKeysState()
-{
+/**
+ * @brief Calculates the key state for the division by adding linked divisions' keystates to this division's keystate.
+ */
+void Division::updateAggregatedKeysState() {
     _aggregatedKeysState = _keysState;
 
     for (const auto* division : _linkedFromDivisions) {
@@ -487,8 +497,7 @@ void Division::updateAggregatedKeysState()
     }
 }
 
-bool Division::triggerVoicesForStop(const int stopIndex, const int note)
-{
+bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
     isPositiveAndBelow(stopIndex, _stops.size());
 
     if (isAlreadyVoiced(stopIndex, note))
@@ -523,8 +532,7 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note)
     return voiceTriggered;
 }
 
-bool Division::isAlreadyVoiced(const int stopIndex, const int note)
-{
+bool Division::isAlreadyVoiced(const int stopIndex, const int note) {
     auto* voice = _activeVoices.first();
 
     while (voice != nullptr) {

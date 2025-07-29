@@ -62,7 +62,6 @@ public:
         }
         buffer[writeIndex] = object;
         producerFields.writeIndex.store(nextWriteIndex, std::memory_order_release);
-        std::cout << "ObjectBuffer::push - Successfully logging event." << std::endl;
         return true;
     }
 
@@ -144,7 +143,6 @@ public:
         }
         // Buffer is cleared.
         consumerFields.readIndex.store(consumerFields.writeIndexCached, std::memory_order_release);
-        std::cout << "ObjectBuffer::pop - Successfully popped events." << std::endl;
         return true;
     }
 };

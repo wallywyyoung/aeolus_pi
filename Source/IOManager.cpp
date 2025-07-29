@@ -67,7 +67,6 @@ std::vector<Addsynth> IOManager::loadPipes() {
     std::vector<Addsynth> synths;
     for (const auto& entry : std::filesystem::directory_iterator("./Resources/stops/")) {
         if (!std::filesystem::is_regular_file(entry)) {
-            std::cout << "Skipping rankwave file " << entry.path() << std::endl;
             continue;
         }
         auto extension = entry.path().extension().string();
@@ -76,6 +75,9 @@ std::vector<Addsynth> IOManager::loadPipes() {
             addsynthFromBinary(entry, synth);
         } else if (extension == ".json") {
             addsynthFromJson(entry, synth);
+        } else {
+            std::cout << "Skipping rankwave file " << entry.path() << std::endl;
+            continue;
         }
         synths.push_back(synth);
     }
