@@ -28,7 +28,6 @@ Voice::Voice(Engine& engine)
       , _stopIndex{-1}
       , _buffer{}
       , _delayLine{SAMPLE_RATE}
-      , _panPosition{0.0f}
       , _postReleaseCounter(0) {
 }
 
@@ -67,7 +66,6 @@ void Voice::trigger(const Pipewave::State& state)
 
     // Assuming notes range [36..96]
     const float n = k * static_cast<float>(abs(note - 65)); // ~[-30..30]
-    _panPosition = limitRange(0.0f, 1.0f, (n + 30.0f) / 60.0f);
 
     _spatialSource.setSampleRate(SAMPLE_RATE_F);
     _spatialSource.setSourcePosition(x, 5.0f);

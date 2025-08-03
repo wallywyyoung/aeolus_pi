@@ -1,4 +1,5 @@
 ##  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
+##  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 ##
 ##  This program is free software; you can redistribute it and/or modify
 ##  it under the terms of the GNU General Public License as published by
@@ -19,15 +20,11 @@ project(aeolus_pi)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# TODO: Put this where it belongs... toolchain file?
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a -mcpu=cortex-a72")
-
-option(WITH_MULTIBUS_OUTPUT "Enable multibus output" OFF)
 
 include_directories(Source)
 
-add_executable(aeolus_pi
-        Source/aeolus/dsp/convolve.h)
+add_executable(aeolus_pi)
 
 target_sources(aeolus_pi PRIVATE
         Source/aeolus/utilities/Range.cpp
@@ -100,20 +97,14 @@ target_sources(aeolus_pi PRIVATE
         Source/IOManager.cpp
         Source/IOManager.h
         Source/main.cpp
-        Source/MemoryGlobal.h
+        Source/MemoryUtilities.cpp
+        Source/MemoryUtilities.h
         Source/StaticAudioBuffer.h)
 
-find_package(Crow CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)
 find_package(thread-pool CONFIG REQUIRED)
 find_package(ALSA REQUIRED)
-target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool ALSA::ALSA Crow::Crow)
+target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool ALSA::ALSA)
 
 file(COPY Resources DESTINATION ${CMAKE_BINARY_DIR})
-
-if(WITH_MULTIBUS_OUTPUT)
-    target_compile_definitions(aeolus_pi PUBLIC AEOLUS_MULTIBUS_OUTPUT=1)
-else()
-    target_compile_definitions(aeolus_pi PUBLIC AEOLUS_MULTIBUS_OUTPUT=0)
-endif()

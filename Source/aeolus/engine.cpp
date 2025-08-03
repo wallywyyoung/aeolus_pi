@@ -64,149 +64,6 @@ void Engine::setReverbWet(const float v) { _convolver.setDryWet(1.0f, v); }
 
 void Engine::setVolume(const float v, const bool immediate) { _params[VOLUME].setValue(v, immediate); }
 
-#if AEOLUS_MULTIBUS_OUTPUT
-void Engine::process(AudioBuffer &out)
-{
-    const int numChannels = out.getNumChannels();
-    int numFrames = out.getNumSamples();
-
-    processPendingIRSwitchEvents();
-    processPendingNoteEvents();
-
-    bool wasAudioGenerated = false;
-
-    int outIdx = 0;
-
-    while (numFrames > 0) {
-        int idx = SUB_FRAME_LENGTH - _remainedSamples;
-
-        while (_remainedSamples > 0 && _interpolator.canWrite()) {
-            for (int ch = 0; ch < numChannels; ++ch)
-                _interpolator.writeUnchecked(_subFrameBuffer.getReadPointer(ch)[idx], static_cast<size_t>(ch));
-
-            _interpolator.writeIncrement();
-
-            _remainedSamples -= 1;
-            idx += 1;
-        }
-
-        while (numFrames > 0 && _interpolator.canRead()) {
-            for (int ch = 0; ch < numChannels; ++ch)
-                out.getWritePointer(ch)[outIdx] = _interpolator.readUnchecked(ch);
-
-            _interpolator.readIncrement();
-
-            numFrames -= 1;
-            outIdx += 1;
-        }
-
-        if (_remainedSamples == 0 && numFrames > 0)
-        {
-            wasAudioGenerated |= processSubFrame();
-            assert(_remainedSamples > 0);
-        }
-
-    }
-
-    // Multibus processing does not have a convolver FX
-
-    // Global volume across all the buses
-    applyVolume(out);
-}
-#else
-void Engine::process(float* outL, float* outR, size_t numFrames, const bool isNonRealtime) {
-    float* origOutL = outL;
-    float* origOutR = outR;
-    const auto origNumFrames = numFrames;
-    bool wasAudioGenerated = false;
-
-    while (numFrames > 0)
-    {
-        if (_remainedSamples > 0) {
-            const int idx = SUB_FRAME_LENGTH - _remainedSamples;
-            const float* subL = _subFrameBuffer.getReadPointer(0, idx);
-            const float* subR = _subFrameBuffer.getReadPointer(1, idx);
-
-            while (_remainedSamples > 0 && _interpolator.canWrite()) {
-                _interpolator.write(*subL, *subR);
-                --_remainedSamples;
-                subL += 1;
-                subR += 1;
-            }
-            while (numFrames > 0 && _interpolator.canRead()) {
-                _interpolator.read(*outL, *outR);
-                numFrames -= 1;
-                outL += 1;
-                outR += 1;
-            }
-        }
-        if (_remainedSamples == 0 && numFrames > 0) {
-            wasAudioGenerated |= processSubFrame();
-            assert(_remainedSamples > 0);
-        }
-    }
-
-    auto frames = numFrames;
-    while (numFrames > 0) {
-        wasAudioGenerated |= processSubFrame();
-    }
-
-    // When there is no audio generated we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
-    _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - static_cast<int>(origNumFrames));
-
-    if (_reverbTailCounter > 0 && _convolver.isAudible()) {
-        _convolver.setNonRealtime(isNonRealtime);
-        _convolver.process(origOutL, origOutR, origOutL, origOutR, origNumFrames);
-    }
-
-    applyVolume(origOutL, origOutR, origNumFrames);
-}
-
-size_t Engine::processNoninterpolatedRealtime(float *outL, float *outR, size_t numFrames) {
-    processMidiBuffer();
-
-    float* origOutL = outL;
-    float* origOutR = outR;
-    const auto origNumFrames = numFrames;
-    bool wasAudioGenerated = false;
-
-    memset(outL, 0.0f, sizeof(float) * numFrames);
-    memset(outR, 0.0f, sizeof(float) * numFrames);
-
-    auto iterations = numFrames / SUB_FRAME_LENGTH;
-    for (int i = 0; i < iterations; ++i) {
-        generateTremulant();
-        for (const auto &division : _divisions) {
-            _divisionFrameBuffer.clear();
-            const bool hasVoices = division->process(_divisionFrameBuffer, _voiceFrameBuffer);
-            wasAudioGenerated |= hasVoices;
-            if (hasVoices) {
-                division->modulate(_divisionFrameBuffer, _tremulantBuffer);
-                const auto leftBuffer = _divisionFrameBuffer.getReadPointer(0);
-                const auto rightBuffer = _divisionFrameBuffer.getReadPointer(1);
-                for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
-                    outL[i] += leftBuffer[i];
-                    outR[i] += rightBuffer[i];
-                }
-            }
-        }
-        outL += SUB_FRAME_LENGTH;
-        outR += SUB_FRAME_LENGTH;
-    }
-
-    // When there is no audio generated we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
-    _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - static_cast<int>(origNumFrames));
-    if (_reverbTailCounter > 0 && _convolver.isAudible()) {
-        _convolver.setNonRealtime(false);
-        _convolver.process(origOutL, origOutR, origOutL, origOutR, origNumFrames);
-    }
-    auto framesProcessed = iterations * SUB_FRAME_LENGTH;
-    applyVolume(origOutL, origOutR, framesProcessed);
-
-    return framesProcessed;
-}
-#endif
-
 void Engine::handleSequencerSwitch(const int& note) {
     clearDivisionsTriggerFlag();
     if (isKeySwitchBackward(note)) {
@@ -346,19 +203,19 @@ void Engine::applyVolume(AudioBuffer& out)
     }
 }
 
-void Engine::applyVolume(float* outL, float* outR, const size_t numFrames)
+void Engine::applyVolume(float* inOut, const size_t framesPerChannel)
 {
     if (_params[VOLUME].isSmoothing()) {
-        for (int i = 0; i < numFrames; ++i) {
+        for (int i = 0; i < framesPerChannel; ++i) {
             const float g = _params[VOLUME].nextValue() * VOLUME_GAIN;
-            outL[i] *= g;
-            outR[i] *= g;
+            inOut[i*2+1] *= g;
+            inOut[i*2+1] *= g;
         }
     } else {
         const float g = _params[VOLUME].target() * VOLUME_GAIN;
-        for (int i = 0; i < numFrames; ++i) {
-            outL[i] *= g;
-            outR[i] *= g;
+        for (int i = 0; i < framesPerChannel; ++i) {
+            inOut[i*2+1] *= g;
+            inOut[i*2+1] *= g;
         }
     }
 }

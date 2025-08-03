@@ -23,9 +23,8 @@
 #include <thread>
 #include <alsa/asoundlib.h>
 
-#include "StaticAudioBuffer.h"
-
 class AlsaInterface {
+    static constexpr auto CONFIG_FILE = "./Resources/configs/audio.json";
 //    Midi
     snd_seq_t *sequencer;
     int portID{};

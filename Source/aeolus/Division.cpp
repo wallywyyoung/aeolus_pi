@@ -326,15 +326,9 @@ bool Division::process(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& t
         float* outR = voiceBuffer.getNumChannels() > 1 ? voiceBuffer.getWritePointer(1) : outL;
 
         voice->process(outL, outR);
-
-#if AEOLUS_MULTIBUS_OUTPUT
-        // Mix voice to the corresponding output channel depending on the pan-position
-        int ch = Limit(0, targetBuffer.getNumChannels() - 1, int(voice->getPanPosition() * targetBuffer.getNumChannels()));
-        targetBuffer.addFrom(ch, 0, voiceBuffer, 0, 0, SUB_FRAME_LENGTH);
-#else
         targetBuffer.addFrom(0, 0, voiceBuffer, 0, 0, SUB_FRAME_LENGTH);
         targetBuffer.addFrom(1, 0, voiceBuffer, 1, 0, SUB_FRAME_LENGTH);
-#endif
+
         if (voice->isOver()) {
             auto* nextVoice = _activeVoices.removeAndReturnNext(voice);
             voice->resetAndReturnToPool();
@@ -356,36 +350,6 @@ void Division::modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& 
 
     // Update gain smoothly
     _params[GAIN].setValue(_paramGain->value());
-
-#if AEOLUS_MULTIBUS_OUTPUT
-
-    if (paramGain.isSmoothing()) {
-
-        for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
-            const float g = (1.0f + gain[i] * lvl) * paramGain.nextValue();
-
-            for (int ch = 0; ch < targetBuffer.getNumChannels(); ++ch) {
-                targetBuffer.getWritePointer(ch)[i] *= g;
-            }
-        }
-
-    } else {
-        // Gain is stable
-        const float pgain = paramGain.target();
-
-        for (int ch = 0; ch < targetBuffer.getNumChannels(); ++ch) {
-            float* const out = targetBuffer.getWritePointer(ch);
-
-            for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
-                float g = (1.0f + gain[i] * lvl) * pgain;
-                out[i] *= g;
-            }
-        }
-    }
-
-    // No swell filtering for multibus
-
-#else
 
     float* outL = targetBuffer.getWritePointer(0);
     float* outR = targetBuffer.getWritePointer(1);
@@ -416,7 +380,6 @@ void Division::modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& 
         dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateL, outL, outL, SUB_FRAME_LENGTH);
         dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateR, outR, outR, SUB_FRAME_LENGTH);
     }
-#endif
 }
 
 void Division::releaseVoicesOfDisabledStops()

@@ -71,7 +71,9 @@ void EngineGlobal::updateStops() const {
     for (const auto &val: _rankwavesByName | std::views::values) {
         auto rwp = val.get();
         pool.enqueue_detach([rwp] {
+            MemoryUtilities::enableFlushToZero();
             rwp->prepareToPlay(SAMPLE_RATE_F);
+            MemoryUtilities::disableFlushToZero();
         });
     }
     pool.wait_for_tasks();
@@ -113,10 +115,6 @@ void EngineGlobal::rebuildRankwaves() {
     //       However, switching tuning very fast (while keeping the voice sustained)
     //       may result in voice to be killed.
     updateStops();
-}
-
-size_t EngineGlobal::audioCallback(float *bufferL, float *bufferR, const size_t bufferSize) {
-    return engine->processNoninterpolatedRealtime(bufferL, bufferR, bufferSize);
 }
 
 void EngineGlobal::pushMidi(const MidiData &midi) {

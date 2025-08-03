@@ -120,22 +120,41 @@ public:
      * @note This must be called on the audio thread.
      */
     void setVolume(float v, bool immediate = false);
-#if AEOLUS_MULTIBUS_OUTPUT
-    /**
-     * Multibus version of the processing (does not include the convolver).
-     */
-    void process(AudioBuffer &out);
-#else
-    /**
-     * Generate audio.
-     */
-    void process(float* outL, float* outR, size_t numFrames, bool isNonRealtime = false);
 
-    size_t processNoninterpolatedRealtime(float *outL, float *outR, size_t numFrames);
-#endif
-    /**
-     * Process incoming MIDI messages.
-     */
+    template<auto OUT_BUFFER_SIZE>
+    void processNoninterpolatedRealtimeStereo(float (&out)[OUT_BUFFER_SIZE]) {
+        processMidiBuffer();
+        bool wasAudioGenerated = false;
+        memset(out, 0.0f, sizeof(float) * OUT_BUFFER_SIZE);
+
+        constexpr auto STEREO_SUB_FRAME_LENGTH = SUB_FRAME_LENGTH * 2;
+        for (int i = 0; i < OUT_BUFFER_SIZE; i += STEREO_SUB_FRAME_LENGTH) {
+            generateTremulant();
+            for (const auto &division : _divisions) {
+                _divisionFrameBuffer.clear();
+                const bool hasVoices = division->process(_divisionFrameBuffer, _voiceFrameBuffer);
+                wasAudioGenerated |= hasVoices;
+                if (hasVoices) {
+                    division->modulate(_divisionFrameBuffer, _tremulantBuffer);
+                    const auto leftBuffer = _divisionFrameBuffer.getReadPointer(0);
+                    const auto rightBuffer = _divisionFrameBuffer.getReadPointer(1);
+                    for (int j = 0; j < SUB_FRAME_LENGTH; ++j) {
+                        out[j * 2 + i] += leftBuffer[j];
+                        out[j * 2 + 1 + i] += rightBuffer[j];
+                    }
+                }
+            }
+        }
+
+        // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
+        constexpr auto OUT_PER_CHANNEL_SIZE = OUT_BUFFER_SIZE / N_OUTPUT_CHANNELS;
+        _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - OUT_PER_CHANNEL_SIZE);
+        if (_reverbTailCounter > 0 && _convolver.isAudible()) {
+            _convolver.process(out, OUT_PER_CHANNEL_SIZE);
+        }
+
+        applyVolume(out, OUT_PER_CHANNEL_SIZE);
+    }
 
     void allStopsOn();
     void handleNoteOn(const int &channel, const int &note) override;
@@ -145,19 +164,12 @@ public:
     void handlePC(const int& pc) override;
     void handleSequencerSwitch(const int& note) override;
 
-    // MidiManager& getMidiKeyboardState() noexcept { return _midiKeyboardState; }
-
     [[nodiscard]] Range getMidiKeyboardRange() const;
-
     [[nodiscard]] std::set<int> getKeySwitches() const;
-
     [[nodiscard]] std::shared_ptr<VoicePool> getVoicePool() const noexcept { return _voicePool; }
-
     [[nodiscard]] int getDivisionCount() const noexcept { return _divisions.size(); }
-    Division *getDivisionByIndex(const int i) { return _divisions[i].get(); }
-
+    [[nodiscard]] Division *getDivisionByIndex(const int i) { return _divisions[i].get(); }
     [[nodiscard]] Division *getDivisionByName(const std::string &name) const;
-
     [[nodiscard]] Sequencer& getSequencer() const noexcept { return *_sequencer.get(); }
 
 private:
@@ -168,7 +180,7 @@ private:
     void generateTremulant();
     /// Apply the gloval volume.
     void applyVolume(AudioBuffer& out);
-    void applyVolume(float* outL, float* outR, size_t numFrames);
+    void applyVolume(float* inOut, size_t framesPerChannel);
     /// Process control MIDI messages: program change (sequencer) and stop buttons CC.
     /// Process stop buttons MIDI controls.
     void processStopControlMessage() const;
@@ -178,9 +190,9 @@ private:
 
     float _sampleRate;
 
-    std::shared_ptr<VoicePool> _voicePool;           ///< All the voices.
+    std::shared_ptr<VoicePool> _voicePool; ///< All the voices.
 
-    AudioParameterPool _params;     ///< Internal parameters.
+    AudioParameterPool _params; ///< Internal parameters.
 
     std::optional<StopControlMode> _stopControlMode{};
     int _stopControlGroup{};

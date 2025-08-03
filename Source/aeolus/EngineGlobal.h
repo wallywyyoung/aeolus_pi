@@ -42,16 +42,12 @@ public:
     void init();
     EngineGlobal(EngineGlobal const&) = delete;
     void operator=(EngineGlobal const&) = delete;
-
     static EngineGlobal* getInstance() noexcept {
         static EngineGlobal instance;
         return &instance;
     }
 
-    /**
-     * Impulse response descriptor for IRs embedded as binary resources.
-     */
-    [[nodiscard ]] const int getMIDISwellChannelsMask() const;
+    [[nodiscard]] const int getMIDISwellChannelsMask() const;
     [[nodiscard]] const bool shouldMTSFilterNoteByChannel(int midiNote, int midiChannel) const;
     [[nodiscard]] bool isMTSEnabled() const { return _mtsEnabled; }
     [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
@@ -70,7 +66,11 @@ public:
     void setMTSEnabled(bool shouldBeEnabled);
     void rebuildRankwaves();
 
-    size_t audioCallback(float *bufferL, float *bufferR, size_t bufferSize);
+    template<auto OUT_BUFFER_SIZE>
+    void audioCallbackStereo(float (&out)[OUT_BUFFER_SIZE]) {
+        engine->processNoninterpolatedRealtimeStereo<OUT_BUFFER_SIZE>(out);
+    }
+
     void pushMidi(const MidiData& midi);
     void pushMidi(const std::vector<MidiData>& midi);
 

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "MemoryGlobal.h"
+#include "MemoryUtilities.h"
 
 #include <atomic>
 #include <iostream>
@@ -30,12 +30,12 @@
 template <typename T, size_t SIZE = 1024>
 class ObjectBuffer {
     // TODO: Perf test and consider all vars in a single cacheline.
-    struct alignas(CACHE_LINE_SIZE) ConsumerFields {
+    struct alignas(MemoryUtilities::CACHE_LINE_SIZE) ConsumerFields {
         std::atomic<size_t> readIndex{0};
         size_t writeIndexCached{0};
     };
 
-    struct alignas(CACHE_LINE_SIZE) ProducerFields {
+    struct alignas(MemoryUtilities::CACHE_LINE_SIZE) ProducerFields {
         std::atomic<size_t> writeIndex{0};
         size_t readIndexCached{0};
     };

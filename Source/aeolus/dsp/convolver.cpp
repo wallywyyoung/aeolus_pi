@@ -177,7 +177,7 @@ struct Convolver::Impl {
         init();
     }
 
-    void process(const float *inL, const float *inR, float *outL, float *outR, const size_t numFrames)
+    void process(float *inOut, const size_t framesPerChannel)
     {
         if (state == Init)
             state = zeroDelay ? FeedHeadIR : ProcessWithIRStream;
@@ -195,9 +195,9 @@ struct Convolver::Impl {
         }
 
         if (state == ProcessWithIRStream) {
-            processFrame(inL, inR, outL, outR, numFrames);
+            processFrame(inOut, framesPerChannel);
 
-            framesProcessed += numFrames;
+            framesProcessed += framesPerChannel;
 
             if (framesProcessed >= inputSize || irSamplesRead >= ir.getNumSamples()) {
                 // The entire IR has been read, switch to procesing without IR streaming
@@ -208,33 +208,33 @@ struct Convolver::Impl {
         }
 
         if (state == Process) {
-            processFrame(inL, inR, outL, outR, numFrames);
+            processFrame(inOut, framesPerChannel);
         }
     }
 
-    void processFrame(const float *inL, const float *inR, float *outL, float *outR, const size_t numFrames)
+    void processFrame(float *inOut, const size_t framesPerChannel)
     {
         if (zeroDelay) {
-            for (size_t i = 0; i < numFrames; ++i) {
-                const float l = convL.tick(inL[i]) + headL.tick(inL[i]);
-                const float r = convR.tick(inR[i]) + headR.tick(inR[i]);
+            for (size_t i = 0; i < framesPerChannel; ++i) {
+                const float l = convL.tick(inOut[i*2]) + headL.tick(inOut[i*2]);
+                const float r = convR.tick(inOut[i*2+1]) + headR.tick(inOut[i*2+1]);
 
                 const float dry = params[DRY].nextValue();
                 const float wet = params[WET].nextValue();
 
-                outL[i] = l * wet + inL[i] * dry;
-                outR[i] = r * wet + inR[i] * dry;
+                inOut[i*2] = l * wet + inOut[i*2] * dry;
+                inOut[i*2+1] = r * wet + inOut[i*2+1] * dry;
             }
         } else {
-            for (size_t i = 0; i < numFrames; ++i) {
-                const float l = convL.tick(inL[i]);
-                const float r = convR.tick(inR[i]);
+            for (size_t i = 0; i < framesPerChannel; ++i) {
+                const float l = convL.tick(inOut[i*2]);
+                const float r = convR.tick(inOut[i*2+1]);
 
                 const float dry = params[DRY].nextValue();
                 const float wet = params[WET].nextValue();
 
-                outL[i] = l * wet + inL[i] * dry;
-                outR[i] = r * wet + inR[i] * dry;
+                inOut[i*2] = l * wet + inOut[i*2] * dry;
+                inOut[i*2+1] = r * wet + inOut[i*2+1] * dry;
             }
         }
     }
@@ -269,8 +269,9 @@ void Convolver::prepareToPlay()
     d->prepareToPlay();
 }
 
-void Convolver::process(const float *inL, const float *inR, float *outL, float *outR, const size_t numFrames) const {
-    d->process(inL, inR, outL, outR, numFrames);
+void Convolver::process(float *inOut, const size_t framesPerChannel, const bool nonRealtime) const {
+    d->updateRealtime(nonRealtime);
+    d->process(inOut, framesPerChannel);
 }
 
 void Convolver::setNonRealtime(const bool nonRealtime) const {

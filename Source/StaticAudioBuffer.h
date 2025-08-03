@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "MemoryGlobal.h"
+#include "MemoryUtilities.h"
 
 #include <array>
 #include <functional>
@@ -27,7 +27,7 @@
 
 template <std::size_t SIZE, std::size_t CHANNELS>
 class StaticAudioBuffer {
-    alignas (CACHE_LINE_SIZE) std::array<float, SIZE * CHANNELS> audioBuffer{};
+    alignas (MemoryUtilities::CACHE_LINE_SIZE) std::array<float, SIZE * CHANNELS> audioBuffer{};
 public:
     StaticAudioBuffer() = default;
     ~StaticAudioBuffer() = default;

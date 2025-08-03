@@ -47,24 +47,3 @@ Custom organ configuration will be loaded by the plugin if found at `Documents/A
 To create the `organ_config.json` start with [default one embedded into the plugin](Resources/configs/default_organ.json) by copying it to `Documents/Aeolus` folder and renaming to `organ_config.json`.
 
 It is also possible to use custom pipe configs in `.ae0` or `.json` format. These have to be placed to the `Documents/Aeolus` folder for then can be referenced from the `organ_config.json` (use pipe file name without the extension in the`"pipe"`attribute of the `organ_config.json`).
-
-## Multibus output
-When compiled with the `WITH_MULTIBUS_OUTPUT` CMake option enabled, the generated plugin will ouput to the `8` separate _monofonic_ buses. Each bus corresponds to the pipes groups placement in space according to the internal horizontal arrangement of the pipes.
-
-In multibus configuration there is no reverb applied, and there is no spatialization performed.
-
-> :point_right: The multibus mode is indended for the object based mixing, where you could place individual pipe groups in space yourself and apply a reverb of your preference.
-
-Pipes are arranged starting from the lowest key from the sides (buses 0 and 7) to the center in the middle of the range (buses 3, 4), and then going back from the centre towards the sides. For the pedal pipes, they go from the outside towards the centre only.
-
-Corresponding pipe position jumps between left and right following the keys (C will be on the left, C# on the right, D of the left, D# on the right and so on).
-
-> :point_right: This very same pipes spatial arrangement is used in the stereo version of the plugin to perform spatialized rendering followed by a stereo convolutional reverb.
-
-## CLAP
-CLAP plugn format currently uses the [JUCE7 Unofficial CLAP Plugin Support](https://github.com/free-audio/clap-juce-extensions).
-
-When compiling, make sure to pull all the submodules recursively:
-```shell
-git submodule update --init --recursive
-```

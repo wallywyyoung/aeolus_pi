@@ -40,6 +40,7 @@ struct Worker::Impl
     }
 
     void run() {
+        MemoryUtilities::enableFlushToZero();
         while (running) {
             wait();
 
@@ -50,6 +51,7 @@ struct Worker::Impl
                 job->run();
             }
         }
+        MemoryUtilities::disableFlushToZero();
     }
 
     bool addJob (Job* job) {

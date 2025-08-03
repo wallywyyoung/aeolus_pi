@@ -22,30 +22,14 @@
 #include <csignal>
 
 bool running = true;
-intptr_t fpsr;
-
-// Using inline assembly for ARMv7/ARMv8 enabling of denormals
-// TODO: Check this is being done right.
-void enableFlushToZeroDenormalsAreZero() {
-    intptr_t ftz = (1 << 24 /* FZ */);
-    intptr_t daz = (1 << 25 /* FZ */);
-    asm volatile("mrs %0, fpcr" : "=r"(fpsr));
-    asm volatile("msr fpcr, %0" : : "ri"(fpsr | ftz | daz));
-}
-
-void disableFlushToZeroDenormalsAreZero() {
-    asm volatile("msr fpcr, %0" : : "ri"(fpsr));
-}
 
 void signalHandler(const int signal) {
     running = false;
-    disableFlushToZeroDenormalsAreZero();
     exit(signal);
 }
 
 int main (int argc, char* argv[]) {
     std::signal(SIGINT | SIGTERM | SIGSEGV | SIGABRT | SIGFPE | SIGILL | SIGBUS, signalHandler);
-    enableFlushToZeroDenormalsAreZero();
 
     EngineGlobal::getInstance()->init();
 

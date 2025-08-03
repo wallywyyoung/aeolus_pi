@@ -60,7 +60,7 @@ public:
 
     void prepareToPlay();
 
-    void process(const float *inL, const float *inR, float *outL, float *outR, size_t numFrames) const;
+    void process(float *inOut, size_t framesPerChannel, bool nonRealtime = false) const;
 
     void setNonRealtime(bool nonRealtime) const;
 

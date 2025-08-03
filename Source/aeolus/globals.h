@@ -31,18 +31,8 @@ template <typename T1, typename T2> bool isPositiveAndBelow(T1 instance, T2 thre
     return T1() <= instance && instance < static_cast<T1>(threshold);
 }
 
-/// Multibus output option (must be set in the project configuration)
-#ifndef AEOLUS_MULTIBUS_OUTPUT
-#   define AEOLUS_MULTIBUS_OUTPUT 0
-#endif
-
-#if AEOLUS_MULTIBUS_OUTPUT
-    constexpr static int N_OUTPUT_CHANNELS = 8;
-    constexpr static int N_VOICE_CHANNELS = 1;
-#else
-    constexpr static int N_OUTPUT_CHANNELS = 2;
-    constexpr static int N_VOICE_CHANNELS = 2;
-#endif
+constexpr static int N_OUTPUT_CHANNELS = 2;
+constexpr static int N_VOICE_CHANNELS = 2;
 
 /// Processing sample rate. It is low enough
 /// since there are not many harmonics to be generated

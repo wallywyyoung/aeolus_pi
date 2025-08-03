@@ -55,8 +55,6 @@ public:
 
     void resetAndReturnToPool();
 
-    [[nodiscard]] float getPanPosition() const noexcept { return _panPosition; }
-
 private:
     Engine& _engine;
     Pipewave::State _state; ///< Pipe state associated with this voice.
@@ -73,9 +71,6 @@ private:
 
     /// Attack chiff.
     dsp::Chiff _chiff;
-
-    ///  Voice virtual pan position [0..1] used for multibus output
-    float _panPosition;
 
     /// Stereo spatial modeller.
     dsp::SpatialSource _spatialSource{};

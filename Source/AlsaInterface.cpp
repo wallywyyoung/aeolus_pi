@@ -20,6 +20,7 @@
 #include "AlsaInterface.h"
 #include "aeolus/globals.h"
 #include "aeolus/EngineGlobal.h"
+#include "MemoryUtilities.h"
 
 #include <alsa/asoundlib.h>
 #include <thread>
@@ -27,11 +28,10 @@
 #include <fstream>
 
 AlsaInterface::AlsaInterface() {
-    const std::filesystem::path configFile = "./Resources/configs/audio.json";
-    std::ifstream stream(configFile);
+    std::ifstream stream(CONFIG_FILE);
     auto config = nlohmann::json::parse(stream);
     midiClientName = config["midiClientName"];
-    playbackDeviceName = config["playbackDeviceName"];
+    playbackDeviceName = "hw:0,0";//config["playbackDeviceName"];
 
     initMidi();
     initAudio();
@@ -118,93 +118,121 @@ void AlsaInterface::endPollMidi() {
 
 void AlsaInterface::initAudio() {
     snd_pcm_hw_params_t* hwParams{};
+    int err = 0;
+    std::string errStr;
 
-    if (snd_pcm_open(&playback, playbackDeviceName.c_str(), SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-        throw std::runtime_error("Failed to open playback device");
+    if (err = snd_pcm_open(&playback, playbackDeviceName.c_str(), SND_PCM_STREAM_PLAYBACK, 0); err < 0) {
+        errStr = "snd_pcm_open failed: ";
+        errStr.append(snd_strerror(err));
+        throw std::runtime_error(errStr);
     }
 
-    if (snd_pcm_hw_params_malloc(&hwParams) < 0) {
-        throw std::runtime_error("Failed to allocate hardware parameters");
+    if (err = snd_pcm_hw_params_malloc(&hwParams); err < 0) {
+        errStr = "snd_pcm_hw_params_malloc failed: ";
+        errStr.append(snd_strerror(err));
+        throw std::runtime_error(errStr);
     }
 
-    if (snd_pcm_hw_params_any(playback, hwParams) < 0) {
-        throw std::runtime_error("Failed to initialize hardware parameters");
+    if (err = snd_pcm_hw_params_any(playback, hwParams); err < 0) {
+        errStr = "snd_pcm_hw_params_any failed: ";
+        errStr.append(snd_strerror(err));
+        throw std::runtime_error(errStr);
     }
 
-    if (snd_pcm_hw_params_set_access(playback, hwParams, SND_PCM_ACCESS_MMAP_NONINTERLEAVED) < 0) {
-        throw std::runtime_error("Failed to set access type");
+    if (err = snd_pcm_hw_params_set_access(playback, hwParams, SND_PCM_ACCESS_MMAP_INTERLEAVED); err < 0) {
+        errStr = "snd_pcm_hw_params_set_access failed: ";
+        errStr.append(snd_strerror(err));
+        throw std::runtime_error(errStr);
     }
 
-    if (snd_pcm_hw_params_set_format(playback, hwParams, SND_PCM_FORMAT_FLOAT) < 0) {
-        throw std::runtime_error("Failed to set sample format");
+    if (err = snd_pcm_hw_params_set_format(playback, hwParams, SND_PCM_FORMAT_S16); err < 0) {
+        errStr = "snd_pcm_hw_params_set_format failed: ";
+        errStr.append(snd_strerror(err));
+        throw std::runtime_error(errStr);
     }
 
     auto sampleRate = static_cast<unsigned int>(SAMPLE_RATE);
-    if (snd_pcm_hw_params_set_rate_near(playback, hwParams, &sampleRate, nullptr) < 0) {
-        throw std::runtime_error("Failed to set sample rate");
+    if (err = snd_pcm_hw_params_set_rate_near(playback, hwParams, &sampleRate, nullptr); err < 0) {
+        errStr = "snd_pcm_hw_params_set_rate_near failed: ";
+        errStr.append(snd_strerror(err));
+        throw std::runtime_error(errStr);
     }
 
     assert(sampleRate == SAMPLE_RATE);
 
-    if (snd_pcm_hw_params_set_channels(playback, hwParams, N_OUTPUT_CHANNELS) < 0) {
-        throw std::runtime_error("Failed to set number of channels");
+    if (err = snd_pcm_hw_params_set_channels(playback, hwParams, N_OUTPUT_CHANNELS); err < 0) {
+        errStr = "snd_pcm_hw_params_set_channels failed: ";
+        errStr.append(snd_strerror(err));
+        throw std::runtime_error(errStr);
     }
-    if (snd_pcm_hw_params(playback, hwParams) < 0) {
-        throw std::runtime_error("Failed to set hardware parameters");
+    if (err = snd_pcm_hw_params(playback, hwParams); err < 0) {
+        errStr = "snd_pcm_hw_params failed: ";
+        errStr.append(snd_strerror(err));
+        throw std::runtime_error(errStr);
     }
 
     snd_pcm_hw_params_free(hwParams);
 
-    if (snd_pcm_prepare(playback) < 0) {
-        throw std::runtime_error("Failed to prepare playback device");
+    if (err = snd_pcm_prepare(playback); err < 0) {
+        errStr = "snd_pcm_prepare failed: ";
+        errStr.append(snd_strerror(err));
+        throw std::runtime_error(errStr);
     }
 }
 
 void AlsaInterface::beginPlayback() {
     runningAudio = true;
     audioThread = std::make_unique<std::thread>([this] {
+        MemoryUtilities::enableFlushToZero();
+        int err;
+        std::string errStr;
         snd_pcm_uframes_t frames;
         snd_pcm_uframes_t offset;
         const snd_pcm_channel_area_t* areas;
+        // alignas(MemoryUtilities::CACHE_LINE_SIZE) int16_t iBuffer[MemoryUtilities::AUDIO_BUFFER_SIZE*N_OUTPUT_CHANNELS];
+        alignas(MemoryUtilities::CACHE_LINE_SIZE) float fBuffer[MemoryUtilities::AUDIO_BUFFER_SIZE];
         do {
             if (snd_pcm_wait(playback, 1000) < 0) {
                 continue;
             }
-            if ((frames = snd_pcm_avail_update(playback)) < 0 || frames < 1) {
+            if (frames = snd_pcm_avail_update(playback); frames < MemoryUtilities::AUDIO_CHANNEL_BUFFER_SIZE) {
                 continue;
             }
-            if (snd_pcm_mmap_begin(playback, &areas, &offset, &frames) < 0) {
-                throw std::runtime_error("Failed to mmap audio buffer");
+            if (err = snd_pcm_mmap_begin(playback, &areas, &offset, &frames); err < 0) {
+                errStr = "snd_pcm_mmap_begin failed: ";
+                errStr.append(snd_strerror(err));
+                throw std::runtime_error(errStr);
             }
-
-            uint8_t* left_base = static_cast<uint8_t*>(areas[0].addr) + (areas[0].first >> 3);
-            uint8_t* right_base = static_cast<uint8_t*>(areas[1].addr) + (areas[1].first >> 3);
-
-            float* left = reinterpret_cast<float*>(left_base + offset * (areas[0].step >> 3));
-            float* right = reinterpret_cast<float*>(right_base + offset * (areas[1].step >> 3));
-
-            auto processedFrames = EngineGlobal::getInstance()->audioCallback(left, right, frames);
-            // for (int i = 0; i < frames; i++) {
-            //     left[i] = sin(2 * M_PI * 440 * ((float)i / SAMPLE_RATE));
-            //     right[i] = sin(2 * M_PI * 440 * ((float)i / SAMPLE_RATE));
+            auto data_ptr = reinterpret_cast<int16_t*>(static_cast<char*>(areas[0].addr) + offset * sizeof(int16_t) * N_OUTPUT_CHANNELS);
+            EngineGlobal::getInstance()->audioCallbackStereo(fBuffer);
+            MemoryUtilities::ConvertF32toS16(fBuffer, &data_ptr[0]);
+            // for (int i = 0; i < MemoryUtilities::AUDIO_BUFFER_SIZE; ++i) {
+            //     data_ptr[i] = std::round(32767.0f * std::clamp(fBuffer[i], -1.0f, 1.0f));
+            //     // std::cout << fBuffer[i] << " in loop " << data_ptr[i] << " vs in neon " << iBuffer[i] << std::endl;
             // }
 
-            if (auto committed = snd_pcm_mmap_commit(playback, offset, processedFrames); committed < 0) {
-                std::cerr << "AlsaInterface::beginPlayback - snd_pcm_mmap_commit error: " << snd_strerror(committed) << std::endl;
+            if (auto committed = snd_pcm_mmap_commit(playback, offset, MemoryUtilities::AUDIO_CHANNEL_BUFFER_SIZE); committed < 0) {
                 if (committed == -EPIPE) {
                     std::cerr << "Underrun detected, recovering...\n";
                     snd_pcm_prepare(playback);
+                } else {
+                    errStr = "snd_pcm_mmap_commit failed: ";
+                    errStr.append(snd_strerror(err));
+                    throw std::runtime_error(errStr);
                 }
                 continue;
             }
             snd_pcm_state_t state = snd_pcm_state(playback);
 
             if (state == SND_PCM_STATE_PREPARED) {
-                if (int err = snd_pcm_start(playback); err < 0) {
-                    std::cerr << "AlsaInterface::beginPlayback - snd_pcm_start error: " << snd_strerror(err) << std::endl;
+                if (err = snd_pcm_start(playback); err < 0) {
+                    errStr = "snd_pcm_start failed: ";
+                    errStr.append(snd_strerror(err));
+                    throw std::runtime_error(errStr);
                 }
             }
         } while (runningAudio);
+        MemoryUtilities::disableFlushToZero();
     });
 }
 
