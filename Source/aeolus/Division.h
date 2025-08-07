@@ -26,7 +26,6 @@
 #include "aeolus/audioparam.h"
 #include "aeolus/dsp/filter.h"
 #include "StaticAudioBuffer.h"
-#include "MidiData.h"
 
 #include <atomic>
 #include <vector>
@@ -48,7 +47,7 @@ public:
     constexpr static size_t TREMULANT_DELAY_LENGTH = 32; // Frequency modulation delay line length (in samples).
 
     /// Link with another division.
-    struct Link {
+    struct Coupler {
         Division* division;
         bool enabled = false;
     };
@@ -63,20 +62,21 @@ public:
     /**
      * Remove all the links between the divisions.
      */
-    void clearLinkedDivisions();
+    void clearCouplers();
 
     /**
      * Populate linked divisions from the division names.
      * This method must be called by the engine when all the divisions
      * have been loaded and initialized.
      */
-    void populateLinkedDivisions();
+    void populateCouplers();
 
-    [[nodiscard]] int getLinksCount() const noexcept;
-    void enableLink(const int &i, const bool &ena);
-    [[nodiscard]] bool isLinkEnabled(const int &i) const;
-    Link& getLinkByIndex(const int &i);
-    void cancelAllLinks();
+    [[nodiscard]] int getCouplerCount() const noexcept;
+    [[nodiscard]] bool isCouplerEnabled(const int &coupler) const;
+    [[nodiscard]] Coupler& getCouplerByIndex(const int &coupler);
+    void enableCoupler(const int &coupler, const bool &enabled);
+    void cancelAllCouplers();
+
     void clear();
     Stop& addRankwave(Rankwave *ptr, const bool &ena = false, const std::string& name = std::string());
 
@@ -119,9 +119,11 @@ public:
     void setStopToggle(const int& stop);
     void setAllStopsOff();
     void setAllStopsOn();
-    // TODO: Pistons
-    // void setDivisionPiston(const int& division, const int& piston);
-    // void recallDivisionPiston(const int& division, const int& piston);
+    DivisionPiston captureStateAsPiston() const;
+    // Pistons
+    void setPiston(const int& piston);
+    void recallPiston(const int& piston);
+    void recallPiston(const DivisionPiston& piston);
 
     bool process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& voiceBuffer);
     void modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1>& tremulantBuffer);
@@ -167,8 +169,9 @@ private:
 
     /// List of linked divisions names.
     std::vector<std::string> _linkedDivisionNames{};
-    std::vector<Link> _linkedDivisions{};
+    std::vector<Coupler> _linkedDivisions{};
     std::vector<Division*> _linkedFromDivisions{};
+    std::vector<DivisionPiston> pistons{};
 
     bool _hasSwell;         ///< Whetehr this division has a swell control.
     bool _hasTremulant;     ///< Whether this division has a remulant control.

@@ -44,11 +44,11 @@ public:
     virtual void setDivisionAllStopsOn(const int& division) = 0;
     virtual void setGlobalAllStopsOff() = 0;
     virtual void setGlobalAllStopsOn() = 0;
-    // TODO: Pistons
-    // virtual void setDivisionPiston(const int& division, const int& piston) = 0;
-    // virtual void recallDivisionPiston(const int& division, const int& piston) = 0;
-    // virtual void setGlobalPiston(const int& piston) = 0;
-    // virtual void recallGlobalPiston(const int& piston) = 0;
+    // Pistons
+    virtual void setDivisionPiston(const int& division, const int& piston) = 0;
+    virtual void recallDivisionPiston(const int& division, const int& piston) = 0;
+    virtual void setGlobalPiston(const int& piston) = 0;
+    virtual void recallGlobalPiston(const int& piston) = 0;
 
     void ProcessMidiBuffer() {
         std::vector<MidiData> midiBuffer{};
@@ -61,11 +61,10 @@ public:
 private:
     void handlePC(const MidiData& event) {
         enum PistonControl {
-            // TODO: Pistons
-            // RecallDivisionPiston,
-            // SetDivisionPiston,
-            // RecallGlobalPiston,
-            // SetGlobalPiston,
+            RecallDivisionPiston,
+            SetDivisionPiston,
+            RecallGlobalPiston,
+            SetGlobalPiston,
             StopOff,
             StopOn,
             StopToggle,
@@ -75,19 +74,18 @@ private:
             AllGlobalStopsOn
         };
         switch (static_cast<PistonControl>(event.param)) {
-            // TODO: Pistons
-            // case RecallDivisionPiston:
-            //     recallDivisionPiston(event.channel, event.value);
-            //     break;
-            // case SetDivisionPiston:
-            //     setDivisionPiston(event.channel, event.value);
-            //     break;
-            // case RecallGlobalPiston:
-            //     recallGlobalPiston(event.value);
-            //     break;
-            // case SetGlobalPiston:
-            //     setGlobalPiston(event.value);
-            //     break;
+            case RecallDivisionPiston:
+                recallDivisionPiston(event.channel, event.value);
+                break;
+            case SetDivisionPiston:
+                setDivisionPiston(event.channel, event.value);
+                break;
+            case RecallGlobalPiston:
+                recallGlobalPiston(event.value);
+                break;
+            case SetGlobalPiston:
+                setGlobalPiston(event.value);
+                break;
             case StopOff:
                 setDivisionStopOff(event.channel, event.value);
                 break;

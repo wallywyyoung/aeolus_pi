@@ -34,48 +34,48 @@ Division::Division(const Engine& engine, const std::string& name) : _name{name},
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateR);
 }
 
-void Division::clearLinkedDivisions() {
+void Division::clearCouplers() {
     _linkedDivisions.clear();
     _linkedFromDivisions.clear();
 }
 
-void Division::populateLinkedDivisions() {
+void Division::populateCouplers() {
     for (const auto& name : _linkedDivisionNames) {
         if (const auto division = _engine.getDivisionByName(name)) {
-            Link link{ division, false };
+            Coupler link{ division, false };
             _linkedDivisions.push_back(link);
             division->_linkedFromDivisions.push_back(this);
         }
     }
 }
 
-int Division::getLinksCount() const noexcept
+int Division::getCouplerCount() const noexcept
 {
     return static_cast<int>(_linkedDivisions.size());
 }
 
-void Division::enableLink(const int &i, const bool &ena)
+void Division::enableCoupler(const int &coupler, const bool &enabled)
 {
-    isPositiveAndBelow(i, _linkedDivisions.size());
+    isPositiveAndBelow(coupler, _linkedDivisions.size());
 
-    if (_linkedDivisions[i].enabled != ena) {
-        _linkedDivisions[i].enabled = ena;
+    if (_linkedDivisions[coupler].enabled != enabled) {
+        _linkedDivisions[coupler].enabled = enabled;
         _engine.getSequencer().setCurrentStepDirty();
     }
 }
 
-bool Division::isLinkEnabled(const int &i) const {
-    isPositiveAndBelow(i, _linkedDivisions.size());
-    return _linkedDivisions[i].enabled;
+bool Division::isCouplerEnabled(const int &coupler) const {
+    isPositiveAndBelow(coupler, _linkedDivisions.size());
+    return _linkedDivisions[coupler].enabled;
 }
 
-Division::Link& Division::getLinkByIndex(const int &i)
+Division::Coupler& Division::getCouplerByIndex(const int &coupler)
 {
-    isPositiveAndBelow(i, _linkedDivisions.size());
-    return _linkedDivisions[i];
+    isPositiveAndBelow(coupler, _linkedDivisions.size());
+    return _linkedDivisions[coupler];
 }
 
-void Division::cancelAllLinks()
+void Division::cancelAllCouplers()
 {
     bool changed{ false };
 
@@ -90,8 +90,7 @@ void Division::cancelAllLinks()
         _engine.getSequencer().setCurrentStepDirty();
 }
 
-void Division::clear()
-{
+void Division::clear() {
     _stops.clear();
 }
 
@@ -277,6 +276,47 @@ void Division::setAllStopsOn() {
         if (!stop.isEnabled()) {
             stop.setEnabled(false);
         }
+    }
+}
+
+DivisionPiston Division::captureStateAsPiston() const {
+    DivisionPiston divisionPiston{};
+    divisionPiston.tremulant = _tremulantEnabled;
+    divisionPiston.stops.resize(_stops.size());
+    for (const auto & _stop : _stops) {
+        divisionPiston.stops.push_back(_stop.isEnabled());
+    }
+    divisionPiston.links.resize(_linkedDivisions.size());
+    for (auto _linkedDivision : _linkedDivisions) {
+        divisionPiston.links.push_back(_linkedDivision.enabled);
+    }
+    return divisionPiston;
+}
+
+void Division::setPiston(const int &piston) {
+    if (pistons.size() <= piston) {
+        pistons.resize(piston + 1);
+    }
+    pistons[piston] = captureStateAsPiston();
+}
+
+void Division::recallPiston(const int& piston) {
+    if (pistons.size() <= piston) {
+        return;
+    }
+    recallPiston(pistons[piston]);
+}
+
+void Division::recallPiston(const DivisionPiston& piston) {
+    for (int i = 0; i < piston.stops.size(); ++i) {
+        if (piston.stops[i]) {
+            setStopOn(i);
+        } else {
+            setStopOff(i);
+        }
+    }
+    for (int i = 0; i < piston.links.size(); ++i) {
+        enableCoupler(i,piston.links[i]);
     }
 }
 

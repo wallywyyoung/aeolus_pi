@@ -22,34 +22,15 @@
 #include <atomic>
 #include <vector>
 
+#include "globals.h"
+
 class Engine;
 
 /**
  * A sequence of organ divisions states (including the stops and tremulant state).
  */
-class Sequencer
-{
+class Sequencer {
 public:
-
-    struct DivisionState
-    {
-        std::vector<bool> stops;    ///< Stops enablement mask.
-        bool tremulant;             ///< Tremulant enablement.
-
-        std::vector<bool> links;    ///< Manuals links.
-
-//        std::map<std::string, std::any> getPersistentState() const;
-//        void setPersistentState(const std::map<std::string, std::any>& v);
-    };
-
-    struct OrganState
-    {
-        std::vector<DivisionState> divisions;
-
-//        std::map<std::string, std::any> getPersistentState() const;
-//        void setPersistentState(const std::map<std::string, std::any>& v);
-    };
-
     Sequencer() = delete;
     Sequencer(Engine& engine, int numSteps);
 
@@ -74,11 +55,9 @@ public:
 private:
 
     void initFromEngine();
-    void captureState(OrganState& organState);
-    void recallState(const OrganState& organState);
 
     Engine& _engine;
-    std::vector<OrganState> _steps;
+    std::vector<GlobalPiston> _steps;
     std::atomic<int> _currentStep;
 
     bool _dirty;

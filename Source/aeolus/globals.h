@@ -22,6 +22,7 @@
 
 #include <cmath>
 #include <numbers>
+#include <vector>
 
 template <typename T> T limitRange(T min, T max, T value) {
     return std::max(min, std::min(max, value));
@@ -31,6 +32,15 @@ template <typename T> T limitRange(T min, T max, T value) {
 template <typename T1, typename T2> bool isPositiveAndBelow(T1 instance, T2 threshold) {
     return T1() <= instance && instance < static_cast<T1>(threshold);
 }
+
+struct DivisionPiston {
+    std::vector<bool> stops;    ///< Stops enablement mask.
+    std::vector<bool> links;    ///< Manuals links.
+    bool tremulant;             ///< Tremulant enablement.
+};
+struct GlobalPiston {
+    std::vector<DivisionPiston> divisions;
+};
 
 // MIDI controls
 enum {

@@ -91,11 +91,13 @@ public:
     void setDivisionAllStopsOn(const int& division) override;
     void setGlobalAllStopsOff() override;
     void setGlobalAllStopsOn() override;
-    // TODO: Pistons
-    // void setDivisionPiston(const int& division, const int& piston) override;
-    // void recallDivisionPiston(const int& division, const int& piston) override;
-    // void setGlobalPiston(const int& piston) override;
-    // void recallGlobalPiston(const int& piston) override;
+    // Pistons
+    void setDivisionPiston(const int& division, const int& piston) override;
+    void recallDivisionPiston(const int& division, const int& piston) override;
+    void setGlobalPiston(const int& piston) override;
+    void recallGlobalPiston(const int& piston) override;
+    void recallGlobalPiston(const GlobalPiston& piston);
+    GlobalPiston captureStateAsPiston() const;
 
     /**
      * Called by the host pefore starting requesting the audio blocks.
@@ -187,7 +189,7 @@ private:
 
     /// List of all divisions
     std::vector<std::unique_ptr<Division>> _divisions{};
-
+    std::vector<GlobalPiston> pistons{};
     std::unique_ptr<Sequencer> _sequencer{};
 
     std::vector<int> _sequencerStepBackwardKeySwitches{ SEQUENCER_BACKWARD_MIDI_KEY };

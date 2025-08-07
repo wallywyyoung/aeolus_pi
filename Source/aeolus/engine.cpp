@@ -130,6 +130,52 @@ void Engine::setGlobalAllStopsOn() {
     }
 }
 
+void Engine::setDivisionPiston(const int& division, const int& piston) {
+    DivisionPiston divisionPiston{};
+    divisionPiston.tremulant = _divisions[division]->isTremulantEnabled();
+    divisionPiston.stops.resize(_divisions[division]->getStopsCount());
+    for (int i = 0; _divisions[division]->getStopsCount(); ++i) {
+        divisionPiston.stops.push_back(_divisions[division]->getStopByIndex(i).isEnabled());
+    }
+    divisionPiston.links.resize(_divisions[division]->getCouplerCount());
+    for (int i = 0; _divisions[division]->getCouplerCount(); ++i) {
+        divisionPiston.links.push_back(_divisions[division]->getCouplerByIndex(i).enabled);
+    }
+}
+
+void Engine::recallDivisionPiston(const int& division, const int& piston) {
+    _divisions[division]->recallPiston(piston);
+}
+
+void Engine::setGlobalPiston(const int& piston) {
+    if (pistons.size() <= piston) {
+        pistons.resize(piston + 1);
+    }
+    pistons[piston] = captureStateAsPiston();
+}
+
+void Engine::recallGlobalPiston(const int& piston) {
+    if (pistons.size() <= piston) {
+        return;
+    }
+    recallGlobalPiston(pistons[piston]);
+}
+
+void Engine::recallGlobalPiston(const GlobalPiston& piston) {
+    for (int i = 0; i < piston.divisions.size(); ++i) {
+        _divisions[i]->recallPiston(piston.divisions[i]);
+    }
+}
+
+GlobalPiston Engine::captureStateAsPiston() const {
+    GlobalPiston globalPiston{};
+    globalPiston.divisions.resize(_divisions.size());
+    for (const auto& division : _divisions) {
+        globalPiston.divisions.emplace_back(division->captureStateAsPiston());
+    }
+    return globalPiston;
+}
+
 std::set<int> Engine::getKeySwitches() const
 {
     std::set<int> keySwitches{};
@@ -269,12 +315,12 @@ auto Engine::populateDivisions() -> void {
 
     // Remove all the links if any.
     for (const auto& division : _divisions) {
-        division->clearLinkedDivisions();
+        division->clearCouplers();
     }
 
     // Update division links after they've been loaded.
     for (const auto& division : _divisions) {
-        division->populateLinkedDivisions();
+        division->populateCouplers();
     }
 
     // @todo Do we want the divisions to be reordered by the couplings?

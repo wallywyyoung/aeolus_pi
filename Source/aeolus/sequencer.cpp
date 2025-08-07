@@ -24,28 +24,19 @@
 
 
 
-Sequencer::Sequencer(Engine& engine, const int numSteps)
-    : _engine{engine}
-    , _steps(numSteps)
-    , _currentStep{0}
-    , _dirty{true}
-{
-    assert(_steps.size() > 0);
-
+Sequencer::Sequencer(Engine& engine, const int numSteps): _engine{engine}, _steps(numSteps), _currentStep{0}, _dirty{true} {
     initFromEngine();
 }
 
-void Sequencer::captureCurrentStep()
-{
-    captureState(_steps[_currentStep]);
+void Sequencer::captureCurrentStep() {
+    _steps[_currentStep] = _engine.captureStateAsPiston();
     _dirty = false;
 }
 
-void Sequencer::captureStateToStep(const int index)
-{
+void Sequencer::captureStateToStep(const int index) {
     isPositiveAndBelow(index, static_cast<int>(_steps.size()));
 
-    captureState(_steps[index]);
+    _steps[index] = _engine.captureStateAsPiston();
 
     // Current state now matches the sequencer step, so we switch to it
     _currentStep = index;
@@ -55,28 +46,28 @@ void Sequencer::captureStateToStep(const int index)
 auto Sequencer::setStep(const int index, const bool captureCurrentState) -> void {
     assert(index >= 0 && index < static_cast<int>(_steps.size()));
 
-    if (captureCurrentState)
+    if (captureCurrentState) {
         captureCurrentStep();
+    }
 
     _currentStep = index;
-    recallState(_steps[_currentStep]);
+    _engine.recallGlobalPiston(_steps[_currentStep]);
     _dirty = false;
 }
 
-void Sequencer::stepBackward()
-{
-    if (_currentStep > 0)
+void Sequencer::stepBackward() {
+    if (_currentStep > 0) {
         setStep(_currentStep - 1);
+    }
 }
 
-void Sequencer::stepForward()
-{
-    if (_currentStep < static_cast<int>(_steps.size()) - 1)
+void Sequencer::stepForward() {
+    if (_currentStep < static_cast<int>(_steps.size()) - 1) {
         setStep(_currentStep + 1);
+    }
 }
 
-void Sequencer::initFromEngine()
-{
+void Sequencer::initFromEngine() {
     const auto numDivisions = _engine.getDivisionCount();
 
     for (auto&[divisions] : _steps) {
@@ -85,60 +76,7 @@ void Sequencer::initFromEngine()
         for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
             const auto division = _engine.getDivisionByIndex(divIdx);
             divisions[divIdx].stops.resize(division->getStopsCount());
-            divisions[divIdx].links.resize(division->getLinksCount());
+            divisions[divIdx].links.resize(division->getCouplerCount());
         }
-    }
-}
-
-void Sequencer::captureState(OrganState& organState)
-{
-    const auto numDivisions = _engine.getDivisionCount();
-    assert(organState.divisions.size() == numDivisions);
-
-    for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
-        auto const division = _engine.getDivisionByIndex(divIdx);
-        auto&[stops, tremulant, links] = organState.divisions[divIdx];
-
-        const auto numStops = division->getStopsCount();
-        assert(stops.size() == numStops);
-
-        // Capture stops
-        for (int stopIdx = 0; stopIdx < numStops; ++stopIdx)
-            stops[stopIdx] = division->getStopByIndex(stopIdx).isEnabled();
-
-        // Capture tremulant
-        tremulant = division->isTremulantEnabled();
-
-        // Capture links
-        const auto numLinks = division->getLinksCount();
-        for (int linkIdx = 0; linkIdx < numLinks; ++linkIdx)
-            links[linkIdx] = division->getLinkByIndex(linkIdx).enabled;
-    }
-}
-
-void Sequencer::recallState(const OrganState& organState) {
-    const auto numDivisions = _engine.getDivisionCount();
-    assert(organState.divisions.size() == numDivisions);
-
-    for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
-        auto const division = _engine.getDivisionByIndex(divIdx);
-
-        assert(organState.divisions[divIdx].stops.size() == division->getStopsCount());
-
-        // Restore stops
-        for (int i = 0; i < division->getStopsCount(); ++i) {
-            if (organState.divisions[divIdx].stops[i]) {
-                division->setStopOn(i);
-            } else {
-                division->setStopOff(i);
-            }
-        }
-
-        // Restore tremulant
-        division->setTremulantEnabled(organState.divisions[divIdx].tremulant);
-
-        // Restore links
-        for (int i = 0; i < division->getLinksCount(); ++i)
-            division->enableLink(i, organState.divisions[divIdx].links[i]);
     }
 }
