@@ -21,6 +21,7 @@
 #pragma once
 
 #include <cmath>
+#include <numbers>
 
 template <typename T> T limitRange(T min, T max, T value) {
     return std::max(min, std::min(max, value));
@@ -30,21 +31,6 @@ template <typename T> T limitRange(T min, T max, T value) {
 template <typename T1, typename T2> bool isPositiveAndBelow(T1 instance, T2 threshold) {
     return T1() <= instance && instance < static_cast<T1>(threshold);
 }
-
-constexpr static int N_OUTPUT_CHANNELS = 2;
-constexpr static int N_VOICE_CHANNELS = 2;
-
-/// Processing sample rate. It is low enough
-/// since there are not many harmonics to be generated
-/// and thus we can get away without using an interpolation filter
-/// when upsampling only.
-constexpr static int SAMPLE_RATE = 44100;
-constexpr static float SAMPLE_RATE_F = static_cast<float>(SAMPLE_RATE);
-constexpr static float SAMPLE_RATE_R = 1.0f / SAMPLE_RATE_F;
-constexpr static size_t BPS_RATE = SAMPLE_RATE * 2 /* 16-bit */ * N_OUTPUT_CHANNELS;
-
-/// Length of a processing frame (in samples).
-constexpr static int SUB_FRAME_LENGTH = 64;
 
 // MIDI controls
 enum {
@@ -76,7 +62,7 @@ template<unsigned M, unsigned N, unsigned B, unsigned A>
 struct SinCosSeries
 {
     constexpr static double value =
-        1.0 - (A * M_PI/ B) * ( A * M_PI / B) / M / (M + 1)
+        1.0 - (A * std::numbers::pi_v<float> / B) * ( A * std::numbers::pi_v<float> / B) / M / (M + 1)
         * SinCosSeries<M + 2, N, B, A>::value;
 };
 
@@ -91,12 +77,12 @@ struct Sin;
 template<unsigned B, unsigned A>
 struct Sin<B, A, float>
 {
-    constexpr static float value = (A * static_cast<float>(M_PI) / B) * static_cast<float>(SinCosSeries<2, 24, B, A>::value);
+    constexpr static float value = (A * std::numbers::pi_v<float> / B) * static_cast<float>(SinCosSeries<2, 24, B, A>::value);
 };
 
 template<unsigned B, unsigned A>
 struct Sin<B, A, double> {
-    constexpr static double value = (A * static_cast<float>(M_PI) / B) * SinCosSeries<2, 34, B, A>::value;
+    constexpr static double value = (A * std::numbers::pi_v<float> / B) * SinCosSeries<2, 34, B, A>::value;
 };
 
 template <typename T>

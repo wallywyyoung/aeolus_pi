@@ -36,16 +36,18 @@ IRs IOManager::loadIRs() {
     IRs irs;
     irs.longestIRLength = dsp::Convolver::BlockSize;
     AudioFile<float> audioFile;
+    std::ostringstream path;
     for (auto jsonIr: jsonIRs["irs"]){
         auto zeroDelay = jsonIr.contains("zeroDelay") ? static_cast<bool>(jsonIr["zeroDelay"]) : false;
         auto startOffset = zeroDelay? 0 : static_cast<int>(jsonIr["startOffset"]);
-        audioFile.load("./Resources/irs/" + static_cast<std::string>(jsonIr["fileName"]));
+        audioFile.load("./Resources/irs/" + std::to_string(SAMPLE_RATE) + "/" + static_cast<std::string>(jsonIr["fileName"]));
         auto ir = IR(jsonIr["name"], audioFile, startOffset);
         //TODO: This must be wrong.
         auto gain = static_cast<float>(jsonIr["gain"]);
         ir.applyGain(gain);
         irs.irs.push_back(ir);
         irs.longestIRLength = std::max(irs.longestIRLength, audioFile.getNumSamplesPerChannel());
+        path.clear();
     }
     return irs;
 }

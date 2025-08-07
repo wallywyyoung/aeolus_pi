@@ -19,11 +19,12 @@
 
 #include "aeolus/dsp/spatial.h"
 
+#include "MemoryUtilities.h"
 
 
 namespace dsp {
 
-SpatialSource::SpatialSource() : _sampleRate{SAMPLE_RATE_F}, _sourcePosition{0.0f, 0.0f}, _listenerPosition{0.0f, 0.0f}, _listenerOrientation{0.0f}, _listenerLeftRightDistance{0.3f}, _leftDelay{}, _rightDelay{}, _filterSpec{}, _filterState{}
+SpatialSource::SpatialSource() : _sourcePosition{0.0f, 0.0f}, _listenerPosition{0.0f, 0.0f}, _listenerOrientation{0.0f}, _listenerLeftRightDistance{0.3f}, _leftDelay{}, _rightDelay{}, _filterSpec{}, _filterState{}
 {
     recalculate();
 }
@@ -78,12 +79,12 @@ void SpatialSource::recalculate()
     const float rightDistance = _sourcePosition.distanceTo(right);
     const float maxDistance = std::max(leftDistance, rightDistance);
     const float maxT = maxDistance / speedOfSound;
-    const auto delayLengthInSamples = static_cast<size_t>(_sampleRate * maxT + 0.5f);
+    const auto delayLengthInSamples = static_cast<size_t>(SAMPLE_RATE_F * maxT + 0.5f);
 
     _delayLine.resize(delayLengthInSamples);
 
-    _leftDelay = static_cast<int>(roundf(leftDistance * _sampleRate / speedOfSound));
-    _rightDelay = static_cast<int>(roundf(rightDistance * _sampleRate / speedOfSound));
+    _leftDelay = static_cast<int>(roundf(leftDistance * SAMPLE_RATE_F / speedOfSound));
+    _rightDelay = static_cast<int>(roundf(rightDistance * SAMPLE_RATE_F / speedOfSound));
 
     constexpr float att = 0.7f; // [0..1]
 
@@ -94,7 +95,6 @@ void SpatialSource::recalculate()
     _filterSpec[0].type = BiquadFilter::LowPass;
     _filterSpec[0].dbGain = 0.0f;
     _filterSpec[0].q = 0.7071f;
-    _filterSpec[0].sampleRate = SAMPLE_RATE;
 
     _filterSpec[1] = _filterSpec[0];
 

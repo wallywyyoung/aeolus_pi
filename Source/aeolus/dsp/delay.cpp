@@ -20,52 +20,42 @@
 #include "aeolus/dsp/delay.h"
 #include "aeolus/globals.h"
 
-#include <cstring>
-
 namespace dsp {
+    DelayLine::DelayLine(const size_t size) : _buffer(size, 0.0f), _writeIndex(0) { }
 
-DelayLine::DelayLine(const size_t size) : _buffer(size, 0.0f), _writeIndex(0) { }
+    void DelayLine::resize (const size_t size) {
+        _buffer.resize(size);
+        reset();
+    }
 
-void DelayLine::resize (const size_t size)
-{
-    _buffer.resize(size);
-    reset();
-}
+    void DelayLine::reset() {
+        _writeIndex = 0;
+        memset(_buffer.data(), 0, sizeof (float) * _buffer.size());
+    }
 
-void DelayLine::reset()
-{
-    _writeIndex = 0;
-    memset(_buffer.data(), 0, sizeof (float) * _buffer.size());
-}
+    void DelayLine::write (const float x) {
+        if (_writeIndex == 0) {
+            _writeIndex = _buffer.size() - 1;
+        } else {
+            --_writeIndex;
+        }
+        _buffer[_writeIndex] = x;
+    }
 
-void DelayLine::write (const float x)
-{
-    if (_writeIndex == 0)
-        _writeIndex = _buffer.size() - 1;
-    else
-        --_writeIndex;
+    float DelayLine::read(const float delay) const {
+        int index = static_cast<int>(std::floor(delay));
+        const float frac = delay - static_cast<float>(index);
 
-    _buffer[_writeIndex] = x;
-}
+        index = (index + _writeIndex) % static_cast<int>(_buffer.size());
+        const auto a = _buffer[index];
+        const auto b = index < _buffer.size() - 1 ? _buffer[index + 1] : _buffer[0];
 
-float DelayLine::read(const float delay) const
-{
-    int index = static_cast<int>(std::floor(delay));
-    const float frac = delay - static_cast<float>(index);
+        return math::lerp(a, b, frac);
+    }
 
-    index = (index + _writeIndex) % static_cast<int>(_buffer.size());
-    const auto a = _buffer[index];
-    const auto b = index < _buffer.size() - 1 ? _buffer[index + 1] : _buffer[0];
-
-    return math::lerp(a, b, frac);
-}
-
-float DelayLine::readNearest(const int delay) const
-{
-    const int index{ static_cast<int>((delay + _writeIndex) % _buffer.size()) };
-    return _buffer[index];
-}
+    float DelayLine::readNearest(const int delay) const {
+        const int index{ static_cast<int>((delay + _writeIndex) % _buffer.size()) };
+        return _buffer[index];
+    }
 
 } // namespace dsp
-
-

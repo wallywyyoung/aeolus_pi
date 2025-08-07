@@ -26,23 +26,18 @@
 #include "aeolus/EngineGlobal.h"
 #include "DivisionFactory.h"
 
-Engine::Engine() : MidiManager(), _sampleRate{SAMPLE_RATE_F}, _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _remainedSamples{0}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}, _interpolator{1.0f, N_OUTPUT_CHANNELS}, _divisionGain(std::make_shared<AudioParameter>(1))
+Engine::Engine() : _divisionGain(std::make_shared<AudioParameter>(1)), _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _remainedSamples{0}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}
 {
     populateDivisions();
     // Sequencer can be created only after the divisions have been populated.
     _sequencer = std::make_unique<Sequencer>(*this, SEQUENCER_N_STEPS);
 }
 
-void Engine::prepareToPlay(const float sampleRate)
+void Engine::prepareToPlay()
 {
     // Select the first IR for reverb by default
     setReverbIR(_selectedIR);
     _convolver.setDryWet(1.0f, 0.25f, true);
-
-    _interpolator.setRatio(SAMPLE_RATE_F / sampleRate); // 44100 / sampleRate
-    _interpolator.reset();
-
-    _sampleRate = sampleRate;
 }
 
 void Engine::setReverbIR(const int num)
@@ -58,8 +53,6 @@ void Engine::setReverbIR(const int num)
     }
 }
 
-float Engine::getReverbLengthInSeconds() const { return static_cast<float>(_convolver.length()) * SAMPLE_RATE_R; }
-
 void Engine::setReverbWet(const float v) { _convolver.setDryWet(1.0f, v); }
 
 void Engine::setVolume(const float v, const bool immediate) { _params[VOLUME].setValue(v, immediate); }
@@ -73,49 +66,68 @@ void Engine::handleSequencerSwitch(const int& note) {
     }
 }
 
-void Engine::handleNoteOn(const int &channel, const int &note) {
+void Engine::setDivisionNoteOn(const int &division, const int &note) {
     clearDivisionsTriggerFlag();
     // Ignore note-on event if filtered by MTS.
-    if (EngineGlobal::getInstance()->shouldMTSFilterNoteByChannel(note, channel)) {
+    if (EngineGlobal::getInstance()->shouldMTSFilterNoteByChannel(note, division)) {
         return;
     }
-    for (const auto &division: _divisions) {
-        division->noteOn(note, channel);
-    }
+    _divisions[division]->setNoteOn(note, false);
 }
 
-void Engine::handleNoteOff(const int &channel, const int &note) {
+void Engine::setDivisionNoteOff(const int &division, const int &note) {
     clearDivisionsTriggerFlag();
+    _divisions[division]->setNoteOff(note, false);
+}
+
+void Engine::setDivisionAllNotesOff(const int& division) {
+    _divisions[division]->setAllNotesOff(false);
+}
+
+void Engine::setGlobalAllNotesOff() {
     for (const auto &division : _divisions) {
-        division->noteOff(note, channel);
+        division->setAllNotesOff(false);
     }
 }
 
-void Engine::handleAllNotesOff() {
-    for (const auto &division : _divisions) {
-        division->allNotesOff();
+void Engine::handleDivisionSwell(const int& division, const float& value) {
+    _divisions[division]->handleSwell(value);
+};
+
+void Engine::handleDivisionTremulant(const int& division, const float& value) {
+    _divisions[division]->handleTremulant(value);
+};
+
+void Engine::setDivisionStopOn(const int& division, const int& stop) {
+    _divisions[division]->setStopOn(stop);
+}
+
+void Engine::setDivisionStopOff(const int& division, const int& stop) {
+    _divisions[division]->setStopOff(stop);
+}
+
+void Engine::setDivisionStopToggle(const int& division, const int& stop) {
+    _divisions[division]->setStopToggle(stop);
+}
+
+void Engine::setDivisionAllStopsOff(const int& division) {
+    _divisions[division]->setAllStopsOff();
+}
+
+void Engine::setDivisionAllStopsOn(const int& division) {
+    _divisions[division]->setAllStopsOn();
+}
+
+void Engine::setGlobalAllStopsOff() {
+    for (auto& division : _divisions) {
+        division->setAllStopsOff();
     }
 }
 
-Range Engine::getMidiKeyboardRange() const
-{
-    int minNote = -1;
-    int maxNote = -1;
-
-    for (auto &division : _divisions) {
-        int min, max;
-        division->getAvailableRange(min, max);
-
-        if (min >= 0 && max >= 0) {
-            if (minNote < 0 || minNote > min)
-                minNote = min;
-
-            if (maxNote < 0 || maxNote < max)
-                maxNote = max;
-        }
+void Engine::setGlobalAllStopsOn() {
+    for (auto& division : _divisions) {
+        division->setAllStopsOn();
     }
-
-    return {minNote, maxNote};
 }
 
 std::set<int> Engine::getKeySwitches() const
@@ -164,12 +176,12 @@ bool Engine::processSubFrame() {
             division->modulate(_divisionFrameBuffer, _tremulantBuffer);
 
             for (int ch = 0; ch < _subFrameBuffer.getNumChannels(); ++ch) {
-                _subFrameBuffer.addFrom(ch, 0, _divisionFrameBuffer, ch, 0, SUB_FRAME_LENGTH);
+                _subFrameBuffer.addFrom(ch, 0, _divisionFrameBuffer, ch, 0, AUDIO_SUB_FRAME_LENGTH);
             }
         }
     }
 
-    _remainedSamples = SUB_FRAME_LENGTH;
+    _remainedSamples = AUDIO_SUB_FRAME_LENGTH;
 
     return wasAudioGenerated;
 }
@@ -178,13 +190,13 @@ void Engine::generateTremulant()
 {
     float* buf = _tremulantBuffer.getWritePointer(0);
 
-    for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
+    for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
         const float s = sinf(_tremulantPhase);
         buf[i] = s * TREMULANT_LEVEL;
         _tremulantPhase += TREMULANT_PHASE_INCREMENT;
 
-        if (_tremulantPhase >= M_PI * 2)
-            _tremulantPhase -= M_PI * 2;
+        if (_tremulantPhase >= std::numbers::pi_v<float> * 2)
+            _tremulantPhase -= std::numbers::pi_v<float> * 2;
     }
 }
 
@@ -217,73 +229,6 @@ void Engine::applyVolume(float* inOut, const size_t framesPerChannel)
             inOut[i*2+1] *= g;
             inOut[i*2+1] *= g;
         }
-    }
-}
-
-
-void Engine::handlePC(const int& pc) {
-    if (pc >= 0 && pc < _sequencer->getStepsCount())
-        _sequencer->setStep(pc);
-}
-
-
-void Engine::handleCC(const int& channel, const int& cc, const int& value) {
-    if (cc == CC_STOP_BUTTONS) {
-        if ((value & 0xC8) == 0x40) {
-            // 01mm0ggg
-            auto mode { StopControlMode::Disabled };
-            switch (value >> 4 & 0x03) {
-                case 0: mode = StopControlMode::Disabled; break;
-                case 1: mode = StopControlMode::SetOff; break;
-                case 2: mode = StopControlMode::SetOn; break;
-                case 3: mode = StopControlMode::Toggle; break;
-                default: break;
-            }
-            _stopControlMode = mode;
-            _stopControlGroup = value & 0x07;
-            if (_stopControlMode == StopControlMode::Disabled) {
-                // Disable message does not require a 2nd part and can be processed immeditely.
-                processStopControlMessage();
-                _stopControlMode.reset();
-            }
-        } else if ((value & 0xE0) == 0) {
-            // 000bbbbb
-            if (_stopControlMode.has_value()) {
-                _stopControlButton = value & 0x1F;
-                processStopControlMessage();
-            }
-        } else {
-            _stopControlMode.reset();
-        }
-    }
-}
-
-void Engine::allStopsOn() {
-    for (auto& division : _divisions) {
-        division->enableAllStops();
-    }
-}
-void Engine::processStopControlMessage() const {
-    if (!_stopControlMode.has_value())
-        return;
-
-    isPositiveAndBelow(_stopControlGroup, _divisions.size());
-
-    switch (*_stopControlMode) {
-        case StopControlMode::Disabled:
-            _divisions[_stopControlGroup]->disableAllStops();
-            break;
-        case StopControlMode::SetOff:
-            _divisions[_stopControlGroup]->enableStop(_stopControlButton, false);
-            break;
-        case StopControlMode::SetOn:
-            _divisions[_stopControlGroup]->enableStop(_stopControlButton, true);
-            break;
-        case StopControlMode::Toggle:
-            _divisions[_stopControlGroup]->enableStop(_stopControlButton, !_divisions[_stopControlGroup]->isStopEnabled(_stopControlButton));
-            break;
-        default:
-            break;
     }
 }
 

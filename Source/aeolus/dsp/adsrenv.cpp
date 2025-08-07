@@ -28,35 +28,23 @@ namespace dsp {
 // Ported from
 // https://www.earlevel.com/main/2013/06/03/envelope-generators-adsr-code/
 
-Envelope::Envelope()
-    : currentState{Off}
-    , currentLevel{0.0f}
-    , attackRate{0.0f}
-    , attackCoef{0.0f}
-    , attackBase{0.0f}
-    , decayRate{0.0f}
-    , decayCoef{0.0f}
-    , decayBase{0.0f}
-    , releaseRate{0.0f}
-    , releaseCoef{0.0f}
-    , releaseBase{0.0f}
-    , sustainLevel{0.0f}
-{
-}
+Envelope::Envelope() : currentState{Off}, currentLevel{0.0f}, attackRate{0.0f}, attackCoef{0.0f}, attackBase{0.0f},
+    decayRate{0.0f}, decayCoef{0.0f}, decayBase{0.0f}, releaseRate{0.0f}, releaseCoef{0.0f}, releaseBase{0.0f},
+    sustainLevel{0.0f} { }
 
-void Envelope::trigger(const Trigger& trigger, const float sampleRate)
+void Envelope::trigger(const Trigger& trigger)
 {
     sustainLevel = trigger.sustain;
 
-    attackRate = trigger.attack * sampleRate;
+    attackRate = trigger.attack * SAMPLE_RATE_F;
     attackCoef = calculate(attackRate, AttackTargetRatio);
     attackBase = (1.0f + AttackTargetRatio) * (1.0f - attackCoef);
 
-    decayRate = trigger.decay * sampleRate;
+    decayRate = trigger.decay * SAMPLE_RATE_F;
     decayCoef = calculate(decayRate, DecayReleaseTargetRatio);
     decayBase = (sustainLevel - DecayReleaseTargetRatio) * (1.0f - decayCoef);
 
-    releaseRate = trigger.release * sampleRate;
+    releaseRate = trigger.release * SAMPLE_RATE_F;
     releaseCoef = calculate(releaseRate, DecayReleaseTargetRatio);
     releaseBase = -DecayReleaseTargetRatio * (1.0f - releaseCoef);
 
@@ -70,9 +58,9 @@ void Envelope::release()
         currentState = Release;
 }
 
-void Envelope::release(const float t, const float sampleRate)
+void Envelope::release(const float t)
 {
-    releaseRate = t * sampleRate;
+    releaseRate = t * SAMPLE_RATE_F;
     releaseCoef = calculate(releaseRate, DecayReleaseTargetRatio);
     releaseBase = -DecayReleaseTargetRatio * (1.0f - releaseCoef);
 

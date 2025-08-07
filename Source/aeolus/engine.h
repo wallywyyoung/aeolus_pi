@@ -42,11 +42,11 @@
 class Engine final : public MidiManager
 {
     /// Global volume gain.
-    constexpr static float VOLUME_GAIN = 1.0f;
+    constexpr static float VOLUME_GAIN = 0.005f;
 
     /// Tremulant modulation frequency.
     constexpr static float TREMULANT_FREQUENCY = 6.283184f;
-    constexpr static float TREMULANT_PHASE_INCREMENT = static_cast<float>(M_PI) * 2.0f * TREMULANT_FREQUENCY / SAMPLE_RATE;
+    constexpr static float TREMULANT_PHASE_INCREMENT = std::numbers::pi_v<float> * 2.0f * TREMULANT_FREQUENCY * SAMPLE_RATE_R;
 
     /// Tremulant OSC wavetable amplitude.
     constexpr static float TREMULANT_LEVEL = 1.0f;
@@ -70,51 +70,47 @@ public:
         NUM_PARAMS
     };
 
-
     std::shared_ptr<AudioParameter> _divisionGain;
 
     explicit Engine();
     ~Engine() = default;
 
-    /**
-     * This method returns external processing sample rate as mandated
-     * by the plugin host. Internally the organ engine performs processing
-     * with a fixed SAMPLE_RATE.
-     */
-    [[nodiscard]] float getSampleRate() const noexcept { return _sampleRate; }
-
-    /**
-     * Returns the number of active (playing) voices.
-     */
-    [[nodiscard]] int getVoiceCount() const noexcept { return _voicePool->getNumberOfActiveVoices(); }
+    // Notes
+    void setDivisionNoteOn(const int& division, const int& note) override;
+    void setDivisionNoteOff(const int& division, const int& note) override;
+    void setDivisionAllNotesOff(const int& division) override;
+    void setGlobalAllNotesOff() override;
+    // Modifiers
+    void handleDivisionSwell(const int& division, const float& value) override;
+    void handleDivisionTremulant(const int& division, const float& value) override;
+    // Stops
+    void setDivisionStopOn(const int& division, const int& stop) override;
+    void setDivisionStopOff(const int& division, const int& stop) override;
+    void setDivisionStopToggle(const int& division, const int& stop) override;
+    void setDivisionAllStopsOff(const int& division) override;
+    void setDivisionAllStopsOn(const int& division) override;
+    void setGlobalAllStopsOff() override;
+    void setGlobalAllStopsOn() override;
+    // TODO: Pistons
+    // void setDivisionPiston(const int& division, const int& piston) override;
+    // void recallDivisionPiston(const int& division, const int& piston) override;
+    // void setGlobalPiston(const int& piston) override;
+    // void recallGlobalPiston(const int& piston) override;
 
     /**
      * Called by the host pefore starting requesting the audio blocks.
      */
-    auto prepareToPlay(float sampleRate) -> void;
-
+    auto prepareToPlay() -> void;
     /**
      * Set the reverb IR bu its number.
      * @note This can be called upon initialisation or on the audio thread.
      */
     void setReverbIR(int num);
-
-    /**
-     * Returns currently set reverb IR number.
-     */
-    [[nodiscard]] int getReverbIR() const noexcept { return _selectedIR; }
-
-    /**
-     * Returns the reverb tail in seconds.
-     */
-    [[nodiscard]] float getReverbLengthInSeconds() const;
-
     /**
      * Set reverb wet output level (linear).
      * @note This must be called on the audio thread.
      */
     void setReverbWet(float v);
-
     /**
      * Set global output volume level (linear).
      * @note This must be called on the audio thread.
@@ -123,11 +119,11 @@ public:
 
     template<auto OUT_BUFFER_SIZE>
     void processNoninterpolatedRealtimeStereo(float (&out)[OUT_BUFFER_SIZE]) {
-        processMidiBuffer();
+        ProcessMidiBuffer();
         bool wasAudioGenerated = false;
         memset(out, 0.0f, sizeof(float) * OUT_BUFFER_SIZE);
 
-        constexpr auto STEREO_SUB_FRAME_LENGTH = SUB_FRAME_LENGTH * 2;
+        constexpr auto STEREO_SUB_FRAME_LENGTH = AUDIO_SUB_FRAME_LENGTH * 2;
         for (int i = 0; i < OUT_BUFFER_SIZE; i += STEREO_SUB_FRAME_LENGTH) {
             generateTremulant();
             for (const auto &division : _divisions) {
@@ -138,7 +134,7 @@ public:
                     division->modulate(_divisionFrameBuffer, _tremulantBuffer);
                     const auto leftBuffer = _divisionFrameBuffer.getReadPointer(0);
                     const auto rightBuffer = _divisionFrameBuffer.getReadPointer(1);
-                    for (int j = 0; j < SUB_FRAME_LENGTH; ++j) {
+                    for (int j = 0; j < AUDIO_SUB_FRAME_LENGTH; ++j) {
                         out[j * 2 + i] += leftBuffer[j];
                         out[j * 2 + 1 + i] += rightBuffer[j];
                     }
@@ -147,7 +143,7 @@ public:
         }
 
         // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
-        constexpr auto OUT_PER_CHANNEL_SIZE = OUT_BUFFER_SIZE / N_OUTPUT_CHANNELS;
+        constexpr auto OUT_PER_CHANNEL_SIZE = OUT_BUFFER_SIZE / OUTPUT_CHANNELS;
         _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - OUT_PER_CHANNEL_SIZE);
         if (_reverbTailCounter > 0 && _convolver.isAudible()) {
             _convolver.process(out, OUT_PER_CHANNEL_SIZE);
@@ -156,21 +152,15 @@ public:
         applyVolume(out, OUT_PER_CHANNEL_SIZE);
     }
 
-    void allStopsOn();
-    void handleNoteOn(const int &channel, const int &note) override;
-    void handleNoteOff(const int &channel, const int &note) override;
-    void handleAllNotesOff() override;
-    void handleCC(const int& channel, const int& cc, const int& value) override;
-    void handlePC(const int& pc) override;
-    void handleSequencerSwitch(const int& note) override;
+    // TODO: Make sequencer work, consider repurposing as choir pedal.
+    void handleSequencerSwitch(const int& note);
+    std::set<int> getKeySwitches() const;
+    [[nodiscard]] Sequencer& getSequencer() const noexcept { return *_sequencer.get(); }
 
-    [[nodiscard]] Range getMidiKeyboardRange() const;
-    [[nodiscard]] std::set<int> getKeySwitches() const;
     [[nodiscard]] std::shared_ptr<VoicePool> getVoicePool() const noexcept { return _voicePool; }
     [[nodiscard]] int getDivisionCount() const noexcept { return _divisions.size(); }
     [[nodiscard]] Division *getDivisionByIndex(const int i) { return _divisions[i].get(); }
     [[nodiscard]] Division *getDivisionByName(const std::string &name) const;
-    [[nodiscard]] Sequencer& getSequencer() const noexcept { return *_sequencer.get(); }
 
 private:
     void populateDivisions();
@@ -187,9 +177,6 @@ private:
     [[nodiscard]] bool isKeySwitchForward(int key) const;
     [[nodiscard]] bool isKeySwitchBackward(int key) const;
     static void populateKeySwitchesVector(std::vector<int>& switches, const nlohmann::json& v);
-
-    float _sampleRate;
-
     std::shared_ptr<VoicePool> _voicePool; ///< All the voices.
 
     AudioParameterPool _params; ///< Internal parameters.
@@ -206,10 +193,10 @@ private:
     std::vector<int> _sequencerStepBackwardKeySwitches{ SEQUENCER_BACKWARD_MIDI_KEY };
     std::vector<int> _sequencerStepForwardKeySwitches{ SEQUENCER_FORWARD_MIDI_KEY };
 
-    StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS> _subFrameBuffer;
-    StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS> _divisionFrameBuffer;
-    StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS> _voiceFrameBuffer;
-    StaticAudioBuffer<SUB_FRAME_LENGTH, 1> _tremulantBuffer;
+    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _subFrameBuffer;
+    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _divisionFrameBuffer;
+    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _voiceFrameBuffer;
+    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1> _tremulantBuffer;
 
     int _remainedSamples;
     float _tremulantPhase;
@@ -217,10 +204,6 @@ private:
     dsp::Convolver _convolver;
     std::atomic<int> _selectedIR;
     int _reverbTailCounter;
-
-    dsp::Interpolator _interpolator;
-
-    // MidiManager _midiKeyboardState;
 };
 
 

@@ -60,7 +60,7 @@ private:
     Envelope _envelope; ///< Noise envelope
     Envelope::Trigger _envelopeTrigger;
 
-    DelayLine _pipeResonator;
+    DelayLineStatic<SAMPLE_RATE> _pipeResonator;
     float _pipeDelay;
 
     // Feedback low-pass filter;

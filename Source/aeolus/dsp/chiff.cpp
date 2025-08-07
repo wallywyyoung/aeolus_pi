@@ -24,9 +24,8 @@
 
 namespace dsp {
 
-Chiff::Chiff() : _envelopeTrigger{0.01f, 0.1f, 0.1f, 0.05f}, _pipeResonator{SAMPLE_RATE}, _pipeDelay{0.0f}, _lpSpec{}, _lpState{}, _gain{1.0f} {
+Chiff::Chiff() : _envelopeTrigger{0.01f, 0.1f, 0.1f, 0.05f}, _pipeDelay{0.0f}, _lpSpec{}, _lpState{}, _gain{1.0f} {
     _lpSpec.type = BiquadFilter::LowPass;
-    _lpSpec.sampleRate = SAMPLE_RATE;
     _lpSpec.dbGain = 0.0f;
     _lpSpec.q = 0.7071f;
 }
@@ -58,8 +57,8 @@ void Chiff::setGain(const float v)
 
 void Chiff::setFrequency(const float f)
 {
-    _pipeDelay = SAMPLE_RATE / f;
-    _lpSpec.freq = fmin(0.45f * SAMPLE_RATE, f * 4.0f);
+    _pipeDelay = SAMPLE_RATE_F / f;
+    _lpSpec.freq = fmin(0.45f * SAMPLE_RATE_F, f * 4.0f);
 }
 
 void Chiff::reset()

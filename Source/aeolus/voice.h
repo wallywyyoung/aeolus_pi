@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
 #include "aeolus/list.h"
 #include "aeolus/rankwave.h"
 #include "aeolus/dsp/chiff.h"
@@ -63,10 +62,10 @@ private:
     /// This is used to tell which stops are voiced.
     int _stopIndex;
 
-    float _buffer[SUB_FRAME_LENGTH];
+    float _buffer[AUDIO_SUB_FRAME_LENGTH];
 
     /// Delay after chiff.
-    dsp::DelayLine _delayLine;
+    dsp::DelayLineStatic<SAMPLE_RATE> _delayLine;
     int _delay{};
 
     /// Attack chiff.

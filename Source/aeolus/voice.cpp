@@ -23,13 +23,7 @@
 
 #include <cstring>
 
-Voice::Voice(Engine& engine)
-    : _engine(engine)
-      , _stopIndex{-1}
-      , _buffer{}
-      , _delayLine{SAMPLE_RATE}
-      , _postReleaseCounter(0) {
-}
+Voice::Voice(Engine& engine) : _engine(engine), _stopIndex{-1}, _buffer{}, _postReleaseCounter(0) { }
 
 void Voice::trigger(const Pipewave::State& state)
 {
@@ -41,7 +35,7 @@ void Voice::trigger(const Pipewave::State& state)
     const auto dt = 1.0f / freq;
 
     // Delay pipe harmonic signal so that chiff noise builds up first
-    _delay = static_cast<int>(std::min<float>(static_cast<float>(_delayLine.size()), 0.5f * dt * SAMPLE_RATE_F));
+    _delay = static_cast<int>(std::min<float>(SAMPLE_RATE_F, 0.5f * dt * SAMPLE_RATE_F));
 
     _chiff.setAttack(5.0f * dt);
     _chiff.setDecay(100.0f * dt);
@@ -64,10 +58,6 @@ void Voice::trigger(const Pipewave::State& state)
 
     const float x = width * k * static_cast<float>(abs(note - 65));
 
-    // Assuming notes range [36..96]
-    const float n = k * static_cast<float>(abs(note - 65)); // ~[-30..30]
-
-    _spatialSource.setSampleRate(SAMPLE_RATE_F);
     _spatialSource.setSourcePosition(x, 5.0f);
     _spatialSource.recalculate();
     _postReleaseCounter = _spatialSource.getPostFxSamplesCount() + 2 * _delay + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
@@ -89,7 +79,7 @@ void Voice::reset()
     _state.reset();
     _stopIndex = -1;
 
-    memset(_buffer, 0, sizeof(float) * SUB_FRAME_LENGTH);
+    memset(_buffer, 0, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
 
     _delayLine.reset();
     _chiff.reset();
@@ -97,12 +87,12 @@ void Voice::reset()
 }
 
 void Voice::process(float* outL, float* outR) {
-    memset(_buffer, 0, sizeof(float) * SUB_FRAME_LENGTH);
+    memset(_buffer, 0, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
 
     const auto gain = _state.gain;
 
     if (_state.env == Pipewave::Over) {
-        _postReleaseCounter -= std::min(static_cast<int>(_postReleaseCounter), SUB_FRAME_LENGTH);
+        _postReleaseCounter -= std::min(static_cast<int>(_postReleaseCounter), AUDIO_SUB_FRAME_LENGTH);
 
         for (float & i : _buffer) {
             _delayLine.write(0.0f);
@@ -119,13 +109,13 @@ void Voice::process(float* outL, float* outR) {
         }
     }
 
-    _chiff.process(_buffer, SUB_FRAME_LENGTH);
+    _chiff.process(_buffer, AUDIO_SUB_FRAME_LENGTH);
 
     // Spatial modellig is only applied on stereo voice output
     if (outL != outR) {
-        _spatialSource.process(_buffer, outL, outR, SUB_FRAME_LENGTH);
+        _spatialSource.process(_buffer, outL, outR, AUDIO_SUB_FRAME_LENGTH);
     } else {
-        memcpy(outL, _buffer, sizeof(float) * SUB_FRAME_LENGTH);
+        memcpy(outL, _buffer, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
     }
 }
 

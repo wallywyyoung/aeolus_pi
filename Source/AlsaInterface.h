@@ -23,6 +23,8 @@
 #include <thread>
 #include <alsa/asoundlib.h>
 
+#include "MemoryUtilities.h"
+
 class AlsaInterface {
     static constexpr auto CONFIG_FILE = "./Resources/configs/audio.json";
 //    Midi
@@ -39,14 +41,24 @@ class AlsaInterface {
     [[nodiscard]] int getMidiClientId();
 
 //    Audio
-    snd_pcm_t* playback;
-    std::atomic<bool> runningAudio = false, runningMidi = false;
+    // snd_pcm_t* playback;
+    std::atomic<bool> runningMidi = false;
     std::string playbackDeviceName;
-    std::unique_ptr<std::thread> audioThread;
+    // std::unique_ptr<std::thread> audioThread;
+    pthread_t tid;
+
+    alignas(CACHE_LINE_SIZE) struct ThreadState {
+        bool runningAudio = false;
+        snd_pcm_t* playback{};
+        // snd_pcm_uframes_t frames{}, offset{};
+        // const snd_pcm_channel_area_t *areas{};
+    };
+    ThreadState threadState{};
 
     void initAudio();
     void beginPlayback();
     void endPlayback();
+    static void* audioHandler(void* stateStruct);
 
 public:
     AlsaInterface();

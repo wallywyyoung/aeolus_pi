@@ -43,7 +43,6 @@ struct BiquadFilter
     struct Spec
     {
         Type type;
-        float sampleRate;
         float freq;
         float q;
         float dbGain;

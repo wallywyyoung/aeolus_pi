@@ -30,17 +30,17 @@ namespace dsp {
 
 static float hann(const int i, const int n)
 {
-    return 0.5f * (1.0f - std::cos (M_PI * 2.0f * i / (n - 1)));
+    return 0.5f * (1.0f - std::cos (std::numbers::pi_v<float> * 2.0f * i / (n - 1)));
 }
 
 static float hamming(const int i, const int n)
 {
-    return 0.53836f + 0.46164f * std::cos (M_PI * 2.0f * i / (n - 1));
+    return 0.53836f + 0.46164f * std::cos (std::numbers::pi_v<float> * 2.0f * i / (n - 1));
 }
 
 static float blackman(const int i, const int n)
 {
-    const auto x = M_PI * 2.0f * i / (n - 1);
+    const auto x = std::numbers::pi_v<float> * 2.0f * i / (n - 1);
     return 0.42659f - 0.49656f * std::cos (x) + 0.076849f * std::cos (2.0f * x);
 }
 
@@ -51,7 +51,7 @@ void Fft::direct(Array& x, const Window win)
     const auto N = static_cast<unsigned int>(x.size());
     // DFT
     unsigned int k = N;
-    const float thetaT = M_PI / N;
+    const float thetaT = std::numbers::pi_v<float> / N;
     Complex phiT = Complex (std::cos (thetaT), std::sin (thetaT)), T;
 
     while (k > 1) {

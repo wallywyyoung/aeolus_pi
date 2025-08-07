@@ -47,23 +47,27 @@ public:
         return &instance;
     }
 
-    [[nodiscard]] const int getMIDISwellChannelsMask() const;
     [[nodiscard]] const bool shouldMTSFilterNoteByChannel(int midiNote, int midiChannel) const;
     [[nodiscard]] bool isMTSEnabled() const { return _mtsEnabled; }
-    [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
-    [[nodiscard]] Rankwave *getStopByName(const std::string &name) const { return _rankwavesByName.at(name).get(); }
     [[nodiscard]] const float getMTSNoteToFrequency(int midiNote, int midiChannel) const;
-    [[nodiscard]] int getStopsCount() const noexcept { return _rankwavesByName.size(); }
-    [[nodiscard]] std::vector<std::string> getAllStopNames() const;
-    [[nodiscard]] int getLongestIRLength() const noexcept { return _longestIRLength; }
-    void updateStops() const;
-    [[nodiscard]] float getTuningFrequency() const noexcept { return _tuningFrequency; }
-    void setTuningFrequency(const float f) noexcept { _tuningFrequency = f; }
-    [[nodiscard]] const Scale& getScale() const noexcept { return *_scale; }
-    void setScaleType(const Scale::Type type) const noexcept { _scale->setType(type); }
     [[nodiscard]] bool isConnectedToMTSMaster() const;
     [[nodiscard]] std::string getMTSScaleName();
     void setMTSEnabled(bool shouldBeEnabled);
+
+    [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
+    [[nodiscard]] int getLongestIRLength() const noexcept { return _longestIRLength; }
+
+    [[nodiscard]] Rankwave *getStopByName(const std::string &name) const { return _rankwavesByName.at(name).get(); }
+    [[nodiscard]] int getStopsCount() const noexcept { return _rankwavesByName.size(); }
+    [[nodiscard]] std::vector<std::string> getAllStopNames() const;
+    void updateStops() const;
+
+    [[nodiscard]] float getTuningFrequency() const noexcept { return _tuningFrequency; }
+    void setTuningFrequency(const float f) noexcept { _tuningFrequency = f; }
+
+    [[nodiscard]] const Scale& getScale() const noexcept { return *_scale; }
+    void setScaleType(const Scale::Type type) const noexcept { _scale->setType(type); }
+
     void rebuildRankwaves();
 
     template<auto OUT_BUFFER_SIZE>
@@ -83,9 +87,9 @@ private:
      * Returns true if there was a change to the tuning.
      */
     bool updateMTSTuningCache();
-
     // juce::Timer
     void timerCallback();
+
     Model model;
     Engine *engine;
     std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName{};
@@ -94,10 +98,7 @@ private:
     MTSClient* _mtsClient{};
     std::shared_ptr<Scale> _scale;
     int _longestIRLength{};   ///< Longest IR length in samples
-
-    float _sampleRate;
     float _tuningFrequency;
-
     bool _mtsEnabled{};
     std::array<float, 128> _mtsTuningCache{};
 };

@@ -73,58 +73,63 @@ public:
     void populateLinkedDivisions();
 
     [[nodiscard]] int getLinksCount() const noexcept;
-    void enableLink(int i, bool ena);
-    [[nodiscard]] bool isLinkEnabled(int i) const;
-    Link& getLinkByIndex(int i);
+    void enableLink(const int &i, const bool &ena);
+    [[nodiscard]] bool isLinkEnabled(const int &i) const;
+    Link& getLinkByIndex(const int &i);
     void cancelAllLinks();
-
-
     void clear();
-    Stop& addRankwave(Rankwave *ptr, bool ena = false, const std::string& name = std::string());
+    Stop& addRankwave(Rankwave *ptr, const bool &ena = false, const std::string& name = std::string());
 
     void setParamGain(const std::shared_ptr<AudioParameter> &param) noexcept { _paramGain = param; }
 
     AudioParameterPool& parameters() noexcept { return _params; }
 
-    void enableAllStops();
     int getStopsCount() const noexcept;
-    void enableStop(int i, bool ena);
-    bool isStopEnabled(int i) const;
-    Stop& getStopByIndex(int i);
-    void disableAllStops();
+    bool isStopEnabled(const int &i) const;
+    Stop& getStopByIndex(const int &i);
 
     void getAvailableRange(int& minNote, int& maxNote) const noexcept;
 
     int getMIDIChannelsMask() const noexcept { return _midiChannelsMask; }
-    bool isForMIDIChannel(int channel) const noexcept;
+    bool isForMIDIChannel(const int &channel) const noexcept;
     void setMIDIChannelsMask(const int channelsMask) noexcept { _midiChannelsMask = channelsMask; }
 
     bool hasSwell() const noexcept { return _hasSwell; }
-    void setHasSwell(const bool v) noexcept { _hasSwell = v; }
+    void setHasSwell(const bool& v) noexcept { _hasSwell = v; }
     bool hasTremulant() const noexcept { return _hasTremulant; }
-    void setHasTremulant(const bool v) noexcept { _hasTremulant = v; }
+    void setHasTremulant(const bool& v) noexcept { _hasTremulant = v; }
     bool isTremulantEnabled() const noexcept { return _tremulantEnabled; }
-    void setTremulantEnabled(bool ena) noexcept;
+    void setTremulantEnabled(const bool& ena) noexcept;
 
-    float getTremulantLevel(bool update = true);
+    float getTremulantLevel(const bool &update = true);
 
     //------------------------------------------------------
 
     // All the following methods must be called on the audio thread.
+    // Notes
+    void setNoteOn(const int& note, const bool& isLinkedDivision);
+    void setNoteOff(const int& note, const bool& updateLinkedDivisions);
+    void setAllNotesOff(const bool& isLinkedDivision);
+    // Modifiers
+    void handleSwell(const int& value);
+    void handleTremulant(const float& value);
+    // Stops
+    void setStopOn(const int& stop);
+    void setStopOff(const int& stop);
+    void setStopToggle(const int& stop);
+    void setAllStopsOff();
+    void setAllStopsOn();
+    // TODO: Pistons
+    // void setDivisionPiston(const int& division, const int& piston);
+    // void recallDivisionPiston(const int& division, const int& piston);
 
-    void noteOn(int note, int midiChannel);
-    void noteOff(int note, int midiChannel);
-    void allNotesOff();
-
-    void handleControlMessage(const MidiData& msg);
-
-    bool process(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& voiceBuffer);
-    void modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<SUB_FRAME_LENGTH, 1>& tremulantBuffer);
+    bool process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& voiceBuffer);
+    void modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1>& tremulantBuffer);
 
     void releaseVoicesOfDisabledStops();
     void triggerVoicesOfEnabledStops();
 
-    List<Voice>& getActiveVoices() noexcept { return _activeVoices; }
+    std::vector<Voice *> &getActiveVoices() noexcept { return _activeVoices; }
 
     /**
      * Tells the division has been alreayd triggered by a linked division,
@@ -185,12 +190,12 @@ private:
     dsp::BiquadFilter::State _swellFilterStateR;
 
     /// Delay lines used for tremulant frequency modulation.
-    dsp::DelayLine _tremulantDelayL;
-    dsp::DelayLine _tremulantDelayR;
+    dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> _tremulantDelayL;
+    dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> _tremulantDelayR;
 
     std::vector<Stop> _stops{};   ///< All the stops this division has.
 
-    List<Voice> _activeVoices;  ///< Active voices on this division.
+    std::vector<Voice*> _activeVoices;  ///< Active voices on this division.
 
     std::bitset<TOTAL_NOTES> _keysState; ///< MIDI keys state 1 = on, 0 = off.
     std::bitset<TOTAL_NOTES> _aggregatedKeysState;   ///< MIDI keys state aggregated from the coupled divisions.

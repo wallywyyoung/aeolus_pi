@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
+#include "MemoryUtilities.h"
 
 namespace dsp {
 
@@ -55,9 +55,9 @@ public:
 
     State state() const noexcept { return currentState; }
 
-    void trigger(const Trigger& trigger, float sampleRate = SAMPLE_RATE_F);
+    void trigger(const Trigger& trigger);
     void release();
-    void release(float t, float sampleRate = SAMPLE_RATE_F);
+    void release(float t);
 
     float next();
 

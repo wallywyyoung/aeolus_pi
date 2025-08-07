@@ -116,8 +116,7 @@ void Sequencer::captureState(OrganState& organState)
     }
 }
 
-void Sequencer::recallState(const OrganState& organState)
-{
+void Sequencer::recallState(const OrganState& organState) {
     const auto numDivisions = _engine.getDivisionCount();
     assert(organState.divisions.size() == numDivisions);
 
@@ -127,8 +126,13 @@ void Sequencer::recallState(const OrganState& organState)
         assert(organState.divisions[divIdx].stops.size() == division->getStopsCount());
 
         // Restore stops
-        for (int i = 0; i < division->getStopsCount(); ++i)
-            division->enableStop(i, organState.divisions[divIdx].stops[i]);
+        for (int i = 0; i < division->getStopsCount(); ++i) {
+            if (organState.divisions[divIdx].stops[i]) {
+                division->setStopOn(i);
+            } else {
+                division->setStopOff(i);
+            }
+        }
 
         // Restore tremulant
         division->setTremulantEnabled(organState.divisions[divIdx].tremulant);

@@ -51,7 +51,7 @@ public:
     [[nodiscard]] int getNoteMin() const noexcept { return _noteMin; }
     [[nodiscard]] int getNoteMax() const noexcept { return _noteMax; }
 
-    void prepareToPlay(float sampleRate);
+    void prepareToPlay();
 
     Pipewave::State trigger(int note);
 

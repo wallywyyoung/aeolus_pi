@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "MemoryUtilities.h"
 #include "aeolus/globals.h"
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/filter.h"
@@ -69,8 +70,6 @@ public:
     void tick(float x, float& l, float& r);
 
     void process(const float* in, float* outL, float* outR, int numFrames);
-
-    void setSampleRate(const float sr) { _sampleRate = sr; }
     void setSourcePosition(const float x, const float y) noexcept { _sourcePosition = {x, y}; }
     void setListenerPosition(const float x, const float y) noexcept { _listenerPosition = {x, y}; }
 
@@ -79,9 +78,6 @@ public:
     size_t getPostFxSamplesCount() const { return _delayLine.size(); }
 
 private:
-
-    float _sampleRate;
-
     Position _sourcePosition;
     Position _listenerPosition;
     float _listenerOrientation;

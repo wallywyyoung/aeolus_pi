@@ -24,6 +24,7 @@
 bool running = true;
 
 void signalHandler(const int signal) {
+    std::cout << "Aeolus got signal " << signal << std::endl;
     running = false;
     exit(signal);
 }
@@ -36,9 +37,12 @@ int main (int argc, char* argv[]) {
     const auto* alsaInterface = new AlsaInterface();
 
     std::cout << "Aeolus is Ready" << std::endl;
+
     do {
         sleep(1);
     } while(running);
+
+    std::cout << "Aeolus is Closing" << std::endl;
 
     delete alsaInterface;
 

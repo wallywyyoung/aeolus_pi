@@ -24,22 +24,16 @@
 
 #include <thread_pool/thread_pool.h>
 
+EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _tuningFrequency(TUNING_FREQUENCY_DEFAULT) { }
 
-EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _sampleRate(SAMPLE_RATE_F),
-                               _tuningFrequency(TUNING_FREQUENCY_DEFAULT) {
-}
 void EngineGlobal::init() {
     irs = IOManager::loadIRs();
     loadRankwaves();
     updateStops();
     engine = new Engine();
-    engine->prepareToPlay(_sampleRate);
-    engine->allStopsOn();
-    engine->setVolume(0.05f, true);
-    // engine->handleNoteOn(0,60);
-    // engine->handleNoteOn(1,60);
-    // engine->handleNoteOn(2,60);
-    // engine->handleNoteOn(3,31);
+    engine->prepareToPlay();
+    engine->setGlobalAllStopsOn();
+    engine->setVolume(0.005f, true);
 }
 
 EngineGlobal::~EngineGlobal() {
@@ -72,7 +66,7 @@ void EngineGlobal::updateStops() const {
         auto rwp = val.get();
         pool.enqueue_detach([rwp] {
             MemoryUtilities::enableFlushToZero();
-            rwp->prepareToPlay(SAMPLE_RATE_F);
+            rwp->prepareToPlay();
             MemoryUtilities::disableFlushToZero();
         });
     }
@@ -130,10 +124,6 @@ void EngineGlobal::loadRankwaves() {
         // TODO: Fix this mapping in JSON.
         _rankwavesByName.emplace(model[i].getFileName(), std::make_unique<Rankwave>(model[i], *_scale, _tuningFrequency));
     }
-}
-
-const int EngineGlobal::getMIDISwellChannelsMask() const{
-    return engine->getMIDISwellChannelsMask();
 }
 
 const bool EngineGlobal::shouldMTSFilterNoteByChannel(const int midiNote, const int midiChannel) const {

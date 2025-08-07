@@ -24,10 +24,10 @@
 #include <cmath>
 #include <random>
 #include <cstring>
-#include <iostream>
 #include <memory>
-#include <limits>
 #include <vector>
+
+#include "MemoryUtilities.h"
 
 Pipewave::Pipewave(const std::shared_ptr<Addsynth> &model, const int note, const float freq) : _model(model), _note(note), _freq(freq) , _needsToBeRebuilt(std::make_shared<std::atomic<bool>>(true)) { }
 
@@ -35,7 +35,6 @@ Pipewave::Pipewave(const Pipewave& other)
         : _model{ other._model }
         , _note{ other._note }
         , _freq{ other._freq }
-        , _sampleRate{ other._sampleRate }
         , _needsToBeRebuilt(std::make_shared<std::atomic<bool>>(other._needsToBeRebuilt->load()))
         , _attackLength{ other._attackLength }
         , _loopLength{ other._loopLength }
@@ -66,11 +65,8 @@ float Pipewave::getPipeFrequency() const noexcept
     return _freq * static_cast<float>(_model->getFn()) / static_cast<float>(_model->getFd());
 }
 
-void Pipewave::prepateToPlay(const float sampleRate)
-{
-    if (_wavetable.empty() || _sampleRate != sampleRate || _needsToBeRebuilt->load()) {
-        _sampleRate = sampleRate;
-
+void Pipewave::prepareToPlay() {
+    if (_wavetable.empty() || _needsToBeRebuilt->load()) {
         genwave();
     }
 }
@@ -119,7 +115,7 @@ void Pipewave::play(State& state, float* out)
     if (_needsToBeRebuilt->load()) {
         // Drastic measures - pipe has been retuned while playing.
         // Data pointers may be invalid at this point - terminate the voice immediately.
-        memset(out, 0, sizeof(float) * SUB_FRAME_LENGTH);
+        memset(out, 0, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
         state.env = Over;
         state.playPtr = nullptr;
         state.releasePtr = nullptr;
@@ -148,12 +144,12 @@ void Pipewave::play(State& state, float* out)
     }
 
     if (r != nullptr) {
-        int k = SUB_FRAME_LENGTH;
+        int k = AUDIO_SUB_FRAME_LENGTH;
         float* q = out;
         float g = state.releaseGain;
         const int i = state.releaseCount - 1;
 
-        float dg = g / SUB_FRAME_LENGTH;
+        float dg = g / AUDIO_SUB_FRAME_LENGTH;
 
         if (i > 0)
             dg *= _releaseMultiplier;
@@ -202,7 +198,7 @@ void Pipewave::play(State& state, float* out)
     }
 
     if (p != nullptr) {
-        int k = SUB_FRAME_LENGTH;
+        int k = AUDIO_SUB_FRAME_LENGTH;
         float* q = out;
 
         if (p < _loopStartPtr) {
@@ -250,8 +246,6 @@ void Pipewave::genwave()
     std::mt19937 gen(rnd());
     std::uniform_real_distribution dist(0.0f, 2.0f);
 
-    const float sampleRate_r = 1.0f / _sampleRate;
-
     float m = _model->getNoteAttack(_note);
 
     for (int h = 0; h < HN_func::N_HARM; ++h) {
@@ -260,11 +254,11 @@ void Pipewave::genwave()
     }
 
     // Attack length aligned to the processing sub-frames
-    _attackLength = static_cast<int>(std::lround(_sampleRate * m + 0.5f));
-    _attackLength = (_attackLength + SUB_FRAME_LENGTH - 1) & ~(SUB_FRAME_LENGTH - 1);
+    _attackLength = static_cast<int>(std::lround(SAMPLE_RATE_F * m + 0.5f));
+    _attackLength = (_attackLength + AUDIO_SUB_FRAME_LENGTH - 1) & ~(AUDIO_SUB_FRAME_LENGTH - 1);
 
     // Target frequency
-    const float f1 = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * (dist(gen) + 1.0f)) * sampleRate_r;
+    const float f1 = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * (dist(gen) + 1.0f)) * SAMPLE_RATE_R;
 
     // Attack frequency (detuned)
     const float f0 = f1 * math::exp2ap(_model->getNoteAttackDetune(_note) / 1200.0f);
@@ -287,17 +281,17 @@ void Pipewave::genwave()
 
     int nc = 0;
 
-    looplen(f1 * _sampleRate, static_cast<float>(_sampleStep) * _sampleRate, static_cast<int>(_sampleRate / 6.0f), _loopLength, nc);
+    looplen(f1 * SAMPLE_RATE_F, static_cast<int>(SAMPLE_RATE_F / 6.0f), _loopLength, nc);
     assert(_loopLength > 0);
     assert(nc > 0);
 
-    if (_loopLength < _sampleStep * SUB_FRAME_LENGTH) {
-        const int k = (_sampleStep * SUB_FRAME_LENGTH - 1) / _loopLength + 1;
+    if (_loopLength < _sampleStep * AUDIO_SUB_FRAME_LENGTH) {
+        const int k = (_sampleStep * AUDIO_SUB_FRAME_LENGTH - 1) / _loopLength + 1;
         _loopLength *= k;
         nc *= k;
     }
 
-    const int wavetableLength = _attackLength + _loopLength + _sampleStep * (SUB_FRAME_LENGTH + 4);
+    const int wavetableLength = _attackLength + _loopLength + _sampleStep * (AUDIO_SUB_FRAME_LENGTH + 4);
     _wavetable.resize(wavetableLength);
 
     std::vector<float> arg(wavetableLength);
@@ -309,12 +303,12 @@ void Pipewave::genwave()
 
     memset(_attackStartPtr, 0, sizeof(float) * _wavetable.size());
 
-    _releaseLength = static_cast<int>(ceilf(_model->getNoteRelease(_note) * _sampleRate / SUB_FRAME_LENGTH) + 1);
+    _releaseLength = static_cast<int>(ceilf(_model->getNoteRelease(_note) * SAMPLE_RATE_F / AUDIO_SUB_FRAME_LENGTH) + 1);
     _releaseMultiplier = 1.0f - powf(0.1f, 1.0f / static_cast<float>(_releaseLength));
     _releaseDetune = static_cast<float>(_sampleStep) * (math::exp2ap(_model->getNoteReleaseDetune(_note) / 1200.0f) - 1.0f);
     _instability = _model->getNoteInstability(_note);
 
-    int k = static_cast<int>(_sampleRate * _model->getNoteAttack(_note) + 0.5);
+    int k = static_cast<int>(SAMPLE_RATE_F * _model->getNoteAttack(_note) + 0.5);
 
     // arg[i] will contain phase steps along the generated wavetable
 
@@ -346,7 +340,7 @@ void Pipewave::genwave()
             continue;
 
         v = v0 * math::exp2ap(0.1661f * (v + _model->getHarmonicRandomisation(h, _note) * (dist(gen) - 1.0f)));
-        k = static_cast<int>(_sampleRate * _model->getHarmonicAttack(h, _note) + 0.5f);
+        k = static_cast<int>(SAMPLE_RATE_F * _model->getHarmonicAttack(h, _note) + 0.5f);
 
         if (k > att.size())
             att.resize(k);
@@ -356,7 +350,7 @@ void Pipewave::genwave()
         for (int i = 0; i < _attackLength + _loopLength; ++i) {
             float t = arg[i] * static_cast<float>(h + 1);
             t -= floorf(t);
-            m = v * sinf(M_PI * 2.0f * t);
+            m = v * sinf(std::numbers::pi_v<float> * 2.0f * t);
 
             if (i < k) {
                 m *= att[i];
@@ -366,21 +360,21 @@ void Pipewave::genwave()
         }
     }
 
-    for (int i = 0; i < _sampleStep * (SUB_FRAME_LENGTH + 4); ++i) {
+    for (int i = 0; i < _sampleStep * (AUDIO_SUB_FRAME_LENGTH + 4); ++i) {
         _attackStartPtr[i + _attackLength + _loopLength] = _attackStartPtr[i + _attackLength];
     }
 
     _needsToBeRebuilt->store(false);
 }
 
-void Pipewave::looplen(const float f, const float sampleRate, const int lmax, int& aa, int& bb)
+void Pipewave::looplen(const float f, const int lmax, int& aa, int& bb)
 {
     constexpr int N = 8;
     int z[N];
     int a, b;
     float d;
 
-    float g = sampleRate / f;
+    float g = SAMPLE_RATE_F / f;
 
     for (int i = 0; i < N; ++i) {
         a = z[i] = static_cast<int>(floor(g + 0.5));
@@ -400,16 +394,16 @@ void Pipewave::looplen(const float f, const float sampleRate, const int lmax, in
         }
 
         if (a <= lmax) {
-            d = sampleRate * b / a - f;
+            d = SAMPLE_RATE_F * b / a - f;
 
             if (fabs(d) < 0.1f && fabs(d) < 3e-4f * f)
                 break;
 
             g = (fabs(g) < 1e-6f) ? 1e6f : 1.0f / g;
         } else  {
-            b = static_cast<int>(static_cast<float>(lmax) * f / sampleRate);
-            a = static_cast<int>(b * sampleRate / f + 0.5f);
-            d = sampleRate * b / a - f;
+            b = static_cast<int>(static_cast<float>(lmax) * f / SAMPLE_RATE_F);
+            a = static_cast<int>(b * SAMPLE_RATE_F / f + 0.5f);
+            d = SAMPLE_RATE_F * b / a - f;
             break;
         }
     }

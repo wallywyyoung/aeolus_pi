@@ -23,6 +23,8 @@
 #include <cmath>
 #include <cstring>
 
+#include "MemoryUtilities.h"
+
 namespace dsp {
 
 void BiquadFilter::updateSpec(Spec& spec)
@@ -35,7 +37,7 @@ void BiquadFilter::updateSpec(Spec& spec)
         A = sqrtf(powf(10.0f, spec.dbGain / 20.0f));
     }
 
-    const float w0 = 2.0f * static_cast<float>(M_PI) * spec.freq / spec.sampleRate;
+    const float w0 = 2.0f * std::numbers::pi_v<float> * spec.freq * SAMPLE_RATE_R;
 
     const float cos_w0 = cos(w0);
     const float sin_w0 = sin(w0);

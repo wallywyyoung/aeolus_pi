@@ -23,44 +23,23 @@
 #include "aeolus/engine.h"
 #include "aeolus/EngineGlobal.h"
 
-Division::Division(const Engine& engine, const std::string& name)
-    : _name{name}
-    , _mnemonic{name}
-    , _hasSwell{false}
-    , _hasTremulant{false}
-    , _midiChannelsMask{ (1 << 16) - 1 }
-    , _tremulantEnabled{false} // Select all MIDI channels by default
-    , _tremulantLevel{0.0f}
-    , _tremulantMaxLevel{TREMULANT_TARGET_LEVEL}
-    , _tremulantTargetLevel{0.0f}
-    , _params{NUM_PARAMS}
-    , _swellFilterSpec{}
-    , _swellFilterStateL{}
-    , _swellFilterStateR{}
-    , _tremulantDelayL(TREMULANT_DELAY_LENGTH)
-    , _tremulantDelayR(TREMULANT_DELAY_LENGTH)
-    , _triggerFlag{}
-    , _engine{engine}
-{
-    _swellFilterSpec.type = dsp::BiquadFilter::LowPass;
-    _swellFilterSpec.sampleRate = SAMPLE_RATE_F;
-    _swellFilterSpec.dbGain = 0.0f;
-    _swellFilterSpec.q = 0.7071f;
-    _swellFilterSpec.freq = 0.4f * SAMPLE_RATE_F;
-
+Division::Division(const Engine& engine, const std::string& name) : _name{name}, _mnemonic{name},
+    _hasSwell{false}, _hasTremulant{false}, _midiChannelsMask{ (1 << 16) - 1 },
+    _tremulantEnabled{false} /* Select all MIDI channels by default */, _tremulantLevel{0.0f},
+    _tremulantMaxLevel{TREMULANT_TARGET_LEVEL}, _tremulantTargetLevel{0.0f}, _params{NUM_PARAMS},
+    _swellFilterSpec{dsp::BiquadFilter::LowPass, 0.4f * SAMPLE_RATE_F, 0.7071f, 0.0f},
+    _swellFilterStateL{}, _swellFilterStateR{}, _triggerFlag{}, _engine{engine} {
     dsp::BiquadFilter::updateSpec(_swellFilterSpec);
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateL);
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateR);
 }
 
-void Division::clearLinkedDivisions()
-{
+void Division::clearLinkedDivisions() {
     _linkedDivisions.clear();
     _linkedFromDivisions.clear();
 }
 
-void Division::populateLinkedDivisions()
-{
+void Division::populateLinkedDivisions() {
     for (const auto& name : _linkedDivisionNames) {
         if (const auto division = _engine.getDivisionByName(name)) {
             Link link{ division, false };
@@ -75,7 +54,7 @@ int Division::getLinksCount() const noexcept
     return static_cast<int>(_linkedDivisions.size());
 }
 
-void Division::enableLink(const int i, const bool ena)
+void Division::enableLink(const int &i, const bool &ena)
 {
     isPositiveAndBelow(i, _linkedDivisions.size());
 
@@ -85,12 +64,12 @@ void Division::enableLink(const int i, const bool ena)
     }
 }
 
-bool Division::isLinkEnabled(const int i) const {
+bool Division::isLinkEnabled(const int &i) const {
     isPositiveAndBelow(i, _linkedDivisions.size());
     return _linkedDivisions[i].enabled;
 }
 
-Division::Link& Division::getLinkByIndex(const int i)
+Division::Link& Division::getLinkByIndex(const int &i)
 {
     isPositiveAndBelow(i, _linkedDivisions.size());
     return _linkedDivisions[i];
@@ -116,7 +95,7 @@ void Division::clear()
     _stops.clear();
 }
 
-Stop& Division::addRankwave(Rankwave *ptr, const bool ena, const std::string& name) {
+Stop& Division::addRankwave(Rankwave *ptr, const bool &ena, const std::string& name) {
     assert(ptr != nullptr);
     auto stop = Stop();
     stop.addZone(ptr);
@@ -131,41 +110,16 @@ int Division::getStopsCount() const noexcept
     return static_cast<int>(_stops.size());
 }
 
-void Division::enableAllStops() {
-    // for (auto& stop : _stops) {
-    //     stop.setEnabled(true);
-    //     _engine.getSequencer().setCurrentStepDirty();
-    // }
-    for (int i = 0; i < 2; ++i)
-        enableStop(i, true);
-}
-
-void Division::enableStop(const int i, const bool ena)
-{
-    isPositiveAndBelow(i, _stops.size());
-
-    if (_stops[i].isEnabled() != ena) {
-        _stops[i].setEnabled(ena);
-        _engine.getSequencer().setCurrentStepDirty();
-    }
-}
-
-bool Division::isStopEnabled(const int i) const
+bool Division::isStopEnabled(const int &i) const
 {
     isPositiveAndBelow(i, _stops.size());
     return _stops[i].isEnabled();
 }
 
-Stop& Division::getStopByIndex(const int i)
+Stop& Division::getStopByIndex(const int &i)
 {
     isPositiveAndBelow(i, _stops.size());
     return _stops[i];
-}
-
-void Division::disableAllStops()
-{
-    for (int i = 0; i < getStopsCount(); ++i)
-        enableStop(i, false);
 }
 
 void Division::getAvailableRange(int& minNote, int& maxNote) const noexcept
@@ -185,13 +139,13 @@ void Division::getAvailableRange(int& minNote, int& maxNote) const noexcept
     }
 }
 
-bool Division::isForMIDIChannel(const int channel) const noexcept
+bool Division::isForMIDIChannel(const int &channel) const noexcept
 {
     const int mask{ _midiChannelsMask.load() };
     return midi::matchMidiChannelToMask(mask, channel);
 }
 
-void Division::setTremulantEnabled(const bool ena) noexcept
+void Division::setTremulantEnabled(const bool& ena) noexcept
 {
     if (!_hasTremulant)
         return;
@@ -204,7 +158,7 @@ void Division::setTremulantEnabled(const bool ena) noexcept
     }
 }
 
-float Division::getTremulantLevel(const bool update)
+float Division::getTremulantLevel(const bool &update)
 {
     const auto level = _tremulantLevel;
 
@@ -214,12 +168,8 @@ float Division::getTremulantLevel(const bool update)
     return level;
 }
 
-void Division::noteOn(const int note, const int midiChannel)
-{
+void Division::setNoteOn(const int& note, const bool& isLinkedDivision) {
     if (hasBeenTriggered())
-        return;
-
-    if (!isForMIDIChannel(midiChannel))
         return;
 
     _triggerFlag = true;
@@ -227,125 +177,134 @@ void Division::noteOn(const int note, const int midiChannel)
     for (int stopIndex = 0; stopIndex < static_cast<int>(_stops.size()); ++stopIndex)
         triggerVoicesForStop(stopIndex, note);
 
-    if (midiChannel != 0) {
-        // Update keys state only when triggered by the assigned MIDI channel
-        _keysState.set(note);
+    if (isLinkedDivision) {
+        return;
     }
+
+    // Update keys state
+    _keysState.set(note);
 
     // Forward to the linked divisions
     for (auto&[division, enabled] : _linkedDivisions) {
         if (enabled) {
-            division->noteOn(note, 0);
+            division->setNoteOn(note, true);
         }
     }
 }
 
-void Division::noteOff(const int note, const int midiChannel) {
+void Division::setNoteOff(const int& note, const bool& isLinkedDivision) {
     if (hasBeenTriggered())
-        return;
-
-    if (!isForMIDIChannel(midiChannel))
         return;
 
     _triggerFlag = true;
 
-    auto* voice = _activeVoices.first();
-
-    while (voice != nullptr) {
-        if (voice->isForNote(note))
+    for (const auto& voice : _activeVoices) {
+        if (voice->isForNote(note) && !_keysState[note]) {
             voice->release();
-
-        voice = voice->next();
+        }
     }
 
-    if (midiChannel != 0) {
-        // Update keys state only when triggered by the assigned MIDI channel.
-        _keysState.reset(note);
+    if (isLinkedDivision) {
+        return;
     }
+
+    // Update keys state
+    _keysState.reset(note);
 
     // Forward to the linked divisions
     for (auto&[division, enabled] : _linkedDivisions) {
         if (enabled) {
-            division->noteOff(note, 0);
+            division->setNoteOff(note, true);
         }
     }
 }
 
-void Division::allNotesOff()
-{
-    _keysState.reset();
-
-    auto* voice = _activeVoices.first();
-
-    while (voice != nullptr) {
-        voice->release();
-        voice = voice->next();
+void Division::setAllNotesOff(const bool& isLinkedDivision) {
+    if (!isLinkedDivision) {
+        _keysState.reset();
     }
-}
-
-void Division::handleControlMessage(const MidiData& msg)
-{
-    const int cc{ msg.param };
-
-    if (cc != CC_MODULATION && cc != CC_VOLUME && cc != CC_ALL_NOTES_OFF)
-        return;
-
-    const int swellCh{ EngineGlobal::getInstance()->getMIDISwellChannelsMask() };
-    const float value{ static_cast<float>(msg.value) / 127.0f };
-
-    if (msg.channel == 0 || (swellCh & (msg.channel - 1)) != 0) {
-        if (_hasSwell && cc == CC_VOLUME) {
-            _params[GAIN].setValue(value);
+    for (const auto& voice : _activeVoices) {
+        if ((isLinkedDivision && !_keysState[voice->getNote()]) || !isLinkedDivision) {
+            voice->release();
         }
     }
-
-    // Hange manual channel specific controls
-    if (!isForMIDIChannel(msg.channel))
-        return;
-
-    if (cc == CC_MODULATION && hasTremulant())
-        setTremulantEnabled(value > 0.5f);
-
-    if (cc == CC_ALL_NOTES_OFF)
-        allNotesOff();
 }
 
-bool Division::process(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& voiceBuffer) {
+void Division::handleSwell(const int& value) {
+    if (_hasSwell) {
+        _params[GAIN].setValue(value);
+    }
+}
+void Division::handleTremulant(const float& value) {
+    if (hasTremulant()) {
+        setTremulantEnabled(value);
+    }
+}
+
+void Division::setStopOn(const int& stop) {
+    isPositiveAndBelow(stop, _stops.size());
+
+    if (!_stops[stop].isEnabled()) {
+        _stops[stop].setEnabled(true);
+        _engine.getSequencer().setCurrentStepDirty();
+    }
+}
+
+void Division::setStopOff(const int& stop) {
+    isPositiveAndBelow(stop, _stops.size());
+
+    if (_stops[stop].isEnabled()) {
+        _stops[stop].setEnabled(false);
+        _engine.getSequencer().setCurrentStepDirty();
+    }
+}
+
+void Division::setStopToggle(const int& stop) {
+    isPositiveAndBelow(stop, _stops.size());
+    _stops[stop].setEnabled(!_stops[stop].isEnabled());
+    _engine.getSequencer().setCurrentStepDirty();
+}
+
+void Division::setAllStopsOff() {
+    for (auto& stop : _stops) {
+        if (stop.isEnabled()) {
+            stop.setEnabled(false);
+        }
+    }
+}
+void Division::setAllStopsOn() {
+    for (auto& stop : _stops) {
+        if (!stop.isEnabled()) {
+            stop.setEnabled(false);
+        }
+    }
+}
+
+bool Division::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& voiceBuffer) {
     updateAggregatedKeysState();
     releaseVoicesOfDisabledStops();
     triggerVoicesOfEnabledStops();
 
-    auto* voice = _activeVoices.first();
-
-    if (voice == nullptr)
-        return false;
-
-    while (voice != nullptr) {
+    for (auto i = _activeVoices.begin(); i != _activeVoices.end();) {
         voiceBuffer.clear();
         float* outL = voiceBuffer.getWritePointer(0);
         float* outR = voiceBuffer.getNumChannels() > 1 ? voiceBuffer.getWritePointer(1) : outL;
-
-        voice->process(outL, outR);
-        targetBuffer.addFrom(0, 0, voiceBuffer, 0, 0, SUB_FRAME_LENGTH);
-        targetBuffer.addFrom(1, 0, voiceBuffer, 1, 0, SUB_FRAME_LENGTH);
-
-        if (voice->isOver()) {
-            auto* nextVoice = _activeVoices.removeAndReturnNext(voice);
-            voice->resetAndReturnToPool();
-            voice = nextVoice;
+        (*i)->process(outL, outR);
+        targetBuffer.addFrom(0, 0, voiceBuffer, 0, 0, AUDIO_SUB_FRAME_LENGTH);
+        targetBuffer.addFrom(1, 0, voiceBuffer, 1, 0, AUDIO_SUB_FRAME_LENGTH);
+        if ((*i)->isOver()) {
+            (*i)->resetAndReturnToPool();
+            i = _activeVoices.erase(i);
         } else {
-            voice = voice->next();
+            ++i;
         }
     }
 
     return true;
 }
 
-void Division::modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<SUB_FRAME_LENGTH, 1>& tremulantBuffer)
-{
+void Division::modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1>& tremulantBuffer) {
     const float* gain = tremulantBuffer.getReadPointer(0);
-    assert(gain != nullptr);
-
     const float lvl = getTremulantLevel(true);
 
     // Update gain smoothly
@@ -354,10 +313,7 @@ void Division::modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& 
     float* outL = targetBuffer.getWritePointer(0);
     float* outR = targetBuffer.getWritePointer(1);
 
-    assert(outL != nullptr);
-    assert(outR != nullptr);
-
-    for (int i = 0; i < SUB_FRAME_LENGTH; ++i) {
+    for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
         _tremulantDelayL.write(outL[i]);
         _tremulantDelayR.write(outR[i]);
 
@@ -377,37 +333,20 @@ void Division::modulate(StaticAudioBuffer<SUB_FRAME_LENGTH, N_OUTPUT_CHANNELS>& 
         const float k = powf(limitRange(0.0f, 1.0f, _params[GAIN].target()), 1.3f);
         _swellFilterSpec.freq = 400.0f + k * (18000.0f - 400.0f);
         dsp::BiquadFilter::updateSpec(_swellFilterSpec);
-        dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateL, outL, outL, SUB_FRAME_LENGTH);
-        dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateR, outR, outR, SUB_FRAME_LENGTH);
+        dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateL, outL, outL, AUDIO_SUB_FRAME_LENGTH);
+        dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateR, outR, outR, AUDIO_SUB_FRAME_LENGTH);
     }
 }
 
-void Division::releaseVoicesOfDisabledStops()
-{
-    auto* voice = _activeVoices.first();
-
-    while (voice != nullptr) {
-        bool shouldRelease{ false };
-
-        if (voice->isActive()) {
-            if (const int stopIndex = voice->stopIndex(); isPositiveAndBelow(stopIndex, _stops.size())) {
-                if (const auto& stop = _stops[stopIndex]; !stop.isEnabled())
-                    shouldRelease = true;
-
-                if (voice->getNote() >= 0 && !_aggregatedKeysState[voice->getNote()])
-                    shouldRelease = true;
-            }
-        }
-
-        if (shouldRelease)
+void Division::releaseVoicesOfDisabledStops() {
+    for (auto& voice : _activeVoices) {
+        if (voice->isActive() && isPositiveAndBelow(voice->stopIndex(), _stops.size()) && (!_stops[voice->stopIndex()].isEnabled() || (voice->getNote() >= 0 && !_aggregatedKeysState[voice->getNote()]))) {
             voice->release();
-
-        voice = voice->next();
+        }
     }
 }
 
-void Division::triggerVoicesOfEnabledStops()
-{
+void Division::triggerVoicesOfEnabledStops() {
     if (_aggregatedKeysState.none()) {
         // No keys are pressed
         return;
@@ -416,30 +355,30 @@ void Division::triggerVoicesOfEnabledStops()
     std::bitset missingNotes{ _aggregatedKeysState };
 
     for (int stopIndex = 0; stopIndex < _stops.size(); ++stopIndex) {
-        if (auto& stop = _stops[stopIndex]; !stop.isEnabled()) {
+        if (!_stops[stopIndex].isEnabled()) {
             continue;
         }
 
         bool hasVoices = false;
 
-        auto* voice = _activeVoices.first();
-
-        while (voice != nullptr) {
-            if (const int voiceNote{ voice->getNote() }; voice->stopIndex() == stopIndex && voiceNote >= 0 && _aggregatedKeysState[voiceNote]) {
+        for (const auto& voice : _activeVoices) {
+            if (auto note = voice->getNote(); voice->stopIndex() == stopIndex && note >= 0 && _aggregatedKeysState[note]) {
                 hasVoices = true;
-                missingNotes[voiceNote] = false;
+                missingNotes[note] = false;
                 break;
             }
-            voice = voice->next();
+        }
+
+        if (hasVoices) {
+            continue;
         }
 
         // Trigger voices for enabled stops
-        if (!hasVoices) {
-            for (int note = 0; note < missingNotes.size(); ++note) {
-                if (missingNotes[note]) {
-                    triggerVoicesForStop(stopIndex, note);
-                }
+        for (int note = 0; note < missingNotes.size(); ++note) {
+            if (!missingNotes[note]) {
+                continue;
             }
+            triggerVoicesForStop(stopIndex, note);
         }
     }
 }
@@ -477,14 +416,14 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
         if (zone.isForKey(note)) {
             for (const auto rw : zone.rankwaves) {
                 // Rankwave may be in the middle of construction, in this case
-                // we don't trigger a voice.
+                // we don't trigger a voice->
                 if (auto state = rw->trigger(note); state.isTriggered()) {
                     state.gain = stop.getGain();
                     state.chiffGain = stop.getChiffGain();
 
                     if (const auto voice = _engine.getVoicePool()->trigger(state)) {
                         voice->setStopIndex(stopIndex);
-                        _activeVoices.append(voice);
+                        _activeVoices.emplace_back(voice);
                         voiceTriggered = true;
                     }
                 }
@@ -496,15 +435,5 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
 }
 
 bool Division::isAlreadyVoiced(const int stopIndex, const int note) {
-    auto* voice = _activeVoices.first();
-
-    while (voice != nullptr) {
-        if (voice->isActive() && voice->stopIndex() == stopIndex && voice->isForNote(note)) {
-            return true;
-        }
-
-        voice = voice->next();
-    }
-
-    return false;
+    return std::ranges::any_of(_activeVoices, [&](const auto& voice) { return voice->isActive() && voice->stopIndex() == stopIndex && voice->isForNote(note); });
 }

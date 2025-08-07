@@ -85,7 +85,7 @@ public:
     [[nodiscard]] float getFreqency() const noexcept { return _freq; }
     [[nodiscard]] float getPipeFrequency() const noexcept;
 
-    void prepateToPlay(float sampleRate);
+    void prepareToPlay();
 
     State trigger();
     void release(State& state);
@@ -95,13 +95,12 @@ public:
 private:
     void genwave();
 
-    static void looplen(float f, float sampleRate, int lmax, int& aa, int& bb);
+    static void looplen(float f, int lmax, int& aa, int& bb);
     static void attgain(float* att, int n, float p);
 
     std::shared_ptr<Addsynth> _model;
     int _note;
     float _freq;
-    float _sampleRate;
 
     // Tells whether this pipewave needs to be re-generated.
     // This is required for example when changing the tuninig.

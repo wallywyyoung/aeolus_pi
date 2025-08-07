@@ -26,58 +26,121 @@
 
 class MidiManager : public ObjectBuffer<MidiData> {
 public:
-    MidiManager() : ObjectBuffer(), midiControlChannelsMask{ (1 << 16) - 1 }, midiSwellChannelsMask{ (1 << 16) - 1 } { }
+    MidiManager() : ObjectBuffer() { }
 
-    virtual void handleNoteOn(const int& channel, const int& note) = 0;
-    virtual void handleNoteOff(const int& channel, const int& note) = 0;
-    virtual void handleAllNotesOff() = 0;
-    virtual void handleCC(const int& channel, const int& cc, const int& value) = 0;
-    virtual void handlePC(const int& pc) = 0;
-    virtual void handleSequencerSwitch(const int& note) = 0;
+    // Notes
+    virtual void setDivisionNoteOn(const int& division, const int& note) = 0;
+    virtual void setDivisionNoteOff(const int& division, const int& note) = 0;
+    virtual void setDivisionAllNotesOff(const int& division) = 0;
+    virtual void setGlobalAllNotesOff() = 0;
+    // Modifiers
+    virtual void handleDivisionSwell(const int& division, const float& value) = 0;
+    virtual void handleDivisionTremulant(const int& division, const float& value) = 0;
+    // Stops
+    virtual void setDivisionStopOn(const int& division, const int& stop) = 0;
+    virtual void setDivisionStopOff(const int& division, const int& stop) = 0;
+    virtual void setDivisionStopToggle(const int& division, const int& stop) = 0;
+    virtual void setDivisionAllStopsOff(const int& division) = 0;
+    virtual void setDivisionAllStopsOn(const int& division) = 0;
+    virtual void setGlobalAllStopsOff() = 0;
+    virtual void setGlobalAllStopsOn() = 0;
+    // TODO: Pistons
+    // virtual void setDivisionPiston(const int& division, const int& piston) = 0;
+    // virtual void recallDivisionPiston(const int& division, const int& piston) = 0;
+    // virtual void setGlobalPiston(const int& piston) = 0;
+    // virtual void recallGlobalPiston(const int& piston) = 0;
 
-    // [[nodiscard]] Range getMidiKeyboardRange() const {
-    //     return range;
-    // }
-
-    void processMidiBuffer() {
+    void ProcessMidiBuffer() {
         std::vector<MidiData> midiBuffer{};
         this->pop(midiBuffer);
         for (const MidiData& event : midiBuffer) {
-            processMidiEvent(event);
+            ProcessMidiEvent(event);
         }
     }
 
-    [[nodiscard]] int getMIDIControlChannelsMask() const noexcept { return midiControlChannelsMask; }
-    void setMIDIControlChannelsMask(const int& mask) noexcept { midiControlChannelsMask = mask; }
-    [[nodiscard]] int getMIDISwellChannelsMask() const noexcept { return midiSwellChannelsMask; }
-    void setMIDISwellChannelsMask(const int& mask) noexcept { midiSwellChannelsMask = mask; }
-protected:
-    void processMidiEvent(const MidiData& event) {
-        // Process global CCs
-        if (event.channel == 15) {
-            handleSequencerSwitch(event.param);
-            return;
+private:
+    void handlePC(const MidiData& event) {
+        enum PistonControl {
+            // TODO: Pistons
+            // RecallDivisionPiston,
+            // SetDivisionPiston,
+            // RecallGlobalPiston,
+            // SetGlobalPiston,
+            StopOff,
+            StopOn,
+            StopToggle,
+            AllDivisionStopsOff,
+            AllDivisionStopsOn,
+            AllGlobalStopsOff,
+            AllGlobalStopsOn
+        };
+        switch (static_cast<PistonControl>(event.param)) {
+            // TODO: Pistons
+            // case RecallDivisionPiston:
+            //     recallDivisionPiston(event.channel, event.value);
+            //     break;
+            // case SetDivisionPiston:
+            //     setDivisionPiston(event.channel, event.value);
+            //     break;
+            // case RecallGlobalPiston:
+            //     recallGlobalPiston(event.value);
+            //     break;
+            // case SetGlobalPiston:
+            //     setGlobalPiston(event.value);
+            //     break;
+            case StopOff:
+                setDivisionStopOff(event.channel, event.value);
+                break;
+            case StopOn:
+                setDivisionStopOn(event.channel, event.value);
+                break;
+            case StopToggle:
+                setDivisionStopToggle(event.channel, event.value);
+                break;
+            case AllDivisionStopsOff:
+                setDivisionAllStopsOff(event.channel);
+            case AllDivisionStopsOn:
+                setDivisionAllStopsOn(event.channel);
         }
+    }
 
+
+    void handleCC(const MidiData& event) {
+        constexpr float DYNAMIC_RANGE_R = 1.0f / 127.0f;
+        enum DivisionControl{
+            Tremulant = 1, // CC MODULATION
+            Swell = 7, // CC VOLUME
+            AllDivisionNotesOff = 121, // CC RESET
+            AllGlobalNotesOff = 123 // CC ALL NOTES OFF
+        };
+        switch (static_cast<DivisionControl>(event.param)) {
+            case Tremulant:
+                handleDivisionTremulant(event.channel, event.value * DYNAMIC_RANGE_R > 0.5f);
+            case Swell:
+                handleDivisionSwell(event.channel, event.value * DYNAMIC_RANGE_R);
+                break;
+            case AllDivisionNotesOff:
+                setDivisionAllNotesOff(event.channel);
+            case AllGlobalNotesOff:
+                setGlobalAllNotesOff();
+                break;
+        }
+    }
+
+    void ProcessMidiEvent(const MidiData& event) {
         switch (event.eventType) {
             case MidiData::NOTE_ON:
-                handleNoteOn(event.channel, event.param);
+                setDivisionNoteOn(event.channel, event.param);
                 break;
             case MidiData::NOTE_OFF:
-                handleNoteOff(event.channel, event.param);
+                setDivisionNoteOff(event.channel, event.param);
                 break;
             case MidiData::CC:
-                handleCC(event.channel, event.param, event.value);
+                handleCC(event);
                 break;
             case MidiData::PC:
-                handlePC(event.value);
+                handlePC(event);
                 break;
         }
     }
-
-    // int _pc{};
-    std::atomic<int> midiControlChannelsMask;
-    std::atomic<int> midiSwellChannelsMask;
-    // std::vector<std::vector<bool>> keyState{};
-    // std::vector<std::vector<int>> ccState{};
 };
