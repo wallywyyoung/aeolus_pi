@@ -33,9 +33,8 @@ public:
     virtual void setDivisionNoteOff(const int& division, const int& note) = 0;
     virtual void setDivisionAllNotesOff(const int& division) = 0;
     virtual void setGlobalAllNotesOff() = 0;
-    // Modifiers
+    // Swell
     virtual void handleDivisionSwell(const int& division, const float& value) = 0;
-    virtual void handleDivisionTremulant(const int& division, const float& value) = 0;
     // Stops
     virtual void setDivisionStopOn(const int& division, const int& stop) = 0;
     virtual void setDivisionStopOff(const int& division, const int& stop) = 0;
@@ -44,6 +43,12 @@ public:
     virtual void setDivisionAllStopsOn(const int& division) = 0;
     virtual void setGlobalAllStopsOff() = 0;
     virtual void setGlobalAllStopsOn() = 0;
+    // Couplers
+    virtual void setDivisionCouplerOn(const int& division, const int& coupler) = 0;
+    virtual void setDivisionCouplerOff(const int& division, const int& coupler) = 0;
+    // Tremulant
+    virtual void setDivisionTremulantOn(const int& division) = 0;
+    virtual void setDivisionTremulantOff(const int& division) = 0;
     // Pistons
     virtual void setDivisionPiston(const int& division, const int& piston) = 0;
     virtual void recallDivisionPiston(const int& division, const int& piston) = 0;
@@ -71,7 +76,11 @@ private:
             AllDivisionStopsOff,
             AllDivisionStopsOn,
             AllGlobalStopsOff,
-            AllGlobalStopsOn
+            AllGlobalStopsOn,
+            DivisionCouplerOn,
+            DivisionCouplerOff,
+            DivisionTremulantOn,
+            DivisionTremulantOff,
         };
         switch (static_cast<PistonControl>(event.param)) {
             case RecallDivisionPiston:
@@ -97,23 +106,33 @@ private:
                 break;
             case AllDivisionStopsOff:
                 setDivisionAllStopsOff(event.channel);
+                break;
             case AllDivisionStopsOn:
                 setDivisionAllStopsOn(event.channel);
+                break;
+            case DivisionCouplerOn:
+                setDivisionCouplerOn(event.channel, event.value);
+                break;
+            case DivisionCouplerOff:
+                setDivisionCouplerOff(event.channel, event.value);
+                break;
+            case DivisionTremulantOn:
+                setDivisionTremulantOn(event.channel);
+                break;
+            case DivisionTremulantOff:
+                setDivisionTremulantOff(event.channel);
+                break;
         }
     }
-
 
     void handleCC(const MidiData& event) {
         constexpr float DYNAMIC_RANGE_R = 1.0f / 127.0f;
         enum DivisionControl{
-            Tremulant = 1, // CC MODULATION
             Swell = 7, // CC VOLUME
             AllDivisionNotesOff = 121, // CC RESET
             AllGlobalNotesOff = 123 // CC ALL NOTES OFF
         };
         switch (static_cast<DivisionControl>(event.param)) {
-            case Tremulant:
-                handleDivisionTremulant(event.channel, event.value * DYNAMIC_RANGE_R > 0.5f);
             case Swell:
                 handleDivisionSwell(event.channel, event.value * DYNAMIC_RANGE_R);
                 break;

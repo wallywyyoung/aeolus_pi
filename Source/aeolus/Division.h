@@ -42,11 +42,8 @@ class Engine;
 class Division {
 
 public:
-    enum Params { GAIN = 0, NUM_PARAMS };
-
     constexpr static size_t TREMULANT_DELAY_LENGTH = 32; // Frequency modulation delay line length (in samples).
 
-    /// Link with another division.
     struct Coupler {
         Division* division;
         bool enabled = false;
@@ -54,84 +51,40 @@ public:
 
     explicit Division(const Engine& engine, const std::string& name = std::string());
 
-    const Engine& getEngine() const noexcept { return _engine; }
-
     [[nodiscard]] std::string getName() const { return _name; }
     [[nodiscard]] std::string getMnemonic() const { return _mnemonic; }
 
-    /**
-     * Remove all the links between the divisions.
-     */
-    void clearCouplers();
+    void init(); // This method must be called after all divisions have been loaded and initialized.
 
-    /**
-     * Populate linked divisions from the division names.
-     * This method must be called by the engine when all the divisions
-     * have been loaded and initialized.
-     */
-    void populateCouplers();
-
-    [[nodiscard]] int getCouplerCount() const noexcept;
-    [[nodiscard]] bool isCouplerEnabled(const int &coupler) const;
-    [[nodiscard]] Coupler& getCouplerByIndex(const int &coupler);
-    void enableCoupler(const int &coupler, const bool &enabled);
-    void cancelAllCouplers();
-
-    void clear();
-    Stop& addRankwave(Rankwave *ptr, const bool &ena = false, const std::string& name = std::string());
-
-    void setParamGain(const std::shared_ptr<AudioParameter> &param) noexcept { _paramGain = param; }
-
-    AudioParameterPool& parameters() noexcept { return _params; }
-
-    int getStopsCount() const noexcept;
-    bool isStopEnabled(const int &i) const;
-    Stop& getStopByIndex(const int &i);
-
-    void getAvailableRange(int& minNote, int& maxNote) const noexcept;
-
-    int getMIDIChannelsMask() const noexcept { return _midiChannelsMask; }
-    bool isForMIDIChannel(const int &channel) const noexcept;
-    void setMIDIChannelsMask(const int channelsMask) noexcept { _midiChannelsMask = channelsMask; }
-
-    bool hasSwell() const noexcept { return _hasSwell; }
-    void setHasSwell(const bool& v) noexcept { _hasSwell = v; }
-    bool hasTremulant() const noexcept { return _hasTremulant; }
-    void setHasTremulant(const bool& v) noexcept { _hasTremulant = v; }
-    bool isTremulantEnabled() const noexcept { return _tremulantEnabled; }
-    void setTremulantEnabled(const bool& ena) noexcept;
-
-    float getTremulantLevel(const bool &update = true);
-
-    //------------------------------------------------------
-
-    // All the following methods must be called on the audio thread.
     // Notes
     void setNoteOn(const int& note, const bool& isLinkedDivision);
     void setNoteOff(const int& note, const bool& updateLinkedDivisions);
     void setAllNotesOff(const bool& isLinkedDivision);
     // Modifiers
     void handleSwell(const int& value);
-    void handleTremulant(const float& value);
     // Stops
     void setStopOn(const int& stop);
     void setStopOff(const int& stop);
     void setStopToggle(const int& stop);
     void setAllStopsOff();
     void setAllStopsOn();
-    DivisionPiston captureStateAsPiston() const;
+    // Couplers
+    void setCouplerOn(const int& coupler);
+    void setCouplerOff(const int& coupler);
+    // Tremulant
+    void setTremulantOn();
+    void setTremulantOff();
     // Pistons
     void setPiston(const int& piston);
     void recallPiston(const int& piston);
     void recallPiston(const DivisionPiston& piston);
+    DivisionPiston captureStateAsPiston() const;
 
     bool process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& voiceBuffer);
     void modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1>& tremulantBuffer);
 
     void releaseVoicesOfDisabledStops();
     void triggerVoicesOfEnabledStops();
-
-    std::vector<Voice *> &getActiveVoices() noexcept { return _activeVoices; }
 
     /**
      * Tells the division has been alreayd triggered by a linked division,
@@ -149,19 +102,15 @@ public:
 private:
     /// Total number of MIDI notes.
     constexpr static int TOTAL_NOTES = 128;
-
     /// Tremulant OSC wavetable amplitude.
     constexpr static float TREMULANT_TARGET_LEVEL = 0.5f; // Amplitude modulation level.
     constexpr static float TREMULANT_DELAY_MODULATION_LEVEL = 0.9f; // Frequency modulation level.
 
-    /**
-     * This will construct the keys aggregated state from the division's keys state
-     * and all the coupled from divisions.
-     */
-    void updateAggregatedKeysState();
+    void setAllCouplersOff();
+    void setAllCouplersOn();
 
+    void updateAggregatedKeysState(); // Aggregates key state from this division's and coulpled divisions' key states.
     bool triggerVoicesForStop(int stopIndex, int note);
-
     bool isAlreadyVoiced(int stopIndex, int node);
 
     std::string _name;     ///< The division name.
@@ -173,19 +122,15 @@ private:
     std::vector<Division*> _linkedFromDivisions{};
     std::vector<DivisionPiston> pistons{};
 
-    bool _hasSwell;         ///< Whetehr this division has a swell control.
-    bool _hasTremulant;     ///< Whether this division has a remulant control.
-
-    std::atomic<int> _midiChannelsMask;     ///< Division MIDI channels.
+    bool _hasSwell;         ///< Whether this division has a swell control.
+    bool _hasTremulant;     ///< Whether this division has a tremulant control.
     std::atomic<bool> _tremulantEnabled;    ///< Whether tremulant is enabled.
 
     float _tremulantLevel;
     float _tremulantMaxLevel;
     std::atomic<float> _tremulantTargetLevel;
 
-    /// Stored gain parameter for easy access from the devision control UI component
-    std::shared_ptr<AudioParameter> _paramGain;
-    AudioParameterPool _params;
+    AudioParameter _paramGain{1};
 
     /// Swell low-pass filter.
     dsp::BiquadFilter::Spec _swellFilterSpec;
@@ -196,17 +141,15 @@ private:
     dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> _tremulantDelayL;
     dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> _tremulantDelayR;
 
-    std::vector<Stop> _stops{};   ///< All the stops this division has.
+    std::vector<Stop> _stops{};   // All the stops this division has.
+    std::vector<Voice*> _activeVoices;  // Active voices on this division.
 
-    std::vector<Voice*> _activeVoices;  ///< Active voices on this division.
-
-    std::bitset<TOTAL_NOTES> _keysState; ///< MIDI keys state 1 = on, 0 = off.
-    std::bitset<TOTAL_NOTES> _aggregatedKeysState;   ///< MIDI keys state aggregated from the coupled divisions.
+    std::bitset<TOTAL_NOTES> _keysState; // Key state for this division.
+    std::bitset<TOTAL_NOTES> _aggregatedKeysState;   // Key state aggregated from coupled divisions.
 
     /// Tells whether this division has been triggered.
-    /// This is used to avoid a division to be triggered multiple
-    /// times by the same not on/off even, which is the case
-    /// for linked divisions.
+    /// This is used to avoid triggering a division multiple times by the same note on/off event,
+    /// which is the case for linked divisions.
     bool _triggerFlag;
     const Engine& _engine;
 

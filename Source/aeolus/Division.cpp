@@ -24,9 +24,9 @@
 #include "aeolus/EngineGlobal.h"
 
 Division::Division(const Engine& engine, const std::string& name) : _name{name}, _mnemonic{name},
-    _hasSwell{false}, _hasTremulant{false}, _midiChannelsMask{ (1 << 16) - 1 },
+    _hasSwell{false}, _hasTremulant{false},
     _tremulantEnabled{false} /* Select all MIDI channels by default */, _tremulantLevel{0.0f},
-    _tremulantMaxLevel{TREMULANT_TARGET_LEVEL}, _tremulantTargetLevel{0.0f}, _params{NUM_PARAMS},
+    _tremulantMaxLevel{TREMULANT_TARGET_LEVEL}, _tremulantTargetLevel{0.0f},
     _swellFilterSpec{dsp::BiquadFilter::LowPass, 0.4f * SAMPLE_RATE_F, 0.7071f, 0.0f},
     _swellFilterStateL{}, _swellFilterStateR{}, _triggerFlag{}, _engine{engine} {
     dsp::BiquadFilter::updateSpec(_swellFilterSpec);
@@ -34,12 +34,7 @@ Division::Division(const Engine& engine, const std::string& name) : _name{name},
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateR);
 }
 
-void Division::clearCouplers() {
-    _linkedDivisions.clear();
-    _linkedFromDivisions.clear();
-}
-
-void Division::populateCouplers() {
+void Division::init() {
     for (const auto& name : _linkedDivisionNames) {
         if (const auto division = _engine.getDivisionByName(name)) {
             Coupler link{ division, false };
@@ -49,122 +44,20 @@ void Division::populateCouplers() {
     }
 }
 
-int Division::getCouplerCount() const noexcept
-{
-    return static_cast<int>(_linkedDivisions.size());
-}
-
-void Division::enableCoupler(const int &coupler, const bool &enabled)
-{
-    isPositiveAndBelow(coupler, _linkedDivisions.size());
-
-    if (_linkedDivisions[coupler].enabled != enabled) {
-        _linkedDivisions[coupler].enabled = enabled;
-        _engine.getSequencer().setCurrentStepDirty();
-    }
-}
-
-bool Division::isCouplerEnabled(const int &coupler) const {
-    isPositiveAndBelow(coupler, _linkedDivisions.size());
-    return _linkedDivisions[coupler].enabled;
-}
-
-Division::Coupler& Division::getCouplerByIndex(const int &coupler)
-{
-    isPositiveAndBelow(coupler, _linkedDivisions.size());
-    return _linkedDivisions[coupler];
-}
-
-void Division::cancelAllCouplers()
-{
-    bool changed{ false };
-
+void Division::setAllCouplersOff() {
     for (auto&[division, enabled] : _linkedDivisions) {
         if (enabled) {
-            changed = true;
             enabled = false;
         }
     }
-
-    if (changed)
-        _engine.getSequencer().setCurrentStepDirty();
 }
 
-void Division::clear() {
-    _stops.clear();
-}
-
-Stop& Division::addRankwave(Rankwave *ptr, const bool &ena, const std::string& name) {
-    assert(ptr != nullptr);
-    auto stop = Stop();
-    stop.addZone(ptr);
-    stop.setEnabled(ena);
-    stop.setName(name.empty() ? ptr->getStopName() : name);
-    _stops.push_back(stop);
-    return _stops.back();
-}
-
-int Division::getStopsCount() const noexcept
-{
-    return static_cast<int>(_stops.size());
-}
-
-bool Division::isStopEnabled(const int &i) const
-{
-    isPositiveAndBelow(i, _stops.size());
-    return _stops[i].isEnabled();
-}
-
-Stop& Division::getStopByIndex(const int &i)
-{
-    isPositiveAndBelow(i, _stops.size());
-    return _stops[i];
-}
-
-void Division::getAvailableRange(int& minNote, int& maxNote) const noexcept
-{
-    minNote = -1;
-    maxNote = -1;
-
-    for (const auto& stop : _stops) {
-        if (stop.isEnabled()) {
-            const auto range{stop.getKeyRange()};
-
-            if (minNote < 0 || minNote > range.getStart())
-                minNote = range.getStart();
-            if (maxNote < 0 || maxNote < range.getEnd() - 1)
-                maxNote = range.getEnd() - 1;
+void Division::setAllCouplersOn() {
+    for (auto&[division, enabled] : _linkedDivisions) {
+        if (!enabled) {
+            enabled = true;
         }
     }
-}
-
-bool Division::isForMIDIChannel(const int &channel) const noexcept
-{
-    const int mask{ _midiChannelsMask.load() };
-    return midi::matchMidiChannelToMask(mask, channel);
-}
-
-void Division::setTremulantEnabled(const bool& ena) noexcept
-{
-    if (!_hasTremulant)
-        return;
-
-    if (_tremulantEnabled != ena) {
-        _tremulantEnabled = ena;
-        _tremulantTargetLevel = _tremulantEnabled ? _tremulantMaxLevel : 0.0f;
-
-        _engine.getSequencer().setCurrentStepDirty();
-    }
-}
-
-float Division::getTremulantLevel(const bool &update)
-{
-    const auto level = _tremulantLevel;
-
-    if (update)
-        _tremulantLevel += 0.1f * (_tremulantTargetLevel - _tremulantLevel);
-
-    return level;
 }
 
 void Division::setNoteOn(const int& note, const bool& isLinkedDivision) {
@@ -231,37 +124,27 @@ void Division::setAllNotesOff(const bool& isLinkedDivision) {
 
 void Division::handleSwell(const int& value) {
     if (_hasSwell) {
-        _params[GAIN].setValue(value);
-    }
-}
-void Division::handleTremulant(const float& value) {
-    if (hasTremulant()) {
-        setTremulantEnabled(value);
+        _paramGain.setValue(value);
     }
 }
 
 void Division::setStopOn(const int& stop) {
     isPositiveAndBelow(stop, _stops.size());
-
     if (!_stops[stop].isEnabled()) {
         _stops[stop].setEnabled(true);
-        _engine.getSequencer().setCurrentStepDirty();
     }
 }
 
 void Division::setStopOff(const int& stop) {
     isPositiveAndBelow(stop, _stops.size());
-
     if (_stops[stop].isEnabled()) {
         _stops[stop].setEnabled(false);
-        _engine.getSequencer().setCurrentStepDirty();
     }
 }
 
 void Division::setStopToggle(const int& stop) {
     isPositiveAndBelow(stop, _stops.size());
     _stops[stop].setEnabled(!_stops[stop].isEnabled());
-    _engine.getSequencer().setCurrentStepDirty();
 }
 
 void Division::setAllStopsOff() {
@@ -270,12 +153,49 @@ void Division::setAllStopsOff() {
             stop.setEnabled(false);
         }
     }
+    setAllCouplersOff();
 }
+
 void Division::setAllStopsOn() {
     for (auto& stop : _stops) {
         if (!stop.isEnabled()) {
             stop.setEnabled(false);
         }
+    }
+    setAllCouplersOn();
+}
+
+void Division::setCouplerOn(const int& coupler) {
+    isPositiveAndBelow(coupler, _linkedDivisions.size());
+    if (!_linkedDivisions[coupler].enabled) {
+        _linkedDivisions[coupler].enabled = true;
+    }
+}
+
+void Division::setCouplerOff(const int& coupler) {
+    isPositiveAndBelow(coupler, _linkedDivisions.size());
+    if (_linkedDivisions[coupler].enabled) {
+        _linkedDivisions[coupler].enabled = false;
+    }
+}
+
+void Division::setTremulantOn() {
+    if (!_hasTremulant) {
+        return;
+    }
+    if (!_tremulantEnabled) {
+        _tremulantEnabled = true;
+        _tremulantTargetLevel = _tremulantEnabled ? _tremulantMaxLevel : 0.0f;
+    }
+}
+
+void Division::setTremulantOff() {
+    if (!_hasTremulant) {
+        return;
+    }
+    if (_tremulantEnabled) {
+        _tremulantEnabled = false;
+        _tremulantTargetLevel = _tremulantEnabled ? _tremulantMaxLevel : 0.0f;
     }
 }
 
@@ -316,7 +236,11 @@ void Division::recallPiston(const DivisionPiston& piston) {
         }
     }
     for (int i = 0; i < piston.links.size(); ++i) {
-        enableCoupler(i,piston.links[i]);
+        if (piston.links[i]) {
+            setCouplerOn(i);
+        } else {
+            setCouplerOff(i);
+        }
     }
 }
 
@@ -345,10 +269,8 @@ bool Division::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS
 
 void Division::modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1>& tremulantBuffer) {
     const float* gain = tremulantBuffer.getReadPointer(0);
-    const float lvl = getTremulantLevel(true);
-
-    // Update gain smoothly
-    _params[GAIN].setValue(_paramGain->value());
+    const float lvl = _tremulantLevel;
+    _tremulantLevel += 0.1f * (_tremulantTargetLevel - _tremulantLevel);
 
     float* outL = targetBuffer.getWritePointer(0);
     float* outR = targetBuffer.getWritePointer(1);
@@ -357,7 +279,7 @@ void Division::modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNEL
         _tremulantDelayL.write(outL[i]);
         _tremulantDelayR.write(outR[i]);
 
-        const float g = (1.0f + gain[i] * lvl) * _params[GAIN].nextValue();
+        const float g = (1.0f + gain[i] * lvl) * _paramGain.nextValue();
 
         constexpr float freqModCenter = TREMULANT_DELAY_LENGTH * 0.5f;
         constexpr float freqModAmp = TREMULANT_DELAY_LENGTH * 0.5f * TREMULANT_DELAY_MODULATION_LEVEL;
@@ -368,9 +290,9 @@ void Division::modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNEL
     }
 
     // Apply swell filter
-    if (hasSwell()) {
+    if (_hasSwell) {
         // Close the filter along with the gain
-        const float k = powf(limitRange(0.0f, 1.0f, _params[GAIN].target()), 1.3f);
+        const float k = powf(limitRange(0.0f, 1.0f, _paramGain.target()), 1.3f);
         _swellFilterSpec.freq = 400.0f + k * (18000.0f - 400.0f);
         dsp::BiquadFilter::updateSpec(_swellFilterSpec);
         dsp::BiquadFilter::process(_swellFilterSpec, _swellFilterStateL, outL, outL, AUDIO_SUB_FRAME_LENGTH);

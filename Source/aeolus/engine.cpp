@@ -26,11 +26,9 @@
 #include "aeolus/EngineGlobal.h"
 #include "DivisionFactory.h"
 
-Engine::Engine() : _divisionGain(std::make_shared<AudioParameter>(1)), _voicePool(std::make_shared<VoicePool>(*this)), _params{NUM_PARAMS}, _remainedSamples{0}, _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}
+Engine::Engine() : _voicePool(std::make_shared<VoicePool>(*this)), _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}
 {
     populateDivisions();
-    // Sequencer can be created only after the divisions have been populated.
-    _sequencer = std::make_unique<Sequencer>(*this, SEQUENCER_N_STEPS);
 }
 
 void Engine::prepareToPlay()
@@ -55,16 +53,7 @@ void Engine::setReverbIR(const int num)
 
 void Engine::setReverbWet(const float v) { _convolver.setDryWet(1.0f, v); }
 
-void Engine::setVolume(const float v, const bool immediate) { _params[VOLUME].setValue(v, immediate); }
-
-void Engine::handleSequencerSwitch(const int& note) {
-    clearDivisionsTriggerFlag();
-    if (isKeySwitchBackward(note)) {
-        _sequencer->stepBackward();
-    } else if (isKeySwitchForward(note)) {
-        _sequencer->stepForward();
-    }
-}
+void Engine::setVolume(const float v, const bool immediate) { _volume.setValue(v, immediate); }
 
 void Engine::setDivisionNoteOn(const int &division, const int &note) {
     clearDivisionsTriggerFlag();
@@ -92,10 +81,6 @@ void Engine::setGlobalAllNotesOff() {
 
 void Engine::handleDivisionSwell(const int& division, const float& value) {
     _divisions[division]->handleSwell(value);
-};
-
-void Engine::handleDivisionTremulant(const int& division, const float& value) {
-    _divisions[division]->handleTremulant(value);
 };
 
 void Engine::setDivisionStopOn(const int& division, const int& stop) {
@@ -130,17 +115,24 @@ void Engine::setGlobalAllStopsOn() {
     }
 }
 
+void Engine::setDivisionCouplerOn(const int& division, const int& coupler) {
+    _divisions[division]->setCouplerOff(coupler);
+}
+
+void Engine::setDivisionCouplerOff(const int& division, const int& coupler) {
+    _divisions[division]->setCouplerOn(coupler);
+}
+
+void Engine::setDivisionTremulantOn(const int& division) {
+    _divisions[division]->setTremulantOn();
+}
+
+void Engine::setDivisionTremulantOff(const int& division) {
+    _divisions[division]->setTremulantOff();
+}
+
 void Engine::setDivisionPiston(const int& division, const int& piston) {
-    DivisionPiston divisionPiston{};
-    divisionPiston.tremulant = _divisions[division]->isTremulantEnabled();
-    divisionPiston.stops.resize(_divisions[division]->getStopsCount());
-    for (int i = 0; _divisions[division]->getStopsCount(); ++i) {
-        divisionPiston.stops.push_back(_divisions[division]->getStopByIndex(i).isEnabled());
-    }
-    divisionPiston.links.resize(_divisions[division]->getCouplerCount());
-    for (int i = 0; _divisions[division]->getCouplerCount(); ++i) {
-        divisionPiston.links.push_back(_divisions[division]->getCouplerByIndex(i).enabled);
-    }
+    _divisions[division]->setPiston(piston);
 }
 
 void Engine::recallDivisionPiston(const int& division, const int& piston) {
@@ -174,19 +166,6 @@ GlobalPiston Engine::captureStateAsPiston() const {
         globalPiston.divisions.emplace_back(division->captureStateAsPiston());
     }
     return globalPiston;
-}
-
-std::set<int> Engine::getKeySwitches() const
-{
-    std::set<int> keySwitches{};
-
-    for (int key : _sequencerStepBackwardKeySwitches)
-        keySwitches.insert(key);
-
-    for (int key : _sequencerStepForwardKeySwitches)
-        keySwitches.insert(key);
-
-    return keySwitches;
 }
 
 Division *Engine::getDivisionByName(const std::string &name) const {
@@ -227,8 +206,6 @@ bool Engine::processSubFrame() {
         }
     }
 
-    _remainedSamples = AUDIO_SUB_FRAME_LENGTH;
-
     return wasAudioGenerated;
 }
 
@@ -248,29 +225,29 @@ void Engine::generateTremulant()
 
 void Engine::applyVolume(AudioBuffer& out)
 {
-    if (_params[VOLUME].isSmoothing()) {
+    if (_volume.isSmoothing()) {
         for (int i = 0; i < out.getNumSamples(); ++i) {
-            const float g = _params[VOLUME].nextValue() * VOLUME_GAIN;
+            const float g = _volume.nextValue() * VOLUME_GAIN;
 
             for (int ch = 0; ch < out.getNumChannels(); ++ch)
                 out.getWritePointer(ch)[i] *= g;
         }
     } else {
-        const float g = _params[VOLUME].target() * VOLUME_GAIN;
+        const float g = _volume.target() * VOLUME_GAIN;
         out.applyGain(g);
     }
 }
 
 void Engine::applyVolume(float* inOut, const size_t framesPerChannel)
 {
-    if (_params[VOLUME].isSmoothing()) {
+    if (_volume.isSmoothing()) {
         for (int i = 0; i < framesPerChannel; ++i) {
-            const float g = _params[VOLUME].nextValue() * VOLUME_GAIN;
+            const float g = _volume.nextValue() * VOLUME_GAIN;
             inOut[i*2+1] *= g;
             inOut[i*2+1] *= g;
         }
     } else {
-        const float g = _params[VOLUME].target() * VOLUME_GAIN;
+        const float g = _volume.target() * VOLUME_GAIN;
         for (int i = 0; i < framesPerChannel; ++i) {
             inOut[i*2+1] *= g;
             inOut[i*2+1] *= g;
@@ -278,21 +255,12 @@ void Engine::applyVolume(float* inOut, const size_t framesPerChannel)
     }
 }
 
-bool Engine::isKeySwitchForward(const int key) const
-{
-    return std::ranges::find(_sequencerStepForwardKeySwitches, key) != _sequencerStepForwardKeySwitches.end();
-}
-
-bool Engine::isKeySwitchBackward(const int key) const
-{
-    return std::ranges::find(_sequencerStepBackwardKeySwitches, key) != _sequencerStepBackwardKeySwitches.end();
-}
-
 auto Engine::populateDivisions() -> void {
     const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
 
-    if (!exists(configFile))
+    if (!exists(configFile)) {
         return;
+    }
 
     std::ifstream stream(configFile);
     auto config = nlohmann::json::parse(stream);
@@ -302,40 +270,33 @@ auto Engine::populateDivisions() -> void {
         _divisions.push_back(std::move(division));
     }
 
-    if (config.contains("sequencer")) {
-        auto sequencer = config["sequencer"];
-        if (sequencer.contains("backward_key")) {
-            populateKeySwitchesVector(_sequencerStepBackwardKeySwitches, sequencer["backward_key"]);
-        }
-
-        if (sequencer.contains("forward_key")) {
-            populateKeySwitchesVector(_sequencerStepForwardKeySwitches, sequencer["forward_key"]);
-        }
-    }
-
-    // Remove all the links if any.
-    for (const auto& division : _divisions) {
-        division->clearCouplers();
-    }
+    // if (config.contains("sequencer")) {
+    //     auto sequencer = config["sequencer"];
+    //     if (sequencer.contains("backward_key")) {
+    //         auto& v= sequencer["backward_key"];
+    //         _sequencerStepBackwardKeySwitches.clear();
+    //         if (v.is_number_integer()) {
+    //             _sequencerStepBackwardKeySwitches.push_back(v);
+    //         } else if (v.is_array()) {
+    //             for (const auto& key : v)
+    //                 _sequencerStepBackwardKeySwitches.push_back(key);
+    //         }
+    //     }
+    //
+    //     if (sequencer.contains("forward_key")) {
+    //         auto& v= sequencer["forward_key"];
+    //         _sequencerStepForwardKeySwitches.clear();
+    //         if (v.is_number_integer()) {
+    //             _sequencerStepForwardKeySwitches.push_back(v);
+    //         } else if (v.is_array()) {
+    //             for (const auto& key : v)
+    //                 _sequencerStepForwardKeySwitches.push_back(key);
+    //         }
+    //     }
+    // }
 
     // Update division links after they've been loaded.
     for (const auto& division : _divisions) {
-        division->populateCouplers();
-    }
-
-    // @todo Do we want the divisions to be reordered by the couplings?
-}
-
-void Engine::populateKeySwitchesVector(std::vector<int>& switches, const nlohmann::json& v) {
-    if (v.is_null())
-        return;
-
-    switches.clear();
-
-    if (v.is_number_integer()) {
-        switches.push_back(v);
-    } else if (v.is_array()) {
-        for (const auto& key : v)
-            switches.push_back(key);
+        division->init();
     }
 }

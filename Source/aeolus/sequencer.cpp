@@ -20,13 +20,7 @@
 #include "aeolus/sequencer.h"
 #include "aeolus/engine.h"
 
-
-
-
-
-Sequencer::Sequencer(Engine& engine, const int numSteps): _engine{engine}, _steps(numSteps), _currentStep{0}, _dirty{true} {
-    initFromEngine();
-}
+Sequencer::Sequencer(Engine& engine, const int numSteps): _engine{engine}, _steps(numSteps), _currentStep{0}, _dirty{true} { }
 
 void Sequencer::captureCurrentStep() {
     _steps[_currentStep] = _engine.captureStateAsPiston();
@@ -45,7 +39,6 @@ void Sequencer::captureStateToStep(const int index) {
 
 auto Sequencer::setStep(const int index, const bool captureCurrentState) -> void {
     assert(index >= 0 && index < static_cast<int>(_steps.size()));
-
     if (captureCurrentState) {
         captureCurrentStep();
     }
@@ -64,19 +57,5 @@ void Sequencer::stepBackward() {
 void Sequencer::stepForward() {
     if (_currentStep < static_cast<int>(_steps.size()) - 1) {
         setStep(_currentStep + 1);
-    }
-}
-
-void Sequencer::initFromEngine() {
-    const auto numDivisions = _engine.getDivisionCount();
-
-    for (auto&[divisions] : _steps) {
-        divisions.resize(numDivisions);
-
-        for (int divIdx = 0; divIdx < numDivisions; ++divIdx) {
-            const auto division = _engine.getDivisionByIndex(divIdx);
-            divisions[divIdx].stops.resize(division->getStopsCount());
-            divisions[divIdx].links.resize(division->getCouplerCount());
-        }
     }
 }

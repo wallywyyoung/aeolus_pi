@@ -31,8 +31,11 @@ class Engine;
  */
 class Sequencer {
 public:
+    constexpr static int SEQUENCER_BACKWARD_MIDI_KEY = 22;
+    constexpr static int SEQUENCER_FORWARD_MIDI_KEY = 23;
+
     Sequencer() = delete;
-    Sequencer(Engine& engine, int numSteps);
+    Sequencer(Engine& engine, int numSteps = 32);
 
     [[nodiscard]] int getStepsCount() const noexcept { return static_cast<int>(_steps.size()); }
     [[nodiscard]] int getCurrentStep() const noexcept { return _currentStep; }
@@ -49,17 +52,15 @@ public:
     void stepBackward();
     void stepForward();
 
+    // Set this any time a division changes a value that affects DivisionCoupler.
     void setCurrentStepDirty() noexcept { _dirty = true; }
     [[nodiscard]] bool isCurrentStepDirty() const noexcept { return _dirty; }
 
 private:
 
-    void initFromEngine();
-
     Engine& _engine;
     std::vector<GlobalPiston> _steps;
     std::atomic<int> _currentStep;
-
     bool _dirty;
 };
 

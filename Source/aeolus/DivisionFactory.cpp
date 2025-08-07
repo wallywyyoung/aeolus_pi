@@ -34,7 +34,7 @@ std::unique_ptr<Division> DivisionFactory::initFromJson(nlohmann::json& v, const
                 division->_linkedDivisionNames.push_back(item);
         }
     }
-    division->setParamGain(engine._divisionGain);
+
     division->_hasSwell = v.contains("swell") && v["swell"];
     division->_hasTremulant = v.contains("tremulant") && v["tremulant"];
     division->_tremulantMaxLevel = division->_hasTremulant ? static_cast<float>(v["tremulant_level"]) : 0.0f;
