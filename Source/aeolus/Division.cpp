@@ -25,8 +25,7 @@
 
 Division::Division(const Engine& engine, const std::string& name) : _name{name}, _mnemonic{name},
     _hasSwell{false}, _hasTremulant{false},
-    _tremulantEnabled{false} /* Select all MIDI channels by default */, _tremulantLevel{0.0f},
-    _tremulantMaxLevel{TREMULANT_TARGET_LEVEL}, _tremulantTargetLevel{0.0f},
+    _tremulantEnabled{false} /* Select all MIDI channels by default */,
     _swellFilterSpec{dsp::BiquadFilter::LowPass, 0.4f * SAMPLE_RATE_F, 0.7071f, 0.0f},
     _swellFilterStateL{}, _swellFilterStateR{}, _triggerFlag{}, _engine{engine} {
     dsp::BiquadFilter::updateSpec(_swellFilterSpec);
@@ -66,15 +65,14 @@ void Division::setNoteOn(const int& note, const bool& isLinkedDivision) {
 
     _triggerFlag = true;
 
-    for (int stopIndex = 0; stopIndex < static_cast<int>(_stops.size()); ++stopIndex)
+    for (int stopIndex = 0; stopIndex < static_cast<int>(_stops.size()); ++stopIndex) {
         triggerVoicesForStop(stopIndex, note);
-
-    if (isLinkedDivision) {
-        return;
     }
 
     // Update keys state
-    _keysState.set(note);
+    if (isLinkedDivision) {
+        _keysState.set(note);
+    }
 
     // Forward to the linked divisions
     for (auto&[division, enabled] : _linkedDivisions) {
@@ -185,7 +183,7 @@ void Division::setTremulantOn() {
     }
     if (!_tremulantEnabled) {
         _tremulantEnabled = true;
-        _tremulantTargetLevel = _tremulantEnabled ? _tremulantMaxLevel : 0.0f;
+        _tremulantLevel.setValue(_tremulantLevel.max());
     }
 }
 
@@ -195,7 +193,7 @@ void Division::setTremulantOff() {
     }
     if (_tremulantEnabled) {
         _tremulantEnabled = false;
-        _tremulantTargetLevel = _tremulantEnabled ? _tremulantMaxLevel : 0.0f;
+        _tremulantLevel.setValue(0.0f, true);
     }
 }
 
@@ -268,25 +266,22 @@ bool Division::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS
 }
 
 void Division::modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1>& tremulantBuffer) {
-    const float* gain = tremulantBuffer.getReadPointer(0);
-    const float lvl = _tremulantLevel;
-    _tremulantLevel += 0.1f * (_tremulantTargetLevel - _tremulantLevel);
-
     float* outL = targetBuffer.getWritePointer(0);
     float* outR = targetBuffer.getWritePointer(1);
 
-    for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
-        _tremulantDelayL.write(outL[i]);
-        _tremulantDelayR.write(outR[i]);
-
-        const float g = (1.0f + gain[i] * lvl) * _paramGain.nextValue();
-
-        constexpr float freqModCenter = TREMULANT_DELAY_LENGTH * 0.5f;
-        constexpr float freqModAmp = TREMULANT_DELAY_LENGTH * 0.5f * TREMULANT_DELAY_MODULATION_LEVEL;
-
-        const float p = freqModCenter + freqModAmp * (0.5f - gain[i] * lvl);
-        outL[i] = _tremulantDelayL.read(p) * g;
-        outR[i] = _tremulantDelayR.read(p) * g;
+    if (_tremulantEnabled) {
+        const float* gain = tremulantBuffer.getReadPointer(0);
+        const float tremulantLevel = _tremulantLevel.nextValue();
+        for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
+            _tremulantDelayL.write(outL[i]);
+            _tremulantDelayR.write(outR[i]);
+            const float g = (1.0f + gain[i] * tremulantLevel) * _paramGain.nextValue();
+            constexpr float freqModCenter = TREMULANT_DELAY_LENGTH * 0.5f;
+            constexpr float freqModAmp = TREMULANT_DELAY_LENGTH * 0.5f * TREMULANT_DELAY_MODULATION_LEVEL;
+            const float p = freqModCenter + freqModAmp * (0.5f - gain[i] * tremulantLevel);
+            outL[i] = _tremulantDelayL.read(p) * g;
+            outR[i] = _tremulantDelayR.read(p) * g;
+        }
     }
 
     // Apply swell filter

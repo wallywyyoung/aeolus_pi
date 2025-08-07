@@ -209,22 +209,19 @@ bool Engine::processSubFrame() {
     return wasAudioGenerated;
 }
 
-void Engine::generateTremulant()
-{
+void Engine::generateTremulant() {
     float* buf = _tremulantBuffer.getWritePointer(0);
-
     for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
         const float s = sinf(_tremulantPhase);
         buf[i] = s * TREMULANT_LEVEL;
         _tremulantPhase += TREMULANT_PHASE_INCREMENT;
-
-        if (_tremulantPhase >= std::numbers::pi_v<float> * 2)
+        if (_tremulantPhase >= std::numbers::pi_v<float> * 2) {
             _tremulantPhase -= std::numbers::pi_v<float> * 2;
+        }
     }
 }
 
-void Engine::applyVolume(AudioBuffer& out)
-{
+void Engine::applyVolume(AudioBuffer& out) {
     if (_volume.isSmoothing()) {
         for (int i = 0; i < out.getNumSamples(); ++i) {
             const float g = _volume.nextValue() * VOLUME_GAIN;
@@ -238,8 +235,7 @@ void Engine::applyVolume(AudioBuffer& out)
     }
 }
 
-void Engine::applyVolume(float* inOut, const size_t framesPerChannel)
-{
+void Engine::applyVolume(float* inOut, const size_t framesPerChannel) {
     if (_volume.isSmoothing()) {
         for (int i = 0; i < framesPerChannel; ++i) {
             const float g = _volume.nextValue() * VOLUME_GAIN;

@@ -126,9 +126,7 @@ private:
     bool _hasTremulant;     ///< Whether this division has a tremulant control.
     std::atomic<bool> _tremulantEnabled;    ///< Whether tremulant is enabled.
 
-    float _tremulantLevel;
-    float _tremulantMaxLevel;
-    std::atomic<float> _tremulantTargetLevel;
+    AudioParameter _tremulantLevel {0.0f, 0.0f, TREMULANT_TARGET_LEVEL, 0.1f};
 
     AudioParameter _paramGain{1};
 
