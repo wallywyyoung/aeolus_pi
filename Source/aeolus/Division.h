@@ -31,7 +31,6 @@
 #include <vector>
 #include <bitset>
 
-
 /**
  * @brief Single keyboard division.
  *
@@ -39,7 +38,6 @@
  * disabled individually.
  */
 class Division {
-
 public:
     constexpr static size_t TREMULANT_DELAY_LENGTH = 32; // Frequency modulation delay line length (in samples).
 

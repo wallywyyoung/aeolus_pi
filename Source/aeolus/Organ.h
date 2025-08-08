@@ -23,7 +23,7 @@
 #include "StaticAudioBuffer.h"
 #include "aeolus/globals.h"
 #include "aeolus/Division.h"
-#include "aeolus/sequencer.h"
+#include "aeolus/Sequencer.h"
 #include "aeolus/AudioParameter.h"
 #include "aeolus/dsp/convolver.h"
 #include "aeolus/MidiManager.h"

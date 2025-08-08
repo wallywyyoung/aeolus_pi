@@ -18,7 +18,7 @@
 //
 // ---------------------------------------------------------------------------
 
-#include "aeolus/scale.h"
+#include "aeolus/Scale.h"
 
 #include <cmath>
 #include <stdexcept>

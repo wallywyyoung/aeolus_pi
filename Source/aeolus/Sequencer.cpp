@@ -17,7 +17,7 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/sequencer.h"
+#include "aeolus/Sequencer.h"
 
 Sequencer::Sequencer(Organ& engine, const int numSteps): _engine{engine}, _steps(numSteps), _currentStep{0}, _dirty{true} { }
 
