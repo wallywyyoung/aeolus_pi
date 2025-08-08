@@ -86,12 +86,3 @@ void EngineGlobal::loadRankwaves() {
         _rankwavesByName.emplace(model[i].getFileName(), std::make_unique<Rankwave>(model[i], *_scale, _tuningFrequency));
     }
 }
-
-void EngineGlobal::timerCallback() {
-    if (!_mtsEnabled) {
-        return;
-    }
-    if (updateMTSTuningCache()) {
-        rebuildRankwaves();
-    }
-}

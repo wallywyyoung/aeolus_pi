@@ -25,29 +25,19 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
 
 include_directories(Source)
 
-add_executable(aeolus_pi)
-
-target_sources(aeolus_pi PRIVATE
-        Source/aeolus/utilities/Range.cpp
-        Source/aeolus/utilities/Range.h
-        Source/aeolus/dsp/adsrenv.cpp
-        Source/aeolus/dsp/adsrenv.h
-        Source/aeolus/dsp/chiff.cpp
-        Source/aeolus/dsp/chiff.h
-        Source/aeolus/dsp/convolve.h
-        Source/aeolus/dsp/convolver.cpp
-        Source/aeolus/dsp/convolver.h
-        Source/aeolus/dsp/delay.cpp
-        Source/aeolus/dsp/delay.h
-        Source/aeolus/dsp/fft.cpp
-        Source/aeolus/dsp/fft.h
-        Source/aeolus/dsp/filter.cpp
-        Source/aeolus/dsp/filter.h
-        Source/aeolus/dsp/interpolator.cpp
-        Source/aeolus/dsp/interpolator.h
-        Source/aeolus/dsp/spatial.cpp
-        Source/aeolus/dsp/spatial.h
-        Source/aeolus/Addsynth.h
+add_executable(aeolus_pi Source/main.cpp
+        Source/MemoryUtilities.cpp
+        Source/MemoryUtilities.h
+        Source/MidiData.cpp
+        Source/MidiData.h
+        Source/ObjectBuffer.h
+        Source/StaticAudioBuffer.h
+        Source/AlsaInterface.cpp
+        Source/AlsaInterface.h
+        Source/AudioBuffer.cpp
+        Source/AudioBuffer.h
+        Source/IOManager.cpp
+        Source/IOManager.h
         Source/aeolus/AudioParameter.cpp
         Source/aeolus/AudioParameter.h
         Source/aeolus/Division.cpp
@@ -55,59 +45,44 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/DivisionFactory.cpp
         Source/aeolus/DivisionFactory.h
         Source/aeolus/EngineGlobal.cpp
-        Source/aeolus/EngineGlobal.h
         Source/aeolus/globals.cpp
-        Source/aeolus/globals.h
         Source/aeolus/HN_func.cpp
         Source/aeolus/HN_func.h
-        Source/aeolus/IR.h
         Source/aeolus/list.h
         Source/aeolus/memory.h
-        Source/aeolus/MidiManager.h
-        Source/aeolus/Model.h
         Source/aeolus/Model.cpp
+        Source/aeolus/Model.h
         Source/aeolus/N_func.cpp
         Source/aeolus/N_func.h
         Source/aeolus/Organ.cpp
-        Source/aeolus/Organ.h
         Source/aeolus/Pipewave.cpp
         Source/aeolus/Pipewave.h
         Source/aeolus/Rankwave.cpp
-        Source/aeolus/Rankwave.h
         Source/aeolus/Scale.cpp
         Source/aeolus/Scale.h
         Source/aeolus/Semaphore.cpp
         Source/aeolus/Semaphore.h
-        Source/aeolus/sequencer.cpp
-        Source/aeolus/sequencer.h
+        Source/aeolus/Sequencer.cpp
         Source/aeolus/SIMD.cpp
         Source/aeolus/SIMD.h
         Source/aeolus/Stop.cpp
         Source/aeolus/Stop.h
         Source/aeolus/Voice.cpp
-        Source/aeolus/Voice.h
-        Source/aeolus/VoicePool.h
         Source/aeolus/VoicePool.cpp
         Source/aeolus/Worker.cpp
         Source/aeolus/Worker.h
-        Source/AlsaInterface.cpp
-        Source/AlsaInterface.h
-        Source/AudioBuffer.cpp
-        Source/AudioBuffer.h
-        Source/ECS.cpp
-        Source/IOManager.cpp
-        Source/IOManager.h
-        Source/KeyboardSystem.cpp
-        Source/KeyboardSystem.h
-        Source/main.cpp
-        Source/MemoryUtilities.cpp
-        Source/MemoryUtilities.h
-        Source/MidiData.cpp
-        Source/MidiData.h
-        Source/ObjectBuffer.h
-        Source/RestManager.cpp
-        Source/RestManager.cpp
-        Source/StaticAudioBuffer.h)
+        Source/aeolus/utilities/Range.cpp
+        Source/aeolus/dsp/adsrenv.cpp
+        Source/aeolus/dsp/chiff.cpp
+        Source/aeolus/dsp/convolve.h
+        Source/aeolus/dsp/convolver.cpp
+        Source/aeolus/dsp/delay.cpp
+        Source/aeolus/dsp/fft.cpp
+        Source/aeolus/dsp/fft.h
+        Source/aeolus/dsp/filter.cpp
+        Source/aeolus/dsp/interpolator.cpp
+        Source/aeolus/dsp/interpolator.h
+        Source/aeolus/dsp/spatial.cpp)
 
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)

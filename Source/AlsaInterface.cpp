@@ -144,6 +144,7 @@ void* AlsaInterface::midiHandler(void *stateStruct) {
    	        snd_seq_free_event(event);
    	    }
     } while (ms.runningMidi);
+    return nullptr;
 }
 
 void AlsaInterface::endPollMidi() {

@@ -28,8 +28,7 @@ Voice* VoicePool::trigger(const Pipewave::State& state) {
         voice->trigger(state);
         _idleVoices.erase(voice);
         ++_voiceCount;
-
-        return voice;
+        return voice.base();
     }
 
     // No more voices.

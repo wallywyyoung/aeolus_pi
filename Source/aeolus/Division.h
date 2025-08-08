@@ -22,7 +22,6 @@
 
 #include "aeolus/Stop.h"
 #include "aeolus/Voice.h"
-#include "aeolus/Organ.h"
 #include "aeolus/AudioParameter.h"
 #include "aeolus/dsp/filter.h"
 #include "StaticAudioBuffer.h"

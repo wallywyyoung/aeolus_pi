@@ -22,10 +22,7 @@
 #include "aeolus/dsp/filter.h"
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/adsrenv.h"
-
-#include <array>
-
-
+#include "MemoryUtilities.h"
 
 namespace dsp {
 

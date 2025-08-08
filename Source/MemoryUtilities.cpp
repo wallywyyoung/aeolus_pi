@@ -41,7 +41,6 @@ void MemoryUtilities::disableFlushToZero() {
 void MemoryUtilities::ConvertF32toS16(float (&in)[NUMBER_SAMPLES], int16_t* out) {
     const float32x4_t min = vdupq_n_f32(-1.0f);
     const float32x4_t max = vdupq_n_f32(1.0f);
-    const float32x4_t volume = vdupq_n_f32(0.005f);
     const float32x4_t scale = vdupq_n_f32(32767.0f);
 
     int i = 0;
@@ -63,7 +62,6 @@ void MemoryUtilities::ConvertF32toS16(float (&in)[NUMBER_SAMPLES], int16_t* out)
 void MemoryUtilities::ConvertF32toS24(float(&in)[NUMBER_SAMPLES], uint8_t* out) {
     const float32x4_t min = vdupq_n_f32(-1.0f);
     const float32x4_t max = vdupq_n_f32(1.0f);
-    const float32x4_t volume = vdupq_n_f32(0.005f);
     const float32x4_t scale = vdupq_n_f32(8388607.0f);
 
     int i = 0;

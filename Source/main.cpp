@@ -29,21 +29,14 @@ void signalHandler(const int signal) {
     exit(signal);
 }
 
-int main (int argc, char* argv[]) {
+int main (int, char*[]) {
     std::signal(SIGINT | SIGTERM | SIGSEGV | SIGABRT | SIGFPE | SIGILL | SIGBUS, signalHandler);
-
     EngineGlobal::getInstance()->init();
-
     const auto* alsaInterface = new AlsaInterface();
-
     std::cout << "Aeolus is Ready" << std::endl;
-
     do {
         sleep(1);
     } while(running);
-
     std::cout << "Aeolus is Closing" << std::endl;
-
     delete alsaInterface;
-
 }

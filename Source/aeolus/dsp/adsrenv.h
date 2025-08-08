@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include "MemoryUtilities.h"
-
 namespace dsp {
 
 /**

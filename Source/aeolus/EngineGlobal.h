@@ -40,6 +40,8 @@ public:
     void init();
     EngineGlobal(EngineGlobal const&) = delete;
     void operator=(EngineGlobal const&) = delete;
+    ~EngineGlobal() = default;
+
     static EngineGlobal* getInstance() noexcept {
         static EngineGlobal instance;
         return &instance;
@@ -68,15 +70,7 @@ public:
 
 private:
     constexpr static float TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
-    ~EngineGlobal();
     void loadRankwaves();
-    /**
-     * Refresh MTS tuning table for all MIDI notes.
-     * Returns true if there was a change to the tuning.
-     */
-    bool updateMTSTuningCache();
-    // juce::Timer
-    void timerCallback();
 
     Model model;
     Organ *engine;

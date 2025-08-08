@@ -21,6 +21,7 @@
 #include "aeolus/Organ.h"
 
 #include <fstream>
+#include <memory>
 
 #include "IOManager.h"
 #include "aeolus/EngineGlobal.h"
@@ -109,11 +110,11 @@ void Organ::setGlobalAllStopsOn() {
 }
 
 void Organ::setDivisionCouplerOn(const int& division, const int& coupler) {
-    _divisions[division]->setCouplerOff(coupler);
+    _divisions[division]->setCouplerOn(coupler);
 }
 
 void Organ::setDivisionCouplerOff(const int& division, const int& coupler) {
-    _divisions[division]->setCouplerOn(coupler);
+    _divisions[division]->setCouplerOff(coupler);
 }
 
 void Organ::setDivisionTremulantOn(const int& division) {
@@ -232,13 +233,13 @@ void Organ::applyVolume(float* inOut, const size_t framesPerChannel) {
     if (_volume.isSmoothing()) {
         for (int i = 0; i < framesPerChannel; ++i) {
             const float g = _volume.nextValue() * VOLUME_GAIN;
-            inOut[i*2+1] *= g;
+            inOut[i*2] *= g;
             inOut[i*2+1] *= g;
         }
     } else {
         const float g = _volume.target() * VOLUME_GAIN;
         for (int i = 0; i < framesPerChannel; ++i) {
-            inOut[i*2+1] *= g;
+            inOut[i*2] *= g;
             inOut[i*2+1] *= g;
         }
     }

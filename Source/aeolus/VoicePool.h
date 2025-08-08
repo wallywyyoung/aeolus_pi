@@ -30,8 +30,6 @@ public:
     constexpr static int DefaultMaxVoices = 512;
 
     explicit VoicePool(Organ& engine, int maxVoices = DefaultMaxVoices);
-    VoicePool (const VoicePool&) = delete;
-    VoicePool& operator= (const VoicePool&) = delete;
 
     [[nodiscard]] int getNumberOfActiveVoices() const noexcept { return _voiceCount; }
     [[nodiscard]] Voice* trigger(const Pipewave::State& state);

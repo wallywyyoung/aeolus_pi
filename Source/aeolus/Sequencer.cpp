@@ -18,8 +18,12 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/Sequencer.h"
+#include "aeolus/Organ.h"
 
-Sequencer::Sequencer(Organ& engine, const int numSteps): _engine{engine}, _steps(numSteps), _currentStep{0}, _dirty{true} { }
+#include <cassert>
+
+
+Sequencer::Sequencer(Organ& engine, int numSteps): _engine{engine}, _steps(numSteps), _currentStep{0}, _dirty{true} { }
 
 void Sequencer::captureCurrentStep() {
     _steps[_currentStep] = _engine.captureStateAsPiston();

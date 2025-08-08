@@ -20,12 +20,12 @@
 
 #pragma once
 
-#include "aeolus/Organ.h"
 #include "aeolus/Rankwave.h"
 #include "aeolus/dsp/chiff.h"
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/spatial.h"
 
+class Organ;
 /**
  * @brief Single voice associated with a single pipe.
  */
@@ -34,6 +34,23 @@ public:
     Voice() = delete;
     explicit Voice(Organ& engine);
 
+    Voice& operator=(const Voice& other) {
+        if (this != &other) {
+            // TODO: Fix assignment.
+            // _engine = EngineGlobal::getInstance()->getEngine();
+            _state = other._state;
+            _stopIndex = other._stopIndex;
+            for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
+                _buffer[i] = other._buffer[i];
+            }
+            _delayLine = other._delayLine;
+            _delay = other._delay;
+            _chiff = other._chiff;
+            _spatialSource = other._spatialSource;
+            _postReleaseCounter = other._postReleaseCounter;
+        }
+        return *this;
+    }
     void trigger(const Pipewave::State& state);
     void release();
     void reset();

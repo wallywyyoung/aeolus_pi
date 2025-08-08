@@ -41,6 +41,6 @@ private:
     static void N_func_fromStream(N_func &nFunc, std::istream& stream);
     static void HN_func_fromJson(HN_func& hnFunc, nlohmann::json& v);
     static void HN_func_fromStream(HN_func& hnFunc, std::istream& stream, const int &nHarm);
-    static void addsynthFromJson(const std::filesystem::directory_entry& entry, Addsynth &adsynth);
+    static void addsynthFromJson(const std::filesystem::directory_entry& entry, Addsynth &addsynth);
     static void addsynthFromBinary(const std::filesystem::directory_entry& entry, Addsynth &addsynth);
 };

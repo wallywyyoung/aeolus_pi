@@ -19,6 +19,7 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/Voice.h"
+#include "aeolus/Organ.h"
 
 #include <cstring>
 

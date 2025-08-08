@@ -22,7 +22,6 @@
 
 #include "ObjectBuffer.h"
 #include "MidiData.h"
-#include <atomic>
 
 class MidiManager : public ObjectBuffer<MidiData> {
 public:
