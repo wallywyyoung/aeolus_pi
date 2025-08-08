@@ -24,6 +24,7 @@
 #include "aeolus/Addsynth.h"
 
 #include <atomic>
+#include <memory>
 
 /**
  * @brief Single pipe wavetable.
@@ -31,22 +32,12 @@
  * This class represents a single pipe mapped to a model (additive synth),
  * note, and frequency.
  */
-class Pipewave final
-{
+class Pipewave final {
 public:
-
-    /// Envelope state.
-    enum EnvState
-    {
-        Idle,
-        Attack,
-        Release,
-        Over
-    };
+    enum EnvState { Idle, Attack, Release, Over }; /// Envelope state.
 
     /// Playback state.
-    struct State
-    {
+    struct State {
         Pipewave *pipewave = nullptr;
         EnvState env = Idle;
         float* playPtr = nullptr;               // _p_p
@@ -103,7 +94,7 @@ private:
     float _freq;
 
     // Tells whether this pipewave needs to be re-generated.
-    // This is required for example when changing the tuninig.
+    // This is required for actions like changing the tuning.
     std::shared_ptr<std::atomic<bool>> _needsToBeRebuilt;
 
     int _attackLength;          // _l0

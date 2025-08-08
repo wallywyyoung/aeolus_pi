@@ -1,5 +1,5 @@
-##  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 ##  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
+##  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 ##
 ##  This program is free software; you can redistribute it and/or modify
 ##  it under the terms of the GNU General Public License as published by
@@ -47,59 +47,66 @@ target_sources(aeolus_pi PRIVATE
         Source/aeolus/dsp/interpolator.h
         Source/aeolus/dsp/spatial.cpp
         Source/aeolus/dsp/spatial.h
-        Source/aeolus/Addsynth.cpp
         Source/aeolus/Addsynth.h
-        Source/aeolus/audioparam.cpp
-        Source/aeolus/audioparam.h
+        Source/aeolus/AudioParameter.cpp
+        Source/aeolus/AudioParameter.h
         Source/aeolus/Division.cpp
         Source/aeolus/Division.h
         Source/aeolus/DivisionFactory.cpp
         Source/aeolus/DivisionFactory.h
-        Source/aeolus/engine.cpp
-        Source/aeolus/engine.h
+        Source/aeolus/EngineGlobal.cpp
+        Source/aeolus/EngineGlobal.h
         Source/aeolus/globals.cpp
         Source/aeolus/globals.h
+        Source/aeolus/HN_func.cpp
+        Source/aeolus/HN_func.h
+        Source/aeolus/IR.h
         Source/aeolus/list.h
         Source/aeolus/memory.h
         Source/aeolus/MidiManager.h
         Source/aeolus/Model.h
         Source/aeolus/Model.cpp
-        Source/aeolus/rankwave.cpp
-        Source/aeolus/rankwave.h
-        Source/aeolus/ringbuffer.h
-        Source/aeolus/scale.cpp
-        Source/aeolus/scale.h
-        Source/aeolus/sema.cpp
-        Source/aeolus/sema.h
-        Source/aeolus/sequencer.cpp
-        Source/aeolus/sequencer.h
-        Source/aeolus/simd.cpp
-        Source/aeolus/simd.h
-        Source/aeolus/stop.cpp
-        Source/aeolus/stop.h
-        Source/aeolus/voice.cpp
-        Source/aeolus/voice.h
-        Source/aeolus/worker.cpp
-        Source/aeolus/worker.h
-        Source/aeolus/HN_func.cpp
-        Source/aeolus/HN_func.h
         Source/aeolus/N_func.cpp
         Source/aeolus/N_func.h
+        Source/aeolus/Organ.cpp
+        Source/aeolus/Organ.h
         Source/aeolus/Pipewave.cpp
         Source/aeolus/Pipewave.h
-        Source/aeolus/EngineGlobal.cpp
-        Source/aeolus/EngineGlobal.h
-        Source/mts/libMTSClient.cpp
-        Source/mts/libMTSClient.h
-        Source/AudioBuffer.cpp
-        Source/AudioBuffer.h
+        Source/aeolus/Rankwave.cpp
+        Source/aeolus/Rankwave.h
+        Source/aeolus/Scale.cpp
+        Source/aeolus/Scale.h
+        Source/aeolus/Semaphore.cpp
+        Source/aeolus/Semaphore.h
+        Source/aeolus/sequencer.cpp
+        Source/aeolus/sequencer.h
+        Source/aeolus/SIMD.cpp
+        Source/aeolus/SIMD.h
+        Source/aeolus/Stop.cpp
+        Source/aeolus/Stop.h
+        Source/aeolus/Voice.cpp
+        Source/aeolus/Voice.h
+        Source/aeolus/VoicePool.h
+        Source/aeolus/VoicePool.cpp
+        Source/aeolus/Worker.cpp
+        Source/aeolus/Worker.h
         Source/AlsaInterface.cpp
         Source/AlsaInterface.h
+        Source/AudioBuffer.cpp
+        Source/AudioBuffer.h
+        Source/ECS.cpp
         Source/IOManager.cpp
         Source/IOManager.h
+        Source/KeyboardSystem.cpp
+        Source/KeyboardSystem.h
         Source/main.cpp
         Source/MemoryUtilities.cpp
         Source/MemoryUtilities.h
+        Source/MidiData.cpp
+        Source/MidiData.h
+        Source/ObjectBuffer.h
+        Source/RestManager.cpp
+        Source/RestManager.cpp
         Source/StaticAudioBuffer.h)
 
 find_package(nlohmann_json CONFIG REQUIRED)

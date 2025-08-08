@@ -19,25 +19,22 @@
 // ---------------------------------------------------------------------------
 
 #include "ObjectBuffer.h"
-#include "aeolus/sema.h"
-#include "aeolus/worker.h"
+#include "aeolus/Semaphore.h"
+#include "aeolus/Worker.h"
+
 #include <thread_pool/thread_safe_queue.h>
 #include <atomic>
 #include <thread>
 
-struct Worker::Impl
-{
+struct Worker::Impl {
     ObjectBuffer<Job*> jobsQueue;
-
     Semaphore sema{};
     std::atomic_bool running;
     std::unique_ptr<std::thread> thread{};
 
     Impl() = default; //jobsQueue(DefaultCapacity), sema(0), running(false) { }
 
-    ~Impl() {
-        stop();
-    }
+    ~Impl() { stop(); }
 
     void run() {
         MemoryUtilities::enableFlushToZero();
@@ -58,16 +55,13 @@ struct Worker::Impl
         if (job == nullptr) {
             throw std::runtime_error("Worker::run: job is null");
         }
-
         const auto ok = jobsQueue.push(job);
         wakeUp();
-
         return ok;
     }
 
     void start() {
         purge();
-
         if (thread == nullptr) {
             running = true;
             thread = std::make_unique<std::thread> (&Impl::run, this);
@@ -78,42 +72,35 @@ struct Worker::Impl
         if (thread != nullptr) {
             running = false;
             wakeUp();
-
-            if (thread->joinable())
+            if (thread->joinable()) {
                 thread->join();
+            }
         }
     }
 
-    bool isRunning() const noexcept
-    {
+    bool isRunning() const noexcept {
         return running;
     }
 
-    void purge()
-    {
+    void purge() {
         Job* job;
-
         while (jobsQueue.pop(job)) {
             // Do nothing.
         }
     }
 
-    void wait()
-    {
+    void wait() {
         sema.wait();
     }
 
-    void wakeUp()
-    {
+    void wakeUp() {
         sema.notify();
     }
 };
 
 //----------------------------------------------------------
 
-Worker::Worker() : d(std::make_unique<Impl>())
-{
-}
+Worker::Worker() : d(std::make_unique<Impl>()) { }
 
 Worker::~Worker() = default;
 

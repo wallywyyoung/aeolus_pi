@@ -18,28 +18,25 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/engine.h"
+#include "aeolus/Organ.h"
 
 #include <fstream>
 
 #include "IOManager.h"
 #include "aeolus/EngineGlobal.h"
-#include "DivisionFactory.h"
+#include "aeolus/DivisionFactory.h"
 
-Engine::Engine() : _voicePool(std::make_shared<VoicePool>(*this)), _tremulantPhase{0.0f}, _selectedIR{0}, _reverbTailCounter{0}
-{
+Organ::Organ() : _voicePool(std::make_shared<VoicePool>(*this)) {
     populateDivisions();
 }
 
-void Engine::prepareToPlay()
-{
+void Organ::prepareToPlay() {
     // Select the first IR for reverb by default
     setReverbIR(_selectedIR);
     _convolver.setDryWet(1.0f, 0.25f, true);
 }
 
-void Engine::setReverbIR(const int num)
-{
+void Organ::setReverbIR(const int num) {
     if (const auto&[irs, longestIRLength] = EngineGlobal::getInstance()->getIRs(); num >= 0 && num < irs.size()) {
         const auto& ir = irs[num];
         _convolver.setLength(static_cast<int>(ir.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
@@ -51,115 +48,111 @@ void Engine::setReverbIR(const int num)
     }
 }
 
-void Engine::setReverbWet(const float v) { _convolver.setDryWet(1.0f, v); }
+void Organ::setReverbWet(const float v) { _convolver.setDryWet(1.0f, v); }
 
-void Engine::setVolume(const float v, const bool immediate) { _volume.setValue(v, immediate); }
+void Organ::setVolume(const float v, const bool immediate) { _volume.setValue(v, immediate); }
 
-void Engine::setDivisionNoteOn(const int &division, const int &note) {
+void Organ::setDivisionNoteOn(const int &division, const int &note) {
     clearDivisionsTriggerFlag();
-    // Ignore note-on event if filtered by MTS.
-    if (EngineGlobal::getInstance()->shouldMTSFilterNoteByChannel(note, division)) {
-        return;
-    }
     _divisions[division]->setNoteOn(note, false);
 }
 
-void Engine::setDivisionNoteOff(const int &division, const int &note) {
+void Organ::setDivisionNoteOff(const int &division, const int &note) {
     clearDivisionsTriggerFlag();
     _divisions[division]->setNoteOff(note, false);
 }
 
-void Engine::setDivisionAllNotesOff(const int& division) {
+void Organ::setDivisionAllNotesOff(const int& division) {
     _divisions[division]->setAllNotesOff(false);
 }
 
-void Engine::setGlobalAllNotesOff() {
+void Organ::setGlobalAllNotesOff() {
     for (const auto &division : _divisions) {
         division->setAllNotesOff(false);
     }
 }
 
-void Engine::handleDivisionSwell(const int& division, const float& value) {
+void Organ::handleDivisionSwell(const int& division, const float& value) {
     _divisions[division]->handleSwell(value);
 };
 
-void Engine::setDivisionStopOn(const int& division, const int& stop) {
+void Organ::setDivisionStopOn(const int& division, const int& stop) {
     _divisions[division]->setStopOn(stop);
 }
 
-void Engine::setDivisionStopOff(const int& division, const int& stop) {
+void Organ::setDivisionStopOff(const int& division, const int& stop) {
     _divisions[division]->setStopOff(stop);
 }
 
-void Engine::setDivisionStopToggle(const int& division, const int& stop) {
+void Organ::setDivisionStopToggle(const int& division, const int& stop) {
     _divisions[division]->setStopToggle(stop);
 }
 
-void Engine::setDivisionAllStopsOff(const int& division) {
+void Organ::setDivisionAllStopsOff(const int& division) {
     _divisions[division]->setAllStopsOff();
 }
 
-void Engine::setDivisionAllStopsOn(const int& division) {
+void Organ::setDivisionAllStopsOn(const int& division) {
     _divisions[division]->setAllStopsOn();
 }
 
-void Engine::setGlobalAllStopsOff() {
+void Organ::setGlobalAllStopsOff() {
     for (auto& division : _divisions) {
         division->setAllStopsOff();
     }
 }
 
-void Engine::setGlobalAllStopsOn() {
+void Organ::setGlobalAllStopsOn() {
     for (auto& division : _divisions) {
         division->setAllStopsOn();
     }
 }
 
-void Engine::setDivisionCouplerOn(const int& division, const int& coupler) {
+void Organ::setDivisionCouplerOn(const int& division, const int& coupler) {
     _divisions[division]->setCouplerOff(coupler);
 }
 
-void Engine::setDivisionCouplerOff(const int& division, const int& coupler) {
+void Organ::setDivisionCouplerOff(const int& division, const int& coupler) {
     _divisions[division]->setCouplerOn(coupler);
 }
 
-void Engine::setDivisionTremulantOn(const int& division) {
+void Organ::setDivisionTremulantOn(const int& division) {
     _divisions[division]->setTremulantOn();
 }
 
-void Engine::setDivisionTremulantOff(const int& division) {
+void Organ::setDivisionTremulantOff(const int& division) {
     _divisions[division]->setTremulantOff();
 }
 
-void Engine::setDivisionPiston(const int& division, const int& piston) {
+void Organ::setDivisionPiston(const int& division, const int& piston) {
     _divisions[division]->setPiston(piston);
 }
 
-void Engine::recallDivisionPiston(const int& division, const int& piston) {
+void Organ::recallDivisionPiston(const int& division, const int& piston) {
     _divisions[division]->recallPiston(piston);
 }
 
-void Engine::setGlobalPiston(const int& piston) {
+void Organ::setGlobalPiston(const int& piston) {
     if (pistons.size() <= piston) {
         pistons.resize(piston + 1);
     }
     pistons[piston] = captureStateAsPiston();
 }
 
-void Engine::recallGlobalPiston(const int& piston) {
+void Organ::recallGlobalPiston(const int& piston) {
     if (pistons.size() <= piston) {
         return;
     }
     recallGlobalPiston(pistons[piston]);
 }
 
-void Engine::recallGlobalPiston(const GlobalPiston& piston) {
+void Organ::recallGlobalPiston(const GlobalPiston& piston) {
     for (int i = 0; i < piston.divisions.size(); ++i) {
         _divisions[i]->recallPiston(piston.divisions[i]);
     }
 }
 
-GlobalPiston Engine::captureStateAsPiston() const {
+GlobalPiston Organ::captureStateAsPiston() const {
     GlobalPiston globalPiston{};
     globalPiston.divisions.resize(_divisions.size());
     for (const auto& division : _divisions) {
@@ -168,7 +161,7 @@ GlobalPiston Engine::captureStateAsPiston() const {
     return globalPiston;
 }
 
-Division *Engine::getDivisionByName(const std::string &name) const {
+Division *Organ::getDivisionByName(const std::string &name) const {
     for (auto &division : _divisions) {
         if (division->getName() == name)
             return division.get();
@@ -177,13 +170,13 @@ Division *Engine::getDivisionByName(const std::string &name) const {
     return nullptr;
 }
 
-void Engine::clearDivisionsTriggerFlag() const {
+void Organ::clearDivisionsTriggerFlag() const {
     for (auto& division : _divisions) {
         division->clearTriggerFlag();
     }
 }
 
-bool Engine::processSubFrame() {
+bool Organ::processSubFrame() {
     generateTremulant();
 
     _subFrameBuffer.clear();
@@ -209,7 +202,7 @@ bool Engine::processSubFrame() {
     return wasAudioGenerated;
 }
 
-void Engine::generateTremulant() {
+void Organ::generateTremulant() {
     float* buf = _tremulantBuffer.getWritePointer(0);
     for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
         const float s = sinf(_tremulantPhase);
@@ -221,7 +214,7 @@ void Engine::generateTremulant() {
     }
 }
 
-void Engine::applyVolume(AudioBuffer& out) {
+void Organ::applyVolume(AudioBuffer& out) {
     if (_volume.isSmoothing()) {
         for (int i = 0; i < out.getNumSamples(); ++i) {
             const float g = _volume.nextValue() * VOLUME_GAIN;
@@ -235,7 +228,7 @@ void Engine::applyVolume(AudioBuffer& out) {
     }
 }
 
-void Engine::applyVolume(float* inOut, const size_t framesPerChannel) {
+void Organ::applyVolume(float* inOut, const size_t framesPerChannel) {
     if (_volume.isSmoothing()) {
         for (int i = 0; i < framesPerChannel; ++i) {
             const float g = _volume.nextValue() * VOLUME_GAIN;
@@ -251,7 +244,7 @@ void Engine::applyVolume(float* inOut, const size_t framesPerChannel) {
     }
 }
 
-auto Engine::populateDivisions() -> void {
+auto Organ::populateDivisions() -> void {
     const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
 
     if (!exists(configFile)) {

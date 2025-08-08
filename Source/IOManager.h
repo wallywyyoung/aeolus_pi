@@ -24,17 +24,23 @@
 #include "aeolus/Addsynth.h"
 #include "aeolus/IR.h"
 
+#include <nlohmann/json.hpp>
+
 class IOManager {
 public:
     static IRs loadIRs();
     static std::vector<Addsynth> loadPipes();
 private:
-    /// Values used by previous version of the synth.
+    /// Values used by a previous version of the synth.
     struct deprecated {
         constexpr static int N_HARM = 48;
         constexpr static int NOTE_MAX = 46;
     }; // namespace deprecated
     static std::vector<std::byte> readBinaryFile(const std::string &path);
+    static void N_func_fromJson(N_func &nFunc, const nlohmann::json& v);
+    static void N_func_fromStream(N_func &nFunc, std::istream& stream);
+    static void HN_func_fromJson(HN_func& hnFunc, nlohmann::json& v);
+    static void HN_func_fromStream(HN_func& hnFunc, std::istream& stream, const int &nHarm);
     static void addsynthFromJson(const std::filesystem::directory_entry& entry, Addsynth &adsynth);
     static void addsynthFromBinary(const std::filesystem::directory_entry& entry, Addsynth &addsynth);
 };

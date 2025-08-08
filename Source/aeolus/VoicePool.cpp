@@ -18,52 +18,27 @@
 //
 // ---------------------------------------------------------------------------
 
-#pragma once
+#include "aeolus/VoicePool.h"
 
-#include <array>
-#include <map>
-#include <string>
+VoicePool::VoicePool(Organ& engine, const int maxVoices): _engine{engine}, _voices(maxVoices, Voice(engine)), _voiceCount{0}, _idleVoices(_voices) { }
 
-class Scale
-{
-public:
-    enum Type {
-        First = 0,
-        Pythagorean = 0,
-        MeanQuart,
-        Werckm3,
-        Kirnberg3,
-        WellTemp,
-        EqualTemp,
-        Ahrend,
-        Vallotti,
-        Kellner,
-        Lehman,
-        Pure,
+Voice* VoicePool::trigger(const Pipewave::State& state) {
+    if (_idleVoices.size() > 0) {
+        auto voice = _idleVoices.begin();
+        voice->trigger(state);
+        _idleVoices.erase(voice);
+        ++_voiceCount;
 
-        Total
-    };
+        return voice;
+    }
 
-    using Table = std::array<float, 12>;
-    using Map = std::map<Type, Table>;
+    // No more voices.
+    return nullptr;
+}
 
-    explicit Scale(Type type = EqualTemp);
-    Type getType() const noexcept { return _type; }
-    void setType(const Type t) noexcept { _type = t; }
-
-    const Table& getTable() const;
-
-    /**
-     * Calculate a MIDI note frequency (Hz) given the tuning A frequency.
-     */
-    float getFrequencyForMidiNote(int midiNote, float tuningFrequency = 440.0f) const;
-
-    static std::string getNameForType(Type type);
-
-private:
-    Type _type;
-
-    const static Map _scales;
-};
-
-
+void VoicePool::resetAndReturnToPool(Voice* voice) {
+    assert(voice != nullptr);
+    voice->reset();
+    _idleVoices.emplace_back(*voice);
+    --_voiceCount;
+}

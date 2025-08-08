@@ -18,7 +18,7 @@
 //
 // ---------------------------------------------------------------------------
 
-#include "aeolus/stop.h"
+#include "aeolus/Stop.h"
 #include "aeolus/EngineGlobal.h"
 
 std::vector<Rankwave *> Stop::getRankwavesFromPipeVar(const nlohmann::json &v) const {

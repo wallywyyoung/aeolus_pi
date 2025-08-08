@@ -33,24 +33,18 @@
     public:
         /// Number of harmonics used.
         constexpr static int N_HARM = 64;
-
-        HN_func();
-        void reset(float v);
+        HN_func() = delete;
+        HN_func(const float& v);
         void setValue(int idx, float v);            // setv(i, v)
         void setValue(int harm, int idx, float v);  // setv(h, i, v)
         void clearValue(int idx);                   // clrv(i)
         void clearValue(int harm, int idx);         // clrv(h, i);
         [[nodiscard]] float getValue(int harm, int idx) const;    // vs(h, i);
         [[nodiscard]] bool isSet(int harm, int idx) const;        // st(h, i)
-
         N_func& operator[](const int harm) { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }
         const N_func& operator[](const int harm) const { isPositiveAndBelow(harm, _h.size()); return _h[harm]; }
-
-        void fromJson(const nlohmann::json& v);
-
-        void read(std::istream& stream, int n = N_HARM);
-
     private:
-        std::array<N_func, N_HARM> _h;
+        std::array<N_func, N_HARM> _h{};
+        friend class IOManager;
     };
 

@@ -27,5 +27,5 @@
 
 class DivisionFactory {
 public:
-    static std::unique_ptr<Division> initFromJson(nlohmann::json& json, const Engine& engine, const std::string& name = std::string());
+    static std::unique_ptr<Division> initFromJson(nlohmann::json& json, const Organ& engine, const std::string& name = std::string());
 };

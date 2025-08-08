@@ -18,12 +18,11 @@
 //
 // ---------------------------------------------------------------------------
 
-#include "aeolus/globals.h"
 #include "aeolus/Division.h"
-#include "aeolus/engine.h"
+#include "aeolus/globals.h"
 #include "aeolus/EngineGlobal.h"
 
-Division::Division(const Engine& engine, const std::string& name) : _name{name}, _mnemonic{name},
+Division::Division(const Organ& engine, const std::string& name) : _name{name}, _mnemonic{name},
     _hasSwell{false}, _hasTremulant{false},
     _tremulantEnabled{false} /* Select all MIDI channels by default */,
     _swellFilterSpec{dsp::BiquadFilter::LowPass, 0.4f * SAMPLE_RATE_F, 0.7071f, 0.0f},

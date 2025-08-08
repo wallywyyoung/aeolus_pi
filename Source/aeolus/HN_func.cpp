@@ -21,13 +21,9 @@
 
 #include "aeolus/HN_func.h"
 
-HN_func::HN_func() { }
-
-void HN_func::reset(const float v)
-{
-    for (auto& h : _h) {
-        h.reset(v);
-    }
+HN_func::HN_func(const float& v) {
+    const auto vn = N_func(v);
+    _h.fill(vn);
 }
 
 void HN_func::setValue(const int idx, const float v)
@@ -78,20 +74,4 @@ bool HN_func::isSet(const int harm, const int idx) const
     isPositiveAndBelow(idx, N_func::N_NOTES);
 
     return _h[harm].isSet(idx);
-}
-
-void HN_func::fromJson(const nlohmann::json& v)
-{
-    if (v.size() >= _h.size()) {
-        for (int i = 0; i < _h.size(); ++i)
-            _h[i].fromJson(v[i]);
-    }
-}
-
-void HN_func::read(std::istream& stream, const int n)
-{
-    const auto m = std::min(_h.size(), static_cast<size_t>(n));
-
-    for (int i = 0; i < m; ++i)
-        _h[i].read(stream);
 }

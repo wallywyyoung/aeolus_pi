@@ -20,7 +20,7 @@
 
 #include "aeolus/EngineGlobal.h"
 #include "IOManager.h"
-#include "aeolus/engine.h"
+#include "aeolus/Organ.h"
 
 #include <thread_pool/thread_pool.h>
 
@@ -30,23 +30,10 @@ void EngineGlobal::init() {
     irs = IOManager::loadIRs();
     loadRankwaves();
     updateStops();
-    engine = new Engine();
+    engine = new Organ();
     engine->prepareToPlay();
     engine->setGlobalAllStopsOn();
     engine->setVolume(0.005f, true);
-}
-
-EngineGlobal::~EngineGlobal() {
-    if (_mtsClient != nullptr) {
-        MTS_DeregisterClient(_mtsClient);
-    }
-}
-
-const float EngineGlobal::getMTSNoteToFrequency(const int midiNote, const int midiChannel) const {
-    if (_mtsClient == nullptr || !isConnectedToMTSMaster()) {
-        return _scale->getFrequencyForMidiNote(midiNote);
-    }
-    return static_cast<float>(MTS_NoteToFrequency(_mtsClient, static_cast<char>(midiNote), static_cast<char>(midiChannel)));
 }
 
 std::vector<std::string> EngineGlobal::getAllStopNames() const
@@ -71,32 +58,6 @@ void EngineGlobal::updateStops() const {
         });
     }
     pool.wait_for_tasks();
-}
-
-bool EngineGlobal::isConnectedToMTSMaster() const {
-    if (nullptr == _mtsClient) {
-        return false;
-    }
-    return MTS_HasMaster(_mtsClient);
-}
-
-std::string EngineGlobal::getMTSScaleName() {
-    if (_mtsClient == nullptr) {
-        return {};
-    }
-
-    return std::string(MTS_GetScaleName(_mtsClient));
-}
-
-void EngineGlobal::setMTSEnabled(const bool shouldBeEnabled) {
-    _mtsEnabled = shouldBeEnabled;
-
-    if (_mtsEnabled && nullptr == _mtsClient) {
-        _mtsClient = MTS_RegisterClient();
-    } else if (!_mtsEnabled && nullptr != _mtsClient) {
-        MTS_DeregisterClient(_mtsClient);
-        _mtsClient = nullptr;
-    }
 }
 
 void EngineGlobal::rebuildRankwaves() {
@@ -124,26 +85,6 @@ void EngineGlobal::loadRankwaves() {
         // TODO: Fix this mapping in JSON.
         _rankwavesByName.emplace(model[i].getFileName(), std::make_unique<Rankwave>(model[i], *_scale, _tuningFrequency));
     }
-}
-
-const bool EngineGlobal::shouldMTSFilterNoteByChannel(const int midiNote, const int midiChannel) const {
-    if (nullptr == _mtsClient || !isConnectedToMTSMaster()) {
-        return false;
-    }
-    return MTS_ShouldFilterNote(_mtsClient, static_cast<char>(midiNote), static_cast<char>(midiChannel));
-}
-
-bool EngineGlobal::updateMTSTuningCache() {
-    bool changed{};
-
-    for (int midiNote = 0; midiNote < _mtsTuningCache.size(); ++midiNote) {
-        if (const float f{ getMTSNoteToFrequency(midiNote, -1) }; _mtsTuningCache[midiNote] != f) {
-            _mtsTuningCache[midiNote] = f;
-            changed = true;
-        }
-    }
-
-    return changed;
 }
 
 void EngineGlobal::timerCallback() {

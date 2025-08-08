@@ -20,14 +20,12 @@
 
 #pragma once
 
-#include <iostream>
 #include <unordered_map>
 
-#include "aeolus/rankwave.h"
-#include "aeolus/scale.h"
-#include "aeolus/engine.h"
+#include "aeolus/Rankwave.h"
+#include "aeolus/Scale.h"
+#include "aeolus/Organ.h"
 #include "aeolus/Model.h"
-#include "mts/libMTSClient.h"
 #include "MidiData.h"
 
 /**
@@ -47,13 +45,6 @@ public:
         return &instance;
     }
 
-    [[nodiscard]] const bool shouldMTSFilterNoteByChannel(int midiNote, int midiChannel) const;
-    [[nodiscard]] bool isMTSEnabled() const { return _mtsEnabled; }
-    [[nodiscard]] const float getMTSNoteToFrequency(int midiNote, int midiChannel) const;
-    [[nodiscard]] bool isConnectedToMTSMaster() const;
-    [[nodiscard]] std::string getMTSScaleName();
-    void setMTSEnabled(bool shouldBeEnabled);
-
     [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
     [[nodiscard]] int getLongestIRLength() const noexcept { return _longestIRLength; }
 
@@ -61,9 +52,6 @@ public:
     [[nodiscard]] int getStopsCount() const noexcept { return _rankwavesByName.size(); }
     [[nodiscard]] std::vector<std::string> getAllStopNames() const;
     void updateStops() const;
-
-    [[nodiscard]] float getTuningFrequency() const noexcept { return _tuningFrequency; }
-    void setTuningFrequency(const float f) noexcept { _tuningFrequency = f; }
 
     [[nodiscard]] const Scale& getScale() const noexcept { return *_scale; }
     void setScaleType(const Scale::Type type) const noexcept { _scale->setType(type); }
@@ -91,11 +79,10 @@ private:
     void timerCallback();
 
     Model model;
-    Engine *engine;
+    Organ *engine;
     std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName{};
     std::vector<IR> _irs{};
     IRs irs;
-    MTSClient* _mtsClient{};
     std::shared_ptr<Scale> _scale;
     int _longestIRLength{};   ///< Longest IR length in samples
     float _tuningFrequency;

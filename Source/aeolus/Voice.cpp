@@ -18,69 +18,54 @@
 //
 // ---------------------------------------------------------------------------
 
-#include "aeolus/voice.h"
-#include "aeolus/engine.h"
+#include "aeolus/Voice.h"
 
 #include <cstring>
 
-Voice::Voice(Engine& engine) : _engine(engine), _stopIndex{-1}, _buffer{}, _postReleaseCounter(0) { }
+Voice::Voice(Organ& engine) : _engine{engine} { }
 
-void Voice::trigger(const Pipewave::State& state)
-{
+void Voice::trigger(const Pipewave::State& state) {
     assert(_state.isIdle());
     _state = state;
-
     // Chiff
     const auto freq = _state.pipewave->getPipeFrequency();
     const auto dt = 1.0f / freq;
-
     // Delay pipe harmonic signal so that chiff noise builds up first
     _delay = static_cast<int>(std::min<float>(SAMPLE_RATE_F, 0.5f * dt * SAMPLE_RATE_F));
-
     _chiff.setAttack(5.0f * dt);
     _chiff.setDecay(100.0f * dt);
     _chiff.setSustain(0.01f);
     _chiff.setRelease(100.0f * dt);
-
     // Frequency-dependant chiff attenuation
     const float att = 1.0f - expf(-freq / 3000.0f);
     _chiff.setGain(std::min<float>(1.0f, 0.02f * _state.chiffGain * att));
     _chiff.setFrequency(freq);
     _chiff.trigger();
-
-    // Spatialisation
+    // Spatialization
     const int note = _state.pipewave->getNote();
     const float k = note % 2 != 0 ? 1.0f : -1.0f;
-
     // Wider spread for low-pitched pipes
     const auto& model = _state.pipewave->getModel();
     const float width = 0.15f * static_cast<float>(model->getFd()) / static_cast<float>(model->getFn());
-
     const float x = width * k * static_cast<float>(abs(note - 65));
-
     _spatialSource.setSourcePosition(x, 5.0f);
     _spatialSource.recalculate();
     _postReleaseCounter = _spatialSource.getPostFxSamplesCount() + 2 * _delay + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
 }
 
-void Voice::release()
-{
+void Voice::release() {
     // This voice is pending to be reclaimed.
-    if (_state.env == Pipewave::Over)
+    if (_state.env == Pipewave::Over) {
         return;
-
+    }
     _state.release();
-
     _chiff.release();
 }
 
-void Voice::reset()
-{
+void Voice::reset() {
     _state.reset();
     _stopIndex = -1;
-
     memset(_buffer, 0, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
-
     _delayLine.reset();
     _chiff.reset();
     _spatialSource.reset();
@@ -88,30 +73,23 @@ void Voice::reset()
 
 void Voice::process(float* outL, float* outR) {
     memset(_buffer, 0, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
-
     const auto gain = _state.gain;
-
     if (_state.env == Pipewave::Over) {
         _postReleaseCounter -= std::min(static_cast<int>(_postReleaseCounter), AUDIO_SUB_FRAME_LENGTH);
-
         for (float & i : _buffer) {
             _delayLine.write(0.0f);
             i = _delayLine.readNearest(_delay) * gain;
         }
-
     } else {
         auto* pipe = _state.pipewave;
         pipe->play(_state, _buffer);
-
         for (float & i : _buffer) {
             _delayLine.write(i);
             i = _delayLine.readNearest(_delay) * gain;
         }
     }
-
     _chiff.process(_buffer, AUDIO_SUB_FRAME_LENGTH);
-
-    // Spatial modellig is only applied on stereo voice output
+    // Spatial modeling is only applied on stereo voice output
     if (outL != outR) {
         _spatialSource.process(_buffer, outL, outR, AUDIO_SUB_FRAME_LENGTH);
     } else {
@@ -119,69 +97,28 @@ void Voice::process(float* outL, float* outR) {
     }
 }
 
-bool Voice::isOver() const noexcept
-{
+bool Voice::isOver() const noexcept {
     return (_state.env == Pipewave::Over) && _postReleaseCounter == 0;
 }
 
-bool Voice::isActive() const noexcept
-{
+bool Voice::isActive() const noexcept {
     return _state.env == Pipewave::Attack;
 }
 
-bool Voice::isForNote(const int note) const noexcept
-{
-    if (_state.pipewave != nullptr)
+bool Voice::isForNote(const int note) const noexcept {
+    if (_state.pipewave != nullptr) {
         return _state.pipewave->getNote() == note;
-
+    }
     return false;
 }
 
-int Voice::getNote() const
-{
-    if (_state.pipewave != nullptr)
+int Voice::getNote() const {
+    if (_state.pipewave != nullptr) {
         return _state.pipewave->getNote();
-
+    }
     return -1;
 }
 
-void Voice::resetAndReturnToPool()
-{
+void Voice::resetAndReturnToPool() {
     _engine.getVoicePool()->resetAndReturnToPool(this);
 }
-
-//==============================================================================
-
-VoicePool::VoicePool(Engine& engine, const int maxVoices)
-    : _engine{engine}
-    , _voices(maxVoices, Voice(engine))
-    , _voiceCount{0}
-{
-    for (auto& voice : _voices)
-        _idleVoices.append(&voice);
-}
-
-Voice* VoicePool::trigger(const Pipewave::State& state)
-{
-    if (auto* voice = _idleVoices.first()) {
-        _idleVoices.remove(voice);
-        voice->trigger(state);
-        ++_voiceCount;
-
-        return voice;
-    }
-
-    // No more voices.
-    return nullptr;
-}
-
-void VoicePool::resetAndReturnToPool(Voice* voice)
-{
-    assert(voice != nullptr);
-
-    voice->reset();
-    _idleVoices.append(voice);
-    --_voiceCount;
-}
-
-

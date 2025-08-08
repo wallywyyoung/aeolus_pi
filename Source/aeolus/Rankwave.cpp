@@ -20,7 +20,7 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/EngineGlobal.h"
-#include "aeolus/rankwave.h"
+#include "aeolus/Rankwave.h"
 
 Rankwave::Rankwave(Addsynth model, const Scale& scale, const float tuningFreq) : _noteMin(model.getNoteMin()), _noteMax(model.getNoteMax()), model(std::make_shared<Addsynth>(model)), _pipes{2} {
     assert(_noteMax - _noteMin + 1 > 0);
@@ -61,33 +61,19 @@ auto Rankwave::createPipes(const Scale &scale, const float tuningFrequency) -> v
     }
 }
 
-void Rankwave::retunePipes(const Scale& scale, const float tuningFrequency)
-{
+void Rankwave::retunePipes(const Scale& scale, const float tuningFrequency) {
     const float fnd = static_cast<float>(model->getFn()) / static_cast<float>(model->getFd());
 
     const int pipeSetIndex{ _pipeSetIndex.load() };
     const int nextPipeSetIndex{ (pipeSetIndex + 1) % static_cast<int>(_pipes.size()) };
 
-    if (EngineGlobal::getInstance()->isMTSEnabled()) {
-        // Use MTS provided tuning
-        for (int i = _noteMin; i <= _noteMax; ++i) {
-            auto& pipe = _pipes[nextPipeSetIndex].at(i - _noteMin);
+    // Use local scale
+    const float fbase = tuningFrequency * fnd;
 
-            // @note MTS tuning may return some weird frequencies, we need to clamp them
-            if (const float f{limitRange(0.1f, SAMPLE_RATE_F * 0.5f - 0.1f, EngineGlobal::getInstance()->getMTSNoteToFrequency(i, -1) * fnd) }; pipe.getPipeFrequency() != f) {
-                pipe.setFrequency(f);
-                pipe.setNeedsToBeRebuilt(true);
-            }
-        }
-    } else {
-        // Use local scale
-        const float fbase = tuningFrequency * fnd;
-
-        for (int i = _noteMin; i <= _noteMax; ++i) {
-            auto& pipe = _pipes[nextPipeSetIndex][i - _noteMin];
-            pipe.setFrequency(scale.getFrequencyForMidiNote(i, fbase));
-            pipe.setNeedsToBeRebuilt(true);
-        }
+    for (int i = _noteMin; i <= _noteMax; ++i) {
+        auto& pipe = _pipes[nextPipeSetIndex][i - _noteMin];
+        pipe.setFrequency(scale.getFrequencyForMidiNote(i, fbase));
+        pipe.setNeedsToBeRebuilt(true);
     }
 }
 

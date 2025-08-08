@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <cmath>
 #include <numbers>
 #include <vector>
 
@@ -38,76 +37,55 @@ struct DivisionPiston {
     std::vector<bool> links;    ///< Manuals links.
     bool tremulant;             ///< Tremulant enablement.
 };
+
 struct GlobalPiston {
     std::vector<DivisionPiston> divisions;
 };
 
-// MIDI controls
-enum {
-    CC_MODULATION = 1,
-    CC_VOLUME = 7,
-    CC_REVERB = 91,
-    CC_STOP_BUTTONS = 98,
-    CC_ALL_NOTES_OFF = 123
-};
-
 namespace math {
+    float exp2ap(float x);
 
-float exp2ap(float x);
+    /// Linear interpolation
+    template <typename T>
+    T lerp (T a, T b, T frac) { return a + (b - a) * frac; }
 
-/// Linear interpolation
-template <typename T>
-T lerp (T a, T b, T frac) { return a + (b - a) * frac; }
+    template <typename T>
+    T lagr (const T* const x, T frac) noexcept
+    {
+        const T c1 = x[2] - (1.0f / 3.0f) * x[0] - 0.5f * x[1] - (1.0f / 6.0f) * x[3];
+        const T c2 = 0.5f * (x[0] + x[2]) - x[1];
+        const T c3 = (1.0f / 6.0f) * (x[3] - x[0]) + 0.5f * (x[1] - x[2]);
+        return ((c3 * frac + c2) * frac + c1) * frac + x[1];
+    }
 
-template <typename T>
-T lagr (const T* const x, T frac) noexcept
-{
-    const T c1 = x[2] - (1.0f / 3.0f) * x[0] - 0.5f * x[1] - (1.0f / 6.0f) * x[3];
-    const T c2 = 0.5f * (x[0] + x[2]) - x[1];
-    const T c3 = (1.0f / 6.0f) * (x[3] - x[0]) + 0.5f * (x[1] - x[2]);
-    return ((c3 * frac + c2) * frac + c1) * frac + x[1];
-}
+    template<unsigned M, unsigned N, unsigned B, unsigned A>
+    struct SinCosSeries {
+        constexpr static double value =
+            1.0 - (A * std::numbers::pi_v<float> / B) * ( A * std::numbers::pi_v<float> / B) / M / (M + 1)
+            * SinCosSeries<M + 2, N, B, A>::value;
+    };
 
-template<unsigned M, unsigned N, unsigned B, unsigned A>
-struct SinCosSeries
-{
-    constexpr static double value =
-        1.0 - (A * std::numbers::pi_v<float> / B) * ( A * std::numbers::pi_v<float> / B) / M / (M + 1)
-        * SinCosSeries<M + 2, N, B, A>::value;
-};
+    template<unsigned N, unsigned B, unsigned A>
+    struct SinCosSeries<N, N, B, A> {
+        constexpr static double value = 1.0;
+    };
 
-template<unsigned N, unsigned B, unsigned A>
-struct SinCosSeries<N, N, B, A> {
-    constexpr static double value = 1.0;
-};
+    template<unsigned B, unsigned A, typename T = double>
+    struct Sin;
 
-template<unsigned B, unsigned A, typename T = double>
-struct Sin;
+    template<unsigned B, unsigned A>
+    struct Sin<B, A, float> {
+        constexpr static float value = (A * std::numbers::pi_v<float> / B) * static_cast<float>(SinCosSeries<2, 24, B, A>::value);
+    };
 
-template<unsigned B, unsigned A>
-struct Sin<B, A, float>
-{
-    constexpr static float value = (A * std::numbers::pi_v<float> / B) * static_cast<float>(SinCosSeries<2, 24, B, A>::value);
-};
+    template<unsigned B, unsigned A>
+    struct Sin<B, A, double> {
+        constexpr static double value = (A * std::numbers::pi_v<float> / B) * SinCosSeries<2, 34, B, A>::value;
+    };
 
-template<unsigned B, unsigned A>
-struct Sin<B, A, double> {
-    constexpr static double value = (A * std::numbers::pi_v<float> / B) * SinCosSeries<2, 34, B, A>::value;
-};
-
-template <typename T>
-constexpr bool isPowerOfTwo(T v)
-{
-    return (v & (v - 1)) == 0;
-}
-
+    template <typename T>
+    constexpr bool isPowerOfTwo(T v)
+    {
+        return (v & (v - 1)) == 0;
+    }
 } // namespace math
-
-//----------------------------------------------------------
-
-namespace midi {
-    int midiChannelToMask(int channel);
-    bool matchMidiChannelToMask(int mask, int channel);
-} // namespace midi
-
-

@@ -22,23 +22,14 @@
 #include "aeolus/N_func.h"
 #include "aeolus/globals.h"
 
-N_func::N_func()
-        : _b{}
-        , _v{}
-{
-    reset(0.0f);
-}
-
-void N_func::reset(const float v)
-{
-    _b = 16;
+N_func::N_func(const float& v) {
     _v.fill(v);
 }
 
-void N_func::setValue(const int idx, const float v)
-{
-    if (! isPositiveAndBelow(idx, N_NOTES))
+void N_func::setValue(const int idx, const float v) {
+    if (! isPositiveAndBelow(idx, N_NOTES)) {
         return;
+    }
 
     _v [idx] = v;
     _b |= 1 << idx;
@@ -74,10 +65,10 @@ void N_func::setValue(const int idx, const float v)
     }
 }
 
-void N_func::clearValue(const int idx)
-{
-    if (isPositiveAndBelow(idx, N_NOTES))
+void N_func::clearValue(const int idx) {
+    if (isPositiveAndBelow(idx, N_NOTES)) {
         return;
+    }
 
     const int m = 1 << idx;
 
@@ -114,20 +105,17 @@ void N_func::clearValue(const int idx)
     }
 }
 
-float N_func::getValue(const int idx) const
-{
+float N_func::getValue(const int idx) const {
     isPositiveAndBelow(idx, _v.size());
     return _v[idx];
 }
 
-bool N_func::isSet(const int idx) const
-{
+bool N_func::isSet(const int idx) const {
     isPositiveAndBelow(idx, _v.size());
     return (_b & (1 << idx)) != 0;
 }
 
-float N_func::operator[](const int note) const
-{
+float N_func::operator[](const int note) const {
     const int i = note / NOTES_GAP;
     const int k = note - NOTES_GAP * i;
     float v = _v [i];
@@ -135,29 +123,8 @@ float N_func::operator[](const int note) const
     if (k) {
         // Apply linear interpolation if falls into the gap.
         isPositiveAndBelow(i + 1, _v.size());
-
         v += k * (_v [i + 1] - v) / NOTES_GAP;
     }
 
     return v;
-}
-
-void N_func::fromJson(const nlohmann::json& v)
-{
-    _b = v["mask"];
-
-    if (auto varr = v["values"]; varr.is_array()) {
-        if (varr.size() >= _v.size()) {
-            for (int i = 0; i < _v.size(); ++i)
-                _v[i] = varr[i];
-        }
-    }
-}
-
-void N_func::read(std::istream& stream)
-{
-    stream.read(reinterpret_cast<char*>(&_b), sizeof(int));
-
-    for (int i = 0; i < _v.size(); ++i)
-        stream.read(reinterpret_cast<char*>(&_v[i]), sizeof(float));
 }

@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "aeolus/rankwave.h"
+#include "aeolus/Rankwave.h"
 #include "aeolus/utilities/Range.h"
 
 #include <nlohmann/json.hpp>

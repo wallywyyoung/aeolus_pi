@@ -19,6 +19,7 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/globals.h"
+#include <cmath>
 
 namespace math {
 

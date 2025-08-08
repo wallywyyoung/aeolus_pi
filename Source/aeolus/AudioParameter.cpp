@@ -19,8 +19,10 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/audioparam.h"
+#include "aeolus/AudioParameter.h"
 #include "aeolus/globals.h"
+
+#include <cmath>
 
 AudioParameter::AudioParameter(const float value, const float min, const float max, const float smooth) : _currentValue{value}, _minValue{min}, _maxValue{max}, _targetValue{value}, _frac{smooth}, _smoothing{false} { }
 

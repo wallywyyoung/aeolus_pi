@@ -2,7 +2,6 @@
 //
 //  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
-//  Copyright (C) 2003-2013 Fons Adriaensen <fons@linuxaudio.org>
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -21,40 +20,26 @@
 
 #pragma once
 
-#include <array>
+#include "aeolus/Voice.h"
 
 /**
- * @brief Interpolated per-note look-up table.
- *
- * This class stores a float parameter across the
- * N_NOTES points. Notes in between get interpolated linearly.
+ * @brief A collection of all the voices.
  */
-
-class N_func final
-{
+class VoicePool final {
 public:
-    /// Number of notes used in parameters look-up table.
-    constexpr static int N_NOTES = 11;
+    constexpr static int DefaultMaxVoices = 512;
 
-    N_func(const float& v);
-    N_func() = default;
+    explicit VoicePool(Organ& engine, int maxVoices = DefaultMaxVoices);
+    VoicePool (const VoicePool&) = delete;
+    VoicePool& operator= (const VoicePool&) = delete;
 
-    void setValue(int idx, float v);    // setv(i, v)
-    void clearValue(int idx);           // clrv(i)
-    float getValue(int idx) const;      // vs(i)
-    bool isSet(int idx) const;          // st(i)
-
-    /// Returns interpolated value for a note number (starting from 0).
-    float operator[](int note) const;   // vi(n)
+    [[nodiscard]] int getNumberOfActiveVoices() const noexcept { return _voiceCount; }
+    [[nodiscard]] Voice* trigger(const Pipewave::State& state);
+    void resetAndReturnToPool(Voice* voice);
 
 private:
-    /// Gap between the N_NOTES notes within the look-up tables.
-    constexpr static int NOTES_GAP = 6;
-
-    int _b{16};
-    std::array<float, N_NOTES> _v{};
-
-    friend class IOManager;
+    Organ& _engine;
+    std::vector<Voice> _voices{}; ///< All the voices.
+    std::vector<Voice> _idleVoices; ///< Voices available to be triggered.
+    std::atomic<int> _voiceCount; ///< Number of taken voices.
 };
-
-

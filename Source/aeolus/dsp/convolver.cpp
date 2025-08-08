@@ -17,7 +17,7 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/audioparam.h"
+#include "aeolus/AudioParameter.h"
 #include "aeolus/dsp/convolve.h"
 #include "aeolus/dsp/convolver.h"
 #include "aeolus/IR.h"

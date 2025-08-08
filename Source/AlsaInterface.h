@@ -20,45 +20,43 @@
 #pragma once
 
 #include <memory>
-#include <thread>
 #include <alsa/asoundlib.h>
-
 #include "MemoryUtilities.h"
 
 class AlsaInterface {
     static constexpr auto CONFIG_FILE = "./Resources/configs/audio.json";
-//    Midi
-    snd_seq_t *sequencer;
-    int portID{};
-    int npfd{};
-    std::unique_ptr<pollfd> pfd;
-    std::string midiClientName;
-    std::unique_ptr<std::thread> midiThread;
 
-    void initMidi();
+    static void createThread(pthread_t& tid, void* func, void* arg);
+
+//    Midi
+    struct MidiThreadObjects {
+        bool runningMidi = false;
+        snd_seq_t *sequencer{};
+        int portID{};
+        int npfd{};
+        std::unique_ptr<pollfd> pfd;
+    };
+    alignas(CACHE_LINE_SIZE) MidiThreadObjects midiThreadObjects{};
+    pthread_t midiTID;
+
+    void initMidi(const std::string &clientName);
     void beginPollMidi();
+    static void* midiHandler(void *stateStruct);
     void endPollMidi();
-    [[nodiscard]] int getMidiClientId();
+    [[nodiscard]] int getMidiClientId(const std::string &clientName);
 
 //    Audio
-    // snd_pcm_t* playback;
-    std::atomic<bool> runningMidi = false;
-    std::string playbackDeviceName;
-    // std::unique_ptr<std::thread> audioThread;
-    pthread_t tid;
-
-    alignas(CACHE_LINE_SIZE) struct ThreadState {
+    struct AudioThreadObjects {
         bool runningAudio = false;
         snd_pcm_t* playback{};
-        // snd_pcm_uframes_t frames{}, offset{};
-        // const snd_pcm_channel_area_t *areas{};
     };
-    ThreadState threadState{};
+    alignas(CACHE_LINE_SIZE) AudioThreadObjects audioThreadObjects{};
+    pthread_t audioTID;
 
-    void initAudio();
+    void initAudio(const std::string &deviceName);
     void beginPlayback();
-    void endPlayback();
     static void* audioHandler(void* stateStruct);
+    void endPlayback();
 
 public:
     AlsaInterface();

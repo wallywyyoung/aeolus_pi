@@ -22,9 +22,8 @@
 #include <atomic>
 #include <vector>
 
-#include "globals.h"
-
-class Engine;
+#include "aeolus/globals.h"
+#include "aeolus/Organ.h"
 
 /**
  * A sequence of organ divisions states (including the stops and tremulant state).
@@ -35,7 +34,7 @@ public:
     constexpr static int SEQUENCER_FORWARD_MIDI_KEY = 23;
 
     Sequencer() = delete;
-    Sequencer(Engine& engine, int numSteps = 32);
+    Sequencer(Organ& engine, int numSteps = 32);
 
     [[nodiscard]] int getStepsCount() const noexcept { return static_cast<int>(_steps.size()); }
     [[nodiscard]] int getCurrentStep() const noexcept { return _currentStep; }
@@ -58,7 +57,7 @@ public:
 
 private:
 
-    Engine& _engine;
+    Organ& _engine;
     std::vector<GlobalPiston> _steps;
     std::atomic<int> _currentStep;
     bool _dirty;

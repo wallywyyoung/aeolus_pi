@@ -1,8 +1,6 @@
 // ----------------------------------------------------------------------------
 //
-//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
-//  Copyright (C) 2003-2013 Fons Adriaensen <fons@linuxaudio.org>
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -19,25 +17,37 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/Addsynth.h"
+#include "aeolus/Semaphore.h"
 
-void Addsynth::reset()
-{
-    _noteMin = NOTE_MIN;
-    _noteMax = NOTE_MAX;
-    _fn = 1;
-    _fd = 1;
+Semaphore::Semaphore(const unsigned initialCount) : _counter{initialCount} { }
 
-    _n_vol.reset(-20.0f);
-    _n_ins.reset(0.0f);
-    _n_off.reset(0.0f);
-    _n_att.reset(0.01f);
-    _n_atd.reset(0.0f);
-    _n_dct.reset(0.01f);
-    _n_dcd.reset(0.0f);
-    _n_ran.reset(0.0f);
-    _h_lev.reset(-100.0f);
-    _h_ran.reset(0.0f);
-    _h_att.reset(0.050f);
-    _h_atp.reset(0.0f);
+void Semaphore::notify() {
+    std::unique_lock lock(_mutex);
+    ++_counter;
+    _cv.notify_one();
+}
+
+void Semaphore::wait() {
+    std::unique_lock lock(_mutex);
+
+    while (_counter == 0)
+        _cv.wait (lock);
+
+    --_counter;
+}
+
+bool Semaphore::tryWait() {
+    std::unique_lock lock(_mutex);
+
+    if (_counter != 0) {
+        --_counter;
+        return true;
+    }
+
+    return false;
+}
+
+unsigned Semaphore::count() const {
+    std::unique_lock lock(_mutex);
+    return _counter;
 }

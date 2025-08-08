@@ -18,11 +18,10 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "DivisionFactory.h"
+#include "aeolus/DivisionFactory.h"
+#include "aeolus/Organ.h"
 
-#include "engine.h"
-
-std::unique_ptr<Division> DivisionFactory::initFromJson(nlohmann::json& v, const Engine& engine, const std::string& name) {
+std::unique_ptr<Division> DivisionFactory::initFromJson(nlohmann::json& v, const Organ& engine, const std::string& name) {
     auto division = std::make_unique<Division>(engine, name);
 
     division->_name = v["name"];

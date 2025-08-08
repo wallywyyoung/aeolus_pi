@@ -20,10 +20,10 @@
 
 #pragma once
 
-#include "aeolus/rankwave.h"
-#include "aeolus/stop.h"
-#include "aeolus/voice.h"
-#include "aeolus/audioparam.h"
+#include "aeolus/Stop.h"
+#include "aeolus/Voice.h"
+#include "aeolus/Organ.h"
+#include "aeolus/AudioParameter.h"
 #include "aeolus/dsp/filter.h"
 #include "StaticAudioBuffer.h"
 
@@ -31,7 +31,6 @@
 #include <vector>
 #include <bitset>
 
-class Engine;
 
 /**
  * @brief Single keyboard division.
@@ -49,7 +48,7 @@ public:
         bool enabled = false;
     };
 
-    explicit Division(const Engine& engine, const std::string& name = std::string());
+    explicit Division(const Organ& engine, const std::string& name = std::string());
 
     [[nodiscard]] std::string getName() const { return _name; }
     [[nodiscard]] std::string getMnemonic() const { return _mnemonic; }
@@ -87,7 +86,7 @@ public:
     void triggerVoicesOfEnabledStops();
 
     /**
-     * Tells the division has been alreayd triggered by a linked division,
+     * Tells the division has been already triggered by a linked division,
      * so that it should not be receiving the same note on/off event.
      */
     bool hasBeenTriggered() const noexcept { return _triggerFlag; }
@@ -149,7 +148,7 @@ private:
     /// This is used to avoid triggering a division multiple times by the same note on/off event,
     /// which is the case for linked divisions.
     bool _triggerFlag;
-    const Engine& _engine;
+    const Organ& _engine;
 
     friend class DivisionFactory;
 };

@@ -23,20 +23,19 @@
 
 #include "aeolus/Addsynth.h"
 #include "aeolus/Pipewave.h"
-#include "aeolus/scale.h"
+#include "aeolus/Scale.h"
 
 #include <vector>
 #include <atomic>
 
 /**
- * @brief Pipes across the keys range.
+ * @brief Pipes across the key range.
  *
  * This class is a collection of pipes based on the same
  * additive synth model.
  */
 
-class Rankwave
-{
+class Rankwave {
 public:
     explicit Rankwave(Addsynth model, const Scale& scale, float tuningFreq);
     Rankwave(const Rankwave&);

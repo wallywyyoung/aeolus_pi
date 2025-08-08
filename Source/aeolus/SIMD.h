@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -17,37 +18,16 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/sema.h"
+#pragma once
 
-Semaphore::Semaphore(const unsigned initialCount) : _counter{initialCount} { }
-
-void Semaphore::notify() {
-    std::unique_lock lock(_mutex);
-    ++_counter;
-    _cv.notify_one();
-}
-
-void Semaphore::wait() {
-    std::unique_lock lock(_mutex);
-
-    while (_counter == 0)
-        _cv.wait (lock);
-
-    --_counter;
-}
-
-bool Semaphore::tryWait() {
-    std::unique_lock lock(_mutex);
-
-    if (_counter != 0) {
-        --_counter;
-        return true;
-    }
-
-    return false;
-}
-
-unsigned Semaphore::count() const {
-    std::unique_lock lock(_mutex);
-    return _counter;
-}
+struct SIMD {
+    static void  (*add)(float*, const float*, unsigned long);
+    static void  (*mul_const_add)(float*, const float*, float, unsigned long);
+    static void  (*add_mul_const)(float*, const float*, float, unsigned long);
+    static void  (*mul_const)(float*, float, unsigned long);
+    static float (*mul_reduce)(const float*, const float*, unsigned long);
+    static float (*mul_reduce_unaligned)(const float*, const float*, unsigned long);
+    static void  (*complex_mul)(float*, const float*, const float*, unsigned long);
+    static void  (*complex_mul_conj)(float*, const float*, const float*, unsigned long);
+    static void  (*fft_step)(float*, const float*, unsigned long);
+};

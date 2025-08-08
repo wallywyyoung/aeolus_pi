@@ -20,9 +20,9 @@
 #pragma once
 
 #include "aeolus/globals.h"
-#include "aeolus/simd.h"
+#include "aeolus/SIMD.h"
 #include "aeolus/memory.h"
-#include "aeolus/worker.h"
+#include "aeolus/Worker.h"
 #include "aeolus/dsp/fft.h"
 
 #include <cassert>
@@ -150,7 +150,7 @@ struct FIR : ConvPart<L>
         float y = 0.0f;
 
         if (ConvPartBase::readIndex + Length < ConvPartBase::inputSize) {
-            y = simd::mul_reduce_unaligned(ConvPartBase::irBuffer, &ConvPartBase::inputBuffer[ConvPartBase::readIndex], Length);
+            y = SIMD::mul_reduce_unaligned(ConvPartBase::irBuffer, &ConvPartBase::inputBuffer[ConvPartBase::readIndex], Length);
         } else {
             for (size_t i = 0; i < Length; ++i)
                 y += ConvPartBase::irBuffer[i] * ConvPartBase::inputBuffer[(ConvPartBase::readIndex + i) % ConvPartBase::inputSize];
@@ -244,7 +244,7 @@ struct FFT : ConvPart<L>
 
         FftImpl::fft_real_padded(complexInputBuffer);
 
-        simd::complex_mul_conj(complexInputBuffer, complexInputBuffer, complexIrBuffer, Length4);
+        SIMD::complex_mul_conj(complexInputBuffer, complexInputBuffer, complexIrBuffer, Length4);
 
         FftImpl::fft(complexInputBuffer);
 
@@ -545,7 +545,7 @@ private:
             if (preconvolved)
                 return; // Already preconvolved or overload?
 
-            simd::complex_mul_conj(convolutionBuffer, inputSpectrumPtr, irSpectrumPtr, Length4);
+            SIMD::complex_mul_conj(convolutionBuffer, inputSpectrumPtr, irSpectrumPtr, Length4);
 
             FftImpl::fft(convolutionBuffer);
 

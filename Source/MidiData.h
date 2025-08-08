@@ -28,32 +28,11 @@ struct MidiData {
 
     EventType eventType : 2;
     unsigned char channel : 7, param : 7, value : 7;
-    MidiData() = default;
 
-    MidiData &operator=(const snd_seq_event_t & event) {
-        switch(event.type) {
-            case SND_SEQ_EVENT_NOTEON:
-                eventType = event.data.note.velocity ? NOTE_ON : NOTE_OFF;
-                channel = event.data.note.channel;
-                param = event.data.note.note;
-                break;
-            case SND_SEQ_EVENT_NOTEOFF:
-                eventType = NOTE_OFF;
-                channel = event.data.note.channel;
-                param = event.data.note.note;
-                break;
-            case SND_SEQ_EVENT_CONTROLLER:
-                eventType = CC;
-                channel = event.data.control.channel;
-                param = event.data.control.param;
-                value = event.data.control.value;
-                break;
-            case SND_SEQ_EVENT_PGMCHANGE:
-                eventType = PC;
-                channel = event.data.control.channel;
-                value = event.data.control.value;
-                break;
-        }
-        return *this;
-    }
+    MidiData() = default;
+    explicit MidiData(const snd_seq_event_t &event);
+
+    MidiData &operator=(const snd_seq_event_t &event);
+
+    bool valid() const;
 };

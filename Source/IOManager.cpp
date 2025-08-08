@@ -86,6 +86,41 @@ std::vector<Addsynth> IOManager::loadPipes() {
     return synths;
 }
 
+void IOManager::HN_func_fromJson(HN_func& hnFunc, nlohmann::json& v) {
+    if (v.size() < hnFunc._h.size()) {
+        return;
+    }
+    for (int i = 0; i < hnFunc._h.size(); ++i) {
+        N_func_fromJson(hnFunc._h[i], v[i]);
+    }
+}
+
+void IOManager::HN_func_fromStream(HN_func& hnFunc, std::istream& stream, const int &nHarm){
+    const auto m = std::min(hnFunc._h.size(), static_cast<size_t>(nHarm));
+    for (int i = 0; i < m; ++i) {
+        N_func_fromStream(hnFunc._h[i], stream);
+    }
+}
+
+
+void IOManager::N_func_fromJson(N_func &nFunc, const nlohmann::json& v) {
+    nFunc._b = v["mask"];
+    if (auto varr = v["values"]; varr.is_array()) {
+        if (varr.size() >= nFunc._v.size()) {
+            for (int i = 0; i < nFunc._v.size(); ++i)
+                nFunc._v[i] = varr[i];
+        }
+    }
+}
+
+void IOManager::N_func_fromStream(N_func &nFunc, std::istream& stream)
+{
+    stream.read(reinterpret_cast<char*>(&nFunc._b), sizeof(int));
+
+    for (int i = 0; i < nFunc._v.size(); ++i) {
+        stream.read(reinterpret_cast<char*>(&nFunc._v[i]), sizeof(float));
+    }
+}
 
 void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, Addsynth &addsynth) {
     std::ifstream stream(entry.path(), std::ios::in);
@@ -100,8 +135,9 @@ void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, 
     addsynth._noteMin = v["note_min"];
     addsynth._noteMax = v["note_max"];
 
-    if (addsynth._noteMax == deprecated::NOTE_MAX)
+    if (addsynth._noteMax == deprecated::NOTE_MAX) {
         addsynth._noteMax = Addsynth::NOTE_MAX;
+    }
 
     addsynth._fn = v["fn"];
     addsynth._fd = v["fd"];
@@ -111,27 +147,23 @@ void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, 
     addsynth._mnemonic = v["mnemonic"];
     addsynth._comments = v["comments"];
 
-    addsynth._n_vol.fromJson(v["n_vol"]);
-    addsynth._n_off.fromJson(v["n_off"]);
-    addsynth._n_ran.fromJson(v["n_ran"]);
+    N_func_fromJson(addsynth._n_vol, v["n_vol"]);
+    N_func_fromJson(addsynth._n_vol, v["n_vol"]);
+    N_func_fromJson(addsynth._n_off, v["n_off"]);
+    N_func_fromJson(addsynth._n_ran, v["n_ran"]);
 
     if (version >= Addsynth::defaultVersion) {
-        addsynth._n_ins.fromJson(v["n_ins"]);
-        addsynth._n_att.fromJson(v["n_att"]);
-        addsynth._n_atd.fromJson(v["n_atd"]);
-        addsynth._n_dct.fromJson(v["n_dct"]);
-        addsynth._n_dcd.fromJson(v["n_dcd"]);
+        N_func_fromJson(addsynth._n_ins, v["n_ins"]);
+        N_func_fromJson(addsynth._n_att, v["n_att"]);
+        N_func_fromJson(addsynth._n_atd, v["n_atd"]);
+        N_func_fromJson(addsynth._n_dct, v["n_dct"]);
+        N_func_fromJson(addsynth._n_dcd, v["n_dcd"]);
     }
 
-    addsynth._h_lev.reset(-100.0f);
-    addsynth._h_ran.reset(0.0f);
-    addsynth._h_att.reset(0.050f);
-    addsynth._h_atp.reset(0.0f);
-
-    addsynth._h_lev.fromJson(v["h_lev"]);
-    addsynth._h_ran.fromJson(v["h_ran"]);
-    addsynth._h_att.fromJson(v["h_att"]);
-    addsynth._h_atp.fromJson(v["h_atp"]);
+    HN_func_fromJson(addsynth._h_lev, v["h_lev"]);
+    HN_func_fromJson(addsynth._h_ran, v["h_ran"]);
+    HN_func_fromJson(addsynth._h_att, v["h_att"]);
+    HN_func_fromJson(addsynth._h_atp, v["h_atp"]);
 }
 
 void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry, Addsynth &addsynth)
@@ -148,8 +180,9 @@ void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry
     const int version = header[7];
     int nHarm = header[26];
 
-    if (nHarm == 0)
+    if (nHarm == 0) {
         nHarm = deprecated::N_HARM;
+    }
 
     addsynth._noteMin = header[28];
     addsynth._noteMax = header[29];
@@ -182,25 +215,20 @@ void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry
 
     stream.seekg(Addsynth::data_offset, std::ios::beg);
 
-    addsynth._n_vol.read(stream);
-    addsynth._n_off.read(stream);
-    addsynth._n_ran.read(stream);
+    N_func_fromStream(addsynth._n_vol, stream);
+    N_func_fromStream(addsynth._n_off, stream);
+    N_func_fromStream(addsynth._n_ran, stream);
 
     if (version >= Addsynth::defaultVersion) {
-        addsynth._n_ins.read(stream);
-        addsynth._n_att.read(stream);
-        addsynth._n_atd.read(stream);
-        addsynth._n_dct.read(stream);
-        addsynth._n_dcd.read(stream);
+        N_func_fromStream(addsynth._n_ins, stream);
+        N_func_fromStream(addsynth._n_att, stream);
+        N_func_fromStream(addsynth._n_atd, stream);
+        N_func_fromStream(addsynth._n_dct, stream);
+        N_func_fromStream(addsynth._n_dcd, stream);
     }
 
-    addsynth._h_lev.reset(-100.0f);
-    addsynth._h_ran.reset(0.0f);
-    addsynth._h_att.reset(0.050f);
-    addsynth._h_atp.reset(0.0f);
-
-    addsynth._h_lev.read(stream, nHarm);
-    addsynth._h_ran.read(stream, nHarm);
-    addsynth._h_att.read(stream, nHarm);
-    addsynth._h_atp.read(stream, nHarm);
+    HN_func_fromStream(addsynth._h_lev, stream, nHarm);
+    HN_func_fromStream(addsynth._h_ran, stream, nHarm);
+    HN_func_fromStream(addsynth._h_att, stream, nHarm);
+    HN_func_fromStream(addsynth._h_atp, stream, nHarm);
 }

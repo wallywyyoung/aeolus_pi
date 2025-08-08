@@ -2,7 +2,6 @@
 //
 //  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
-//  Copyright (C) 2003-2013 Fons Adriaensen <fons@linuxaudio.org>
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -22,39 +21,47 @@
 #pragma once
 
 #include <array>
+#include <map>
+#include <string>
 
-/**
- * @brief Interpolated per-note look-up table.
- *
- * This class stores a float parameter across the
- * N_NOTES points. Notes in between get interpolated linearly.
- */
-
-class N_func final
-{
+class Scale {
 public:
-    /// Number of notes used in parameters look-up table.
-    constexpr static int N_NOTES = 11;
+    enum Type {
+        First = 0,
+        Pythagorean = 0,
+        MeanQuart,
+        Werckm3,
+        Kirnberg3,
+        WellTemp,
+        EqualTemp,
+        Ahrend,
+        Vallotti,
+        Kellner,
+        Lehman,
+        Pure,
 
-    N_func(const float& v);
-    N_func() = default;
+        Total
+    };
 
-    void setValue(int idx, float v);    // setv(i, v)
-    void clearValue(int idx);           // clrv(i)
-    float getValue(int idx) const;      // vs(i)
-    bool isSet(int idx) const;          // st(i)
+    using Table = std::array<float, 12>;
+    using Map = std::map<Type, Table>;
 
-    /// Returns interpolated value for a note number (starting from 0).
-    float operator[](int note) const;   // vi(n)
+    explicit Scale(Type type = EqualTemp);
+    Type getType() const noexcept { return _type; }
+    void setType(const Type t) noexcept { _type = t; }
+
+    const Table& getTable() const;
+
+    /**
+     * Calculate a MIDI note frequency (Hz) given the tuning A frequency.
+     */
+    float getFrequencyForMidiNote(int midiNote, float tuningFrequency = 440.0f) const;
+
+    static std::string getNameForType(Type type);
 
 private:
-    /// Gap between the N_NOTES notes within the look-up tables.
-    constexpr static int NOTES_GAP = 6;
-
-    int _b{16};
-    std::array<float, N_NOTES> _v{};
-
-    friend class IOManager;
+    Type _type;
+    const static Map _scales;
 };
 
 

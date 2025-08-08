@@ -20,7 +20,7 @@
 #pragma once
 
 #include "aeolus/globals.h"
-#include "aeolus/simd.h"
+#include "aeolus/SIMD.h"
 
 #include <cmath>
 #include <array>
@@ -96,7 +96,7 @@ struct DanielsonLanczos
         Next::apply(data);
         Next::apply(data + N);
 
-        simd::fft_step(data, w.data(), N);
+        SIMD::fft_step(data, w.data(), N);
     }
 
     inline static void apply_real(T* data)

@@ -23,19 +23,14 @@
 
 #include "aeolus/HN_func.h"
 
-#include <nlohmann/json.hpp>
+#include <string>
 
 class Addsynth final
 {
 public:
-    explicit Addsynth() {
-        reset();
-    }
-
-    void reset();
+    explicit Addsynth() = default;
 
     void setStopName(const std::string& n) { _stopName = n; }
-
     [[nodiscard]] const std::string& getStopName() const { return _stopName; }
     [[nodiscard]] const std::string& getFileName() const { return _fileName; }
     [[nodiscard]] const std::string& getCopyright() const { return _copyright; }
@@ -43,38 +38,25 @@ public:
     [[nodiscard]] const std::string& getComments() const { return _comments; }
     [[nodiscard]] int getNoteMin() const noexcept { return _noteMin; }
     [[nodiscard]] int getNoteMax() const noexcept { return _noteMax; }
-
-    void fromJson(const nlohmann::json& v);
-
-    void fromStream(std::istream& stream);
-
-    [[nodiscard]] float getNoteVolume(const int n) const noexcept { return _n_vol[n]; }
-    [[nodiscard]] float getNoteAttack(const int n) const noexcept { return _n_att[n]; }
-    [[nodiscard]] float getNoteOffset(const int n) const noexcept { return _n_off[n]; }
-    [[nodiscard]] float getNoteRandomisation(const int n) const noexcept { return _n_ran[n]; }
-    [[nodiscard]] float getNoteInstability(const int n) const noexcept { return _n_ins[n]; }
-    [[nodiscard]] float getNoteAttackDetune(const int n) const noexcept { return _n_atd[n]; }
-    [[nodiscard]] float getNoteRelease(const int n) const noexcept { return _n_dct[n]; }
-    [[nodiscard]] float getNoteReleaseDetune(const int n) const noexcept { return _n_dcd[n]; }
-    [[nodiscard]] float getHarmonicLevel(const int h, const int n) const noexcept { return _h_lev[h][n]; }
-    [[nodiscard]] float getHarmonicAttack(const int h, const int n) const noexcept { return _h_att[h][n]; }
-    [[nodiscard]] float getHarmonicRandomisation(const int h, const int n) const noexcept { return _h_ran[h][n]; }
-    [[nodiscard]] float getHarmonicAttackProfile(const int h, const int n) const noexcept { return _h_atp[h][n]; }
-
-    /// Frequency ration nominator.
-    [[nodiscard]] int getFn() const noexcept { return _fn; }
-
-    ///  Frequency ratio denominator.
-    [[nodiscard]] int getFd() const noexcept { return _fd; }
+    [[nodiscard]] float getNoteVolume(const int& n) const noexcept { return _n_vol[n]; }
+    [[nodiscard]] float getNoteAttack(const int& n) const noexcept { return _n_att[n]; }
+    [[nodiscard]] float getNoteOffset(const int& n) const noexcept { return _n_off[n]; }
+    [[nodiscard]] float getNoteRandomisation(const int& n) const noexcept { return _n_ran[n]; }
+    [[nodiscard]] float getNoteInstability(const int& n) const noexcept { return _n_ins[n]; }
+    [[nodiscard]] float getNoteAttackDetune(const int& n) const noexcept { return _n_atd[n]; }
+    [[nodiscard]] float getNoteRelease(const int& n) const noexcept { return _n_dct[n]; }
+    [[nodiscard]] float getNoteReleaseDetune(const int& n) const noexcept { return _n_dcd[n]; }
+    [[nodiscard]] float getHarmonicLevel(const int& h, const int& n) const noexcept { return _h_lev[h][n]; }
+    [[nodiscard]] float getHarmonicAttack(const int& h, const int& n) const noexcept { return _h_att[h][n]; }
+    [[nodiscard]] float getHarmonicRandomisation(const int& h, const int& n) const noexcept { return _h_ran[h][n]; }
+    [[nodiscard]] float getHarmonicAttackProfile(const int& h, const int& n) const noexcept { return _h_atp[h][n]; }
+    [[nodiscard]] int getFn() const noexcept { return _fn; } // Frequency ration nominator.
+    [[nodiscard]] int getFd() const noexcept { return _fd; } //  Frequency ratio denominator.
 
 private:
-    /// Lowest possible note.
-    constexpr static int NOTE_MIN = 36;
-    /// Highest possible note.
-    constexpr static int NOTE_MAX = 96;
-
+    constexpr static int NOTE_MIN = 36; // Lowest possible note.
+    constexpr static int NOTE_MAX = 96; // Highest possible note.
     constexpr static int defaultVersion = 2;
-
     constexpr static size_t header_length    = 32;
     constexpr static size_t stopName_length  = 32;
     constexpr static size_t copyright_length = 56;
@@ -89,24 +71,25 @@ private:
     std::string _mnemonic{};
     std::string _comments{};
 
-    int _noteMin{};   // _n0;
-    int _noteMax{};   // _n1;
-    int _fn{};
-    int _fd{};
+    int _noteMin{NOTE_MIN};   // _n0;
+    int _noteMax{NOTE_MAX};   // _n1;
+    int _fn{1};
+    int _fd{1};
 
-    N_func  _n_vol;
-    N_func  _n_off;
-    N_func  _n_ran;
-    N_func  _n_ins;
-    N_func  _n_att; ///< Attack time.
-    N_func  _n_atd; ///< Attack detune.
-    N_func  _n_dct; ///< Releate time.
-    N_func  _n_dcd; ///< Release detune.
+    N_func  _n_vol{-20.0f};
+    N_func  _n_off{0.0f};
+    N_func  _n_ran{0.0f};
+    N_func  _n_ins{0.0f};
 
-    HN_func _h_lev; ///< Harmonic level
-    HN_func _h_ran; ///< Harmonic level randomization.
-    HN_func _h_att; ///< Harmonic attack time
-    HN_func _h_atp; ///< Harmonic attack profile.
+    N_func  _n_att{0.01f}; // Attack time.
+    N_func  _n_atd{0.0f}; // Attack detune.
+    N_func  _n_dct{0.01f}; // Release time.
+    N_func  _n_dcd{0.0f}; // Release detune.
+
+    HN_func _h_lev{-100.0f}; // Harmonic level
+    HN_func _h_ran{0.0f}; // Harmonic level randomization.
+    HN_func _h_att{0.05f}; // Harmonic attack time
+    HN_func _h_atp{0.0f}; // Harmonic attack profile.
 
     friend class IOManager;
 };
