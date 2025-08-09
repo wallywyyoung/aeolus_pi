@@ -19,17 +19,20 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <alsa/asoundlib.h>
+
 #include "MemoryUtilities.h"
 
+class MidiData;
+
 class AlsaInterface {
+    //    General
     static constexpr auto CONFIG_FILE = "./Resources/configs/audio.json";
-
-    static void createThread(pthread_t& tid, void* func, void* arg);
-
-//    Midi
+    //    Midi
     struct MidiThreadObjects {
+        std::function<void(const MidiData&)> submitMidiEvent;
         bool runningMidi = false;
         snd_seq_t *sequencer{};
         int portID{};
@@ -38,14 +41,7 @@ class AlsaInterface {
     };
     alignas(CACHE_LINE_SIZE) MidiThreadObjects midiThreadObjects{};
     pthread_t midiTID;
-
-    void initMidi(const std::string &clientName);
-    void beginPollMidi();
-    static void* midiHandler(void *stateStruct);
-    void endPollMidi();
-    [[nodiscard]] int getMidiClientId(const std::string &clientName);
-
-//    Audio
+    //    Audio
     struct AudioThreadObjects {
         bool runningAudio = false;
         snd_pcm_t* playback{};
@@ -53,12 +49,23 @@ class AlsaInterface {
     alignas(CACHE_LINE_SIZE) AudioThreadObjects audioThreadObjects{};
     pthread_t audioTID;
 
+    //    General
+    void init();
+    static void createThread(pthread_t& tid, void* func, void* arg);
+    //    Midi
+    void initMidi(const std::string &clientName);
+    void beginPollMidi();
+    static void* midiHandler(void *stateStruct);
+    void endPollMidi();
+    [[nodiscard]] int getMidiClientId(const std::string &clientName);
+
     void initAudio(const std::string &deviceName);
     void beginPlayback();
-    static void* audioHandler(void* stateStruct);
+    static void* audioHandler(AudioThreadObjects * stateStruct);
     void endPlayback();
 
 public:
+    AlsaInterface(std::function<void(const MidiData&)> submitMidiEvent);
     AlsaInterface();
     ~AlsaInterface();
 };

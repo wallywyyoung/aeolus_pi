@@ -24,27 +24,15 @@
 
 #include <thread_pool/thread_pool.h>
 
-EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _tuningFrequency(TUNING_FREQUENCY_DEFAULT) { }
-
-void EngineGlobal::init() {
+EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _tuningFrequency(TUNING_FREQUENCY_DEFAULT) {
     irs = IOManager::loadIRs();
     loadRankwaves();
     updateStops();
-    engine = new Organ();
-    engine->prepareToPlay();
+    engine = new Organ(std::bind(&EngineGlobal::getStopByName, this, std::placeholders::_1));
+    organInterface = static_cast<OrganInterface *>(engine);
+    _reverbTailCounter = _convolver.setIR(irs.irs[0]);
+    _volume.setValue(0.005f, true);
     engine->setGlobalAllStopsOn();
-    engine->setVolume(0.005f, true);
-}
-
-std::vector<std::string> EngineGlobal::getAllStopNames() const
-{
-    auto names = std::vector<std::string>();
-
-    for (const auto &key: _rankwavesByName | std::views::keys) {
-        names.push_back(key);
-    }
-
-    return names;
 }
 
 void EngineGlobal::updateStops() const {
@@ -70,14 +58,6 @@ void EngineGlobal::rebuildRankwaves() {
     //       However, switching tuning very fast (while keeping the voice sustained)
     //       may result in voice to be killed.
     updateStops();
-}
-
-void EngineGlobal::pushMidi(const MidiData &midi) {
-    engine->push(midi);
-}
-
-void EngineGlobal::pushMidi(const std::vector<MidiData> &midi) {
-    engine->push(midi);
 }
 
 void EngineGlobal::loadRankwaves() {

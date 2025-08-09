@@ -24,56 +24,42 @@
 #include "aeolus/globals.h"
 #include "aeolus/Division.h"
 #include "aeolus/Sequencer.h"
-#include "aeolus/AudioParameter.h"
 #include "aeolus/dsp/convolver.h"
 #include "aeolus/MidiManager.h"
+#include "aeolus/VoicePool.h"
 
 #include <vector>
 
-#include "aeolus/VoicePool.h"
 
 /**
  * @brief Organ engine.
  * This class defines the top-level organ engine that performs MIDI events processing
  * and audio generation.
  */
-class Organ final : public MidiManager {
-    constexpr static float VOLUME_GAIN = 0.005f; /// Global volume gain.
+class Organ final : public MidiManager::OrganInterface {
     constexpr static float TREMULANT_FREQUENCY = 6.283184f; /// Tremulant modulation frequency.
     constexpr static float TREMULANT_PHASE_INCREMENT = std::numbers::pi_v<float> * 2.0f * TREMULANT_FREQUENCY * SAMPLE_RATE_R;
     constexpr static float TREMULANT_LEVEL = 1.0f; /// Tremulant OSC wavetable amplitude.
 
-    void populateDivisions();
     void clearDivisionsTriggerFlag() const;
-    bool processSubFrame();
-    void generateTremulant(); // Generate tremulant osc waveform for a subframe.
-    void applyVolume(AudioBuffer& out); /// Apply the global volume.
-    void applyVolume(float* inOut, size_t framesPerChannel);
 
-    std::shared_ptr<VoicePool> _voicePool;
+    void generateTremulant(); // Generate tremulant osc waveform for a subframe.
+
+    std::shared_ptr<VoicePool> _voicePool{};
     std::vector<std::unique_ptr<Division>> _divisions{};
     std::vector<GlobalPiston> pistons{};
     std::unique_ptr<Sequencer> _sequencer{};
 
-    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _subFrameBuffer;
+    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _summingFrameBuffer;
     StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _divisionFrameBuffer;
     StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _voiceFrameBuffer;
     StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1> _tremulantBuffer;
 
-    AudioParameter _volume;
     float _tremulantPhase{0.0f};
-    dsp::Convolver _convolver;
-    std::atomic<int> _selectedIR{0};
-    int _reverbTailCounter{0};
 
 public:
-    explicit Organ();
+    explicit Organ(std::function<Rankwave*(const std::string&)> getStopByName);
     ~Organ() = default;
-
-    void prepareToPlay(); // Called before starting requesting the audio blocks.
-    void setReverbIR(int num); // Set the reverb IR by its number.
-    void setReverbWet(float v); // Set reverb wet output level (linear). Audio thread only.
-    void setVolume(float v, bool immediate = false); // Set output volume (linear). Audio thread only.
 
     // Notes
     void setDivisionNoteOn(const int& division, const int& note) override;
@@ -104,12 +90,9 @@ public:
     void recallGlobalPiston(const GlobalPiston& piston);
 
     [[nodiscard]] GlobalPiston captureStateAsPiston() const;
-    [[nodiscard]] std::shared_ptr<VoicePool> getVoicePool() const noexcept { return _voicePool; }
-    [[nodiscard]] Division *getDivisionByName(const std::string &name) const;
 
     template<auto OUT_BUFFER_SIZE> // Generate audio. Audio thread only.
-    void processNoninterpolatedRealtimeStereo(float (&out)[OUT_BUFFER_SIZE]) {
-        ProcessMidiBuffer();
+    bool processNoninterpolatedRealtimeStereo(float (&out)[OUT_BUFFER_SIZE]) {
         bool wasAudioGenerated = false;
         memset(out, 0.0f, sizeof(float) * OUT_BUFFER_SIZE);
 
@@ -132,12 +115,6 @@ public:
                 }
             }
         }
-        // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
-        constexpr auto OUT_PER_CHANNEL_SIZE = OUT_BUFFER_SIZE / OUTPUT_CHANNELS;
-        _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - OUT_PER_CHANNEL_SIZE);
-        if (_reverbTailCounter > 0 && _convolver.isAudible()) {
-            _convolver.process(out, OUT_PER_CHANNEL_SIZE);
-        }
-        applyVolume(out, OUT_PER_CHANNEL_SIZE);
+        return wasAudioGenerated;
     }
 };

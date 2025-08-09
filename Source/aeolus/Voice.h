@@ -25,19 +25,29 @@
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/spatial.h"
 
-class Organ;
+#include <functional>
+
 /**
  * @brief Single voice associated with a single pipe.
  */
 class Voice {
+    std::function<void(Voice*)> _resetAndReturn;
+    Pipewave::State _state; ///< Pipe state associated with this voice.
+    int _stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
+    float _buffer[AUDIO_SUB_FRAME_LENGTH]{};
+    dsp::DelayLineStatic<SAMPLE_RATE> _delayLine; /// Delay after chiff.
+    int _delay{};
+    dsp::Chiff _chiff; /// Attack chiff.
+    dsp::SpatialSource _spatialSource{}; /// Stereo spatial modeller.
+    size_t _postReleaseCounter{0}; /// Counter to account for the delayed sound before recycling the voice.
 public:
     Voice() = delete;
-    explicit Voice(Organ& engine);
+
+    explicit Voice(const std::function<void(Voice *)> &resetAndReturn) : _resetAndReturn {resetAndReturn} { }
 
     Voice& operator=(const Voice& other) {
         if (this != &other) {
-            // TODO: Fix assignment.
-            // _engine = EngineGlobal::getInstance()->getEngine();
+            _resetAndReturn = other._resetAndReturn;
             _state = other._state;
             _stopIndex = other._stopIndex;
             for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
@@ -63,15 +73,4 @@ public:
     [[nodiscard]] bool isForNote(int note) const noexcept;
     [[nodiscard]] int getNote() const;
     [[nodiscard]] int stopIndex() const noexcept { return _stopIndex; }
-
-private:
-    Organ& _engine;
-    Pipewave::State _state; ///< Pipe state associated with this voice.
-    int _stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
-    float _buffer[AUDIO_SUB_FRAME_LENGTH]{};
-    dsp::DelayLineStatic<SAMPLE_RATE> _delayLine; /// Delay after chiff.
-    int _delay{};
-    dsp::Chiff _chiff; /// Attack chiff.
-    dsp::SpatialSource _spatialSource{}; /// Stereo spatial modeller.
-    size_t _postReleaseCounter{0}; /// Counter to account for the delayed sound before recycling the voice.
 };

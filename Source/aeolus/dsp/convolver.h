@@ -43,32 +43,26 @@ public:
     };
 
     // Default parameters set on creation
-    constexpr static float DefaultDry  = 0.0f;
-    constexpr static float DefaultWet  = 1.0f;
+    constexpr static float DefaultDry  = 1.0f;
+    constexpr static float DefaultWet  = 0.25f;
     constexpr static float DefaultGain = 1.0f;
 
     /// Single convolution block size (in number of samples).
     constexpr static size_t BlockSize = 4096;
 
     Convolver();
+
     ~Convolver();
 
-    void setIR(const IR& ir);
+    int setIR(const IR &ir);
 
     void setDryWet(float dry, float wet, bool force = false);
-    bool isAudible() const;
 
-    void prepareToPlay();
+    bool isAudible() const;
 
     void process(float *inOut, size_t framesPerChannel, bool nonRealtime = false) const;
 
-    void setNonRealtime(bool nonRealtime) const;
-
     int length() const noexcept;
-    void setLength(int len) const noexcept;
-
-    bool zeroDelay() const noexcept;
-    void setZeroDelay(bool v) const noexcept;
 
 protected:
 

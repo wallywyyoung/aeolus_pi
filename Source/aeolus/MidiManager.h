@@ -25,34 +25,37 @@
 
 class MidiManager : public ObjectBuffer<MidiData> {
 public:
-    MidiManager() : ObjectBuffer() { }
+    class OrganInterface {
+    public:
+        // Notes
+        virtual void setDivisionNoteOn(const int& division, const int& note) = 0;
+        virtual void setDivisionNoteOff(const int& division, const int& note) = 0;
+        virtual void setDivisionAllNotesOff(const int& division) = 0;
+        virtual void setGlobalAllNotesOff() = 0;
+        // Swell
+        virtual void handleDivisionSwell(const int& division, const float& value) = 0;
+        // Stops
+        virtual void setDivisionStopOn(const int& division, const int& stop) = 0;
+        virtual void setDivisionStopOff(const int& division, const int& stop) = 0;
+        virtual void setDivisionStopToggle(const int& division, const int& stop) = 0;
+        virtual void setDivisionAllStopsOff(const int& division) = 0;
+        virtual void setDivisionAllStopsOn(const int& division) = 0;
+        virtual void setGlobalAllStopsOff() = 0;
+        virtual void setGlobalAllStopsOn() = 0;
+        // Couplers
+        virtual void setDivisionCouplerOn(const int& division, const int& coupler) = 0;
+        virtual void setDivisionCouplerOff(const int& division, const int& coupler) = 0;
+        // Tremulant
+        virtual void setDivisionTremulantOn(const int& division) = 0;
+        virtual void setDivisionTremulantOff(const int& division) = 0;
+        // Pistons
+        virtual void setDivisionPiston(const int& division, const int& piston) = 0;
+        virtual void recallDivisionPiston(const int& division, const int& piston) = 0;
+        virtual void setGlobalPiston(const int& piston) = 0;
+        virtual void recallGlobalPiston(const int& piston) = 0;
+    };
 
-    // Notes
-    virtual void setDivisionNoteOn(const int& division, const int& note) = 0;
-    virtual void setDivisionNoteOff(const int& division, const int& note) = 0;
-    virtual void setDivisionAllNotesOff(const int& division) = 0;
-    virtual void setGlobalAllNotesOff() = 0;
-    // Swell
-    virtual void handleDivisionSwell(const int& division, const float& value) = 0;
-    // Stops
-    virtual void setDivisionStopOn(const int& division, const int& stop) = 0;
-    virtual void setDivisionStopOff(const int& division, const int& stop) = 0;
-    virtual void setDivisionStopToggle(const int& division, const int& stop) = 0;
-    virtual void setDivisionAllStopsOff(const int& division) = 0;
-    virtual void setDivisionAllStopsOn(const int& division) = 0;
-    virtual void setGlobalAllStopsOff() = 0;
-    virtual void setGlobalAllStopsOn() = 0;
-    // Couplers
-    virtual void setDivisionCouplerOn(const int& division, const int& coupler) = 0;
-    virtual void setDivisionCouplerOff(const int& division, const int& coupler) = 0;
-    // Tremulant
-    virtual void setDivisionTremulantOn(const int& division) = 0;
-    virtual void setDivisionTremulantOff(const int& division) = 0;
-    // Pistons
-    virtual void setDivisionPiston(const int& division, const int& piston) = 0;
-    virtual void recallDivisionPiston(const int& division, const int& piston) = 0;
-    virtual void setGlobalPiston(const int& piston) = 0;
-    virtual void recallGlobalPiston(const int& piston) = 0;
+    MidiManager() : ObjectBuffer() { }
 
     void ProcessMidiBuffer() {
         std::vector<MidiData> midiBuffer{};
@@ -61,6 +64,9 @@ public:
             ProcessMidiEvent(event);
         }
     }
+
+protected:
+    OrganInterface* organInterface = nullptr;
 
 private:
     void handlePC(const MidiData& event) {
@@ -83,43 +89,43 @@ private:
         };
         switch (static_cast<PistonControl>(event.param)) {
             case RecallDivisionPiston:
-                recallDivisionPiston(event.channel, event.value);
+                organInterface->recallDivisionPiston(event.channel, event.value);
                 break;
             case SetDivisionPiston:
-                setDivisionPiston(event.channel, event.value);
+                organInterface->setDivisionPiston(event.channel, event.value);
                 break;
             case RecallGlobalPiston:
-                recallGlobalPiston(event.value);
+                organInterface->recallGlobalPiston(event.value);
                 break;
             case SetGlobalPiston:
-                setGlobalPiston(event.value);
+                organInterface->setGlobalPiston(event.value);
                 break;
             case StopOff:
-                setDivisionStopOff(event.channel, event.value);
+                organInterface->setDivisionStopOff(event.channel, event.value);
                 break;
             case StopOn:
-                setDivisionStopOn(event.channel, event.value);
+                organInterface->setDivisionStopOn(event.channel, event.value);
                 break;
             case StopToggle:
-                setDivisionStopToggle(event.channel, event.value);
+                organInterface->setDivisionStopToggle(event.channel, event.value);
                 break;
             case AllDivisionStopsOff:
-                setDivisionAllStopsOff(event.channel);
+                organInterface->setDivisionAllStopsOff(event.channel);
                 break;
             case AllDivisionStopsOn:
-                setDivisionAllStopsOn(event.channel);
+                organInterface->setDivisionAllStopsOn(event.channel);
                 break;
             case DivisionCouplerOn:
-                setDivisionCouplerOn(event.channel, event.value);
+                organInterface->setDivisionCouplerOn(event.channel, event.value);
                 break;
             case DivisionCouplerOff:
-                setDivisionCouplerOff(event.channel, event.value);
+                organInterface->setDivisionCouplerOff(event.channel, event.value);
                 break;
             case DivisionTremulantOn:
-                setDivisionTremulantOn(event.channel);
+                organInterface->setDivisionTremulantOn(event.channel);
                 break;
             case DivisionTremulantOff:
-                setDivisionTremulantOff(event.channel);
+                organInterface->setDivisionTremulantOff(event.channel);
                 break;
         }
     }
@@ -133,12 +139,12 @@ private:
         };
         switch (static_cast<DivisionControl>(event.param)) {
             case Swell:
-                handleDivisionSwell(event.channel, event.value * DYNAMIC_RANGE_R);
+                organInterface->handleDivisionSwell(event.channel, event.value * DYNAMIC_RANGE_R);
                 break;
             case AllDivisionNotesOff:
-                setDivisionAllNotesOff(event.channel);
+                organInterface->setDivisionAllNotesOff(event.channel);
             case AllGlobalNotesOff:
-                setGlobalAllNotesOff();
+                organInterface->setGlobalAllNotesOff();
                 break;
         }
     }
@@ -146,10 +152,10 @@ private:
     void ProcessMidiEvent(const MidiData& event) {
         switch (event.eventType) {
             case MidiData::NOTE_ON:
-                setDivisionNoteOn(event.channel, event.param);
+                organInterface->setDivisionNoteOn(event.channel, event.param);
                 break;
             case MidiData::NOTE_OFF:
-                setDivisionNoteOff(event.channel, event.param);
+                organInterface->setDivisionNoteOff(event.channel, event.param);
                 break;
             case MidiData::CC:
                 handleCC(event);

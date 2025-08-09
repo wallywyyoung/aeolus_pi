@@ -16,27 +16,23 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
-#include "aeolus/VoicePool.h"
+#pragma once
 
+#include <vector>
+#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 
-VoicePool::VoicePool(const int maxVoices): _voices(maxVoices, Voice(std::bind(&VoicePool::resetAndReturnToPool, this, std::placeholders::_1))), _voiceCount{0}, _idleVoices(_voices) { }
-Voice* VoicePool::trigger(const Pipewave::State& state) {
-    if (_idleVoices.size() > 0) {
-        auto voice = _idleVoices.begin();
-        voice->trigger(state);
-        _idleVoices.erase(voice);
-        ++_voiceCount;
-        return voice.base();
-    }
-    // No more voices.
-    return nullptr;
-}
+#include "DivisionFactory.h"
+#include "aeolus/Stop.h"
 
-void VoicePool::resetAndReturnToPool(Voice* voice) {
-    assert(voice != nullptr);
-    voice->reset();
-    _idleVoices.emplace_back(*voice);
-    --_voiceCount;
-}
+class StopFactory {
+    static std::vector<Rankwave *> getRankwavesFromPipeVar(const nlohmann::json &json, std::function<Rankwave *(const std::string &)> stopByName);
+    static Stop::Type getTypeFromString(const std::string& n);
+    static void addZone(Stop &stop, const std::vector<Rankwave *> &rw);
+    static void initFromJson(const nlohmann::json& json, Stop& stop, std::function<Rankwave *(const std::string &)> getStopByName);
+
+public:
+    static void initFromJson(const nlohmann::json& json, std::vector<Stop>& stops, std::function<Rankwave *(const std::string &)> getStopByName);
+};

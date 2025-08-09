@@ -249,24 +249,20 @@ Convolver::Convolver()
 
 Convolver::~Convolver() = default;
 
-void Convolver::setIR(const IR& ir)
-{
+int Convolver::setIR(const IR &ir) {
+    d->length = static_cast<int>((ir.getNumSamples() / BlockSize + 1) * BlockSize);
     d->setIR(ir);
+    d->prepareToPlay();
+    d->zeroDelay = ir.zeroDelay;
+    return length();
 }
 
-void Convolver::setDryWet(const float dry, const float wet, const bool force)
-{
+void Convolver::setDryWet(const float dry, const float wet, const bool force) {
     d->setDryWet(dry, wet, force);
 }
 
-bool Convolver::isAudible() const
-{
+bool Convolver::isAudible() const {
     return d->isAudible();
-}
-
-void Convolver::prepareToPlay()
-{
-    d->prepareToPlay();
 }
 
 void Convolver::process(float *inOut, const size_t framesPerChannel, const bool nonRealtime) const {
@@ -274,30 +270,10 @@ void Convolver::process(float *inOut, const size_t framesPerChannel, const bool 
     d->process(inOut, framesPerChannel);
 }
 
-void Convolver::setNonRealtime(const bool nonRealtime) const {
-    d->updateRealtime(nonRealtime);
-}
-
 int Convolver::length() const noexcept
 {
     return static_cast<int>(d->length);
 }
-
-void Convolver::setLength(const int len) const noexcept
-{
-    d->length = len;
-}
-
-bool Convolver::zeroDelay() const noexcept
-{
-    return d->zeroDelay;
-}
-
-void Convolver::setZeroDelay(const bool v) const noexcept
-{
-    d->zeroDelay = v;
-}
-
 } // namespace dsp
 
 

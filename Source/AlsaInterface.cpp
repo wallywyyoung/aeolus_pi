@@ -24,9 +24,25 @@
 
 #include <alsa/asoundlib.h>
 #include <pthread.h>
-#include <sched.h>
+#include <linux/sched.h>
+#include <linux/sched/types.h>
+#include <syscall.h>
+
 #include <nlohmann/json.hpp>
 #include <fstream>
+
+AlsaInterface::AlsaInterface(std::function<void(const MidiData&)> submitMidiEvent) : midiThreadObjects{ submitMidiEvent } {
+    std::ifstream stream(CONFIG_FILE);
+    auto config = nlohmann::json::parse(stream);
+    auto midiClientName = static_cast<std::string>(config["midiClientName"]);
+    auto playbackDeviceName = static_cast<std::string>(config["playbackDeviceName"]);
+
+    // initMidi(midiClientName);
+    initAudio(playbackDeviceName);
+
+    // beginPollMidi();
+    beginPlayback();
+}
 
 AlsaInterface::AlsaInterface() {
     std::ifstream stream(CONFIG_FILE);
@@ -34,10 +50,10 @@ AlsaInterface::AlsaInterface() {
     auto midiClientName = static_cast<std::string>(config["midiClientName"]);
     auto playbackDeviceName = static_cast<std::string>(config["playbackDeviceName"]);
 
-    initMidi(midiClientName);
+    // initMidi(midiClientName);
     initAudio(playbackDeviceName);
 
-    beginPollMidi();
+    // beginPollMidi();
     beginPlayback();
 }
 
@@ -60,18 +76,26 @@ inline static void AlsaErrorChecker(const int& error, const std::string& method)
         throw std::runtime_error("pthread_attr_init failed");
     }
 
-    if (ret = pthread_attr_setschedpolicy(&attr, SCHED_FIFO); ret < 0) {
+    if (ret = pthread_attr_setschedpolicy(&attr, SCHED_DEADLINE); ret < 0) {
         pthread_attr_destroy(&attr);
         throw std::runtime_error("pthread_attr_setschedpolicy failed");
     }
 
     sched_param schedParam;
-    schedParam.sched_priority = sched_get_priority_max(SCHED_FIFO);
+    schedParam.sched_priority = sched_get_priority_max(SCHED_DEADLINE);
     if (ret = pthread_attr_setschedparam(&attr, &schedParam); ret < 0) {
         pthread_attr_destroy(&attr);
         throw std::runtime_error("pthread_attr_setschedparam failed");
     }
+    sched_attr attr2 {
+        .size = sizeof(sched_attr),
+        .sched_policy = SCHED_DEADLINE,
+        .sched_runtime = 5 * 1000 * 1000,
+        .sched_deadline = 10 * 1000 * 1000,
+        .sched_period = 10 * 1000 * 1000,
+    };
 
+    syscall(SYS_sched_setattr, &attr2, sizeof(attr2));
     if (ret = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); ret < 0) {
         pthread_attr_destroy(&attr);
         throw std::runtime_error("pthread_attr_setinheritsched failed");
@@ -124,18 +148,18 @@ void AlsaInterface::beginPollMidi() {
 void* AlsaInterface::midiHandler(void *stateStruct) {
     const auto& ms = *static_cast<MidiThreadObjects*>(stateStruct);
    	do {
-   		// TODO: Poll doesn't work in debug for some reason.
-		 snd_seq_poll_descriptors(ms.sequencer,ms.pfd.get(), ms.npfd, POLLIN);
-   		 if (poll(ms.pfd.get(), ms.npfd, -1) < 0) {
-			continue;
-   		 }
+   // 		// TODO: Poll doesn't work in debug for some reason.
+		 // snd_seq_poll_descriptors(ms.sequencer,ms.pfd.get(), ms.npfd, POLLIN);
+   // 		 if (poll(ms.pfd.get(), ms.npfd, -1) < 0) {
+			// continue;
+   // 		 }
 		snd_seq_event_t *event;
 		if (const int err = snd_seq_event_input(ms.sequencer, &event); err < 0 || !event) {
     	    continue;
     	}
    	    if (MidiData midiData(*event); midiData.valid()) {
    	        try {
-   	            EngineGlobal::getInstance()->pushMidi(midiData);
+   	            ms.submitMidiEvent(midiData);
    	        } catch (const std::exception& e) {
    	            std::cerr << "AlsaInterface::beginPollMidi - Exception thrown: " << e.what() << std::endl;
    	        } catch (...) {
@@ -143,6 +167,7 @@ void* AlsaInterface::midiHandler(void *stateStruct) {
    	        }
    	        snd_seq_free_event(event);
    	    }
+   	    sched_yield();
     } while (ms.runningMidi);
     return nullptr;
 }
@@ -193,30 +218,39 @@ void AlsaInterface::initAudio(const std::string &deviceName) {
 
 void AlsaInterface::beginPlayback() {
     audioThreadObjects.runningAudio = true;
-    createThread(audioTID, reinterpret_cast<void*>(&audioHandler), &audioThreadObjects);
+
+    audioHandler(&audioThreadObjects);
+    // createThread(audioTID, reinterpret_cast<void*>(&audioHandler), &audioThreadObjects);
 }
 
-void* AlsaInterface::audioHandler(void *stateStruct) {
+void* AlsaInterface::audioHandler(AudioThreadObjects * stateStruct) {
     MemoryUtilities::enableFlushToZero();
     const auto& ts = *static_cast<AudioThreadObjects*>(stateStruct);
 
     alignas(CACHE_LINE_SIZE) float fBuffer[NUMBER_SAMPLES];
-    alignas(CACHE_LINE_SIZE) uint8_t oBuffer[NUMBER_SAMPLES * 3];
+    alignas(CACHE_LINE_SIZE) int16_t oBuffer[NUMBER_SAMPLES * 3];
 
     // constexpr auto timeRequiredMicroseconds = NUMBER_FRAMES * SAMPLE_RATE_R * 1000000;
 
-    // AlsaErrorChecker(snd_pcm_start(ts.playback), "snd_pcm_start");
     do {
-        if (snd_pcm_wait(ts.playback, 1) < 0) {
-            continue;
-        }
+        // if (snd_pcm_avail_update(ts.playback) < NUMBER_FRAMES) {
+        //     continue;
+        // }
+        std::cout << "Audio loop has frames available." << std::endl;
         // auto timer = std::chrono::high_resolution_clock::now();
         // EngineGlobal::getInstance()->audioCallbackStereo(fBuffer);
         for (int i = 0; i < NUMBER_FRAMES; ++i) {
             auto time = static_cast<float>(i) * SAMPLE_RATE_R;
-            fBuffer[i*2 + 1] = fBuffer[i*2] = sinf(2.0f * std::numbers::pi_v<float> * 440.0f * time);
+            auto val = sinf(2.0f * std::numbers::pi_v<float> * 110.0f * time);;
+            fBuffer[i * 2 + 1] = val;
+            fBuffer[i * 2 + 0] = val;
         }
-        MemoryUtilities::ConvertF32toS24(fBuffer, oBuffer);
+        for (int i = 0; i < NUMBER_FRAMES; ++i) {
+            oBuffer[i*2] = static_cast<uint16_t>(std::ranges::clamp(fBuffer[i*2], -1.0f, 1.0f) * 32767.0f) >> 3;
+            oBuffer[i*2+1] = oBuffer[i*2];
+        }
+        // TODO: Fix S24 conversion.
+        MemoryUtilities::ConvertF32toS16(fBuffer, oBuffer);
         snd_pcm_writei(ts.playback, oBuffer, NUMBER_FRAMES);
         // auto end = std::chrono::high_resolution_clock::now();
         // auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - timer).count();
@@ -226,6 +260,12 @@ void* AlsaInterface::audioHandler(void *stateStruct) {
         // } else {
         //     std::cerr << "Audio loop completed in " << time << " microseconds, or " << time - timeRequiredMicroseconds << " microseconds late." << std::endl;
         // }
+            std::cout << snd_pcm_state_name(snd_pcm_state(ts.playback)) << std::endl;
+        if (snd_pcm_state(ts.playback) == SND_PCM_STATE_PREPARED) {
+            std::cout << "Audio Prepared, Playing" << std::endl;
+            AlsaErrorChecker(snd_pcm_start(ts.playback), "snd_pcm_start");
+        }
+        sched_yield();
     } while (ts.runningAudio);
     MemoryUtilities::disableFlushToZero();
     return nullptr;

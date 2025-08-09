@@ -25,7 +25,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
 
 include_directories(Source)
 
-add_executable(aeolus_pi Source/main.cpp
+add_executable(aeolus_pi
+        Source/main.cpp
         Source/MemoryUtilities.cpp
         Source/MemoryUtilities.h
         Source/MidiData.cpp
@@ -65,7 +66,6 @@ add_executable(aeolus_pi Source/main.cpp
         Source/aeolus/Sequencer.cpp
         Source/aeolus/SIMD.cpp
         Source/aeolus/SIMD.h
-        Source/aeolus/Stop.cpp
         Source/aeolus/Stop.h
         Source/aeolus/Voice.cpp
         Source/aeolus/VoicePool.cpp
@@ -82,7 +82,9 @@ add_executable(aeolus_pi Source/main.cpp
         Source/aeolus/dsp/filter.cpp
         Source/aeolus/dsp/interpolator.cpp
         Source/aeolus/dsp/interpolator.h
-        Source/aeolus/dsp/spatial.cpp)
+        Source/aeolus/dsp/spatial.cpp
+        Source/aeolus/StopFactory.cpp
+)
 
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)

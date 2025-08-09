@@ -21,6 +21,7 @@
 #pragma once
 
 #include "aeolus/Voice.h"
+#include <functional>
 
 /**
  * @brief A collection of all the voices.
@@ -29,14 +30,13 @@ class VoicePool final {
 public:
     constexpr static int DefaultMaxVoices = 512;
 
-    explicit VoicePool(Organ& engine, int maxVoices = DefaultMaxVoices);
+    explicit VoicePool(int maxVoices = DefaultMaxVoices);
 
     [[nodiscard]] int getNumberOfActiveVoices() const noexcept { return _voiceCount; }
     [[nodiscard]] Voice* trigger(const Pipewave::State& state);
     void resetAndReturnToPool(Voice* voice);
 
 private:
-    Organ& _engine;
     std::vector<Voice> _voices{}; ///< All the voices.
     std::vector<Voice> _idleVoices; ///< Voices available to be triggered.
     std::atomic<int> _voiceCount; ///< Number of taken voices.

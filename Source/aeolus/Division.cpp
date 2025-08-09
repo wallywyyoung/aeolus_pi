@@ -22,24 +22,14 @@
 #include "aeolus/globals.h"
 #include "aeolus/EngineGlobal.h"
 
-Division::Division(const Organ& engine, const std::string& name) : _name{name}, _mnemonic{name},
+Division::Division(const std::string& name) : _name{name}, _mnemonic{name},
     _hasSwell{false}, _hasTremulant{false},
     _tremulantEnabled{false} /* Select all MIDI channels by default */,
     _swellFilterSpec{dsp::BiquadFilter::LowPass, 0.4f * SAMPLE_RATE_F, 0.7071f, 0.0f},
-    _swellFilterStateL{}, _swellFilterStateR{}, _triggerFlag{}, _engine{engine} {
+    _swellFilterStateL{}, _swellFilterStateR{}, _triggerFlag{} {
     dsp::BiquadFilter::updateSpec(_swellFilterSpec);
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateL);
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateR);
-}
-
-void Division::init() {
-    for (const auto& name : _linkedDivisionNames) {
-        if (const auto division = _engine.getDivisionByName(name)) {
-            Coupler link{ division, false };
-            _linkedDivisions.push_back(link);
-            division->_linkedFromDivisions.push_back(this);
-        }
-    }
 }
 
 void Division::setAllCouplersOff() {
@@ -377,7 +367,7 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
                     state.gain = stop.getGain();
                     state.chiffGain = stop.getChiffGain();
 
-                    if (const auto voice = _engine.getVoicePool()->trigger(state)) {
+                    if (const auto voice = _voicePool->trigger(state)) {
                         voice->setStopIndex(stopIndex);
                         _activeVoices.emplace_back(voice);
                         voiceTriggered = true;

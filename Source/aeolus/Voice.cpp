@@ -23,8 +23,6 @@
 
 #include <cstring>
 
-Voice::Voice(Organ& engine) : _engine{engine} { }
-
 void Voice::trigger(const Pipewave::State& state) {
     assert(_state.isIdle());
     _state = state;
@@ -121,5 +119,5 @@ int Voice::getNote() const {
 }
 
 void Voice::resetAndReturnToPool() {
-    _engine.getVoicePool()->resetAndReturnToPool(this);
+    _resetAndReturn(this);
 }

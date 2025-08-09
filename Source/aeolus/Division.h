@@ -30,6 +30,9 @@
 #include <vector>
 #include <bitset>
 
+#include "VoicePool.h"
+
+class Organ;
 /**
  * @brief Single keyboard division.
  *
@@ -45,12 +48,10 @@ public:
         bool enabled = false;
     };
 
-    explicit Division(const Organ& engine, const std::string& name = std::string());
+    explicit Division(const std::string& name = std::string());
 
     [[nodiscard]] std::string getName() const { return _name; }
     [[nodiscard]] std::string getMnemonic() const { return _mnemonic; }
-
-    void init(); // This method must be called after all divisions have been loaded and initialized.
 
     // Notes
     void setNoteOn(const int& note, const bool& isLinkedDivision);
@@ -121,7 +122,7 @@ private:
     bool _hasSwell;         ///< Whether this division has a swell control.
     bool _hasTremulant;     ///< Whether this division has a tremulant control.
     std::atomic<bool> _tremulantEnabled;    ///< Whether tremulant is enabled.
-
+    std::shared_ptr<VoicePool> _voicePool;
     AudioParameter _tremulantLevel {0.0f, 0.0f, TREMULANT_TARGET_LEVEL, 0.1f};
 
     AudioParameter _paramGain{1};
@@ -145,7 +146,6 @@ private:
     /// This is used to avoid triggering a division multiple times by the same note on/off event,
     /// which is the case for linked divisions.
     bool _triggerFlag;
-    const Organ& _engine;
 
     friend class DivisionFactory;
 };

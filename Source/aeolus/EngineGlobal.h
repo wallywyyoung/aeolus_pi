@@ -26,7 +26,6 @@
 #include "aeolus/Scale.h"
 #include "aeolus/Organ.h"
 #include "aeolus/Model.h"
-#include "MidiData.h"
 
 /**
  * @brief A global shared instance of the organ engine.
@@ -34,43 +33,49 @@
  * This class in a singleton which is shared among all the plugin instances.
  */
 
-class EngineGlobal final {
+class EngineGlobal final  : public MidiManager {
 public:
     EngineGlobal();
-    void init();
-    EngineGlobal(EngineGlobal const&) = delete;
-    void operator=(EngineGlobal const&) = delete;
     ~EngineGlobal() = default;
 
-    static EngineGlobal* getInstance() noexcept {
-        static EngineGlobal instance;
-        return &instance;
-    }
-
-    [[nodiscard]] const IRs& getIRs() const noexcept { return irs; }
-    [[nodiscard]] int getLongestIRLength() const noexcept { return _longestIRLength; }
-
     [[nodiscard]] Rankwave *getStopByName(const std::string &name) const { return _rankwavesByName.at(name).get(); }
-    [[nodiscard]] int getStopsCount() const noexcept { return _rankwavesByName.size(); }
-    [[nodiscard]] std::vector<std::string> getAllStopNames() const;
-    void updateStops() const;
-
-    [[nodiscard]] const Scale& getScale() const noexcept { return *_scale; }
-    void setScaleType(const Scale::Type type) const noexcept { _scale->setType(type); }
-
-    void rebuildRankwaves();
+    void pushMidi(const MidiData& midiData) { push(midiData); }
 
     template<auto OUT_BUFFER_SIZE>
     void audioCallbackStereo(float (&out)[OUT_BUFFER_SIZE]) {
-        engine->processNoninterpolatedRealtimeStereo<OUT_BUFFER_SIZE>(out);
+        // Midi / Configuration Block
+        ProcessMidiBuffer();
+        // Organ Block
+        bool wasAudioGenerated = engine->processNoninterpolatedRealtimeStereo<OUT_BUFFER_SIZE>(out);
+        // Reverb Block
+        constexpr auto OUT_PER_CHANNEL_SIZE = OUT_BUFFER_SIZE / OUTPUT_CHANNELS;
+        // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
+        _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - OUT_PER_CHANNEL_SIZE);
+        if (_reverbTailCounter > 0 && _convolver.isAudible()) {
+            _convolver.process(out, OUT_PER_CHANNEL_SIZE);
+        }
+        // Volume Block
+        if (_volume.isSmoothing()) {
+            for (int i = 0; i < OUT_PER_CHANNEL_SIZE; ++i) {
+                const float g = _volume.nextValue();
+                out[i*2] *= g;
+                out[i*2+1] *= g;
+            }
+        } else {
+            const float g = _volume.target();
+            for (int i = 0; i < OUT_PER_CHANNEL_SIZE; ++i) {
+                out[i*2] *= g;
+                out[i*2+1] *= g;
+            }
+        }
     }
-
-    void pushMidi(const MidiData& midi);
-    void pushMidi(const std::vector<MidiData>& midi);
 
 private:
     constexpr static float TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
+
     void loadRankwaves();
+    void updateStops() const;
+    void rebuildRankwaves();
 
     Model model;
     Organ *engine;
@@ -80,6 +85,8 @@ private:
     std::shared_ptr<Scale> _scale;
     int _longestIRLength{};   ///< Longest IR length in samples
     float _tuningFrequency;
-    bool _mtsEnabled{};
-    std::array<float, 128> _mtsTuningCache{};
+
+    AudioParameter _volume;
+    dsp::Convolver _convolver;
+    int _reverbTailCounter{0};
 };

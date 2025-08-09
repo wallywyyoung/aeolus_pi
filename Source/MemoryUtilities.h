@@ -37,7 +37,7 @@ enum Channels {
 constexpr static Channels OUTPUT_CHANNELS = Stereo;
 constexpr static Channels VOICE_CHANNELS = Stereo;
 constexpr static SampleRate SAMPLE_RATE = kHz48000;
-constexpr static SampleFormat SAMPLE_FORMAT = S24;
+constexpr static SampleFormat SAMPLE_FORMAT = S16;
 constexpr static float SAMPLE_RATE_F = static_cast<float>(SAMPLE_RATE);
 constexpr static float SAMPLE_RATE_R = 1.0f / SAMPLE_RATE_F;
 constexpr static int PERIOD_SIZE = static_cast<int>(SAMPLE_RATE_F * 0.01f);

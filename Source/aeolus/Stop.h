@@ -23,18 +23,14 @@
 #include "aeolus/Rankwave.h"
 #include "aeolus/utilities/Range.h"
 
-#include <nlohmann/json.hpp>
-
 /**
  * This class represents a single stop.
  * A stop can be a combination of pipes arranged in zones.
  * A zone is defined for a continuous range of keys and is
  * composed of one or multiple pipes (e.g. mixtures).
  */
-class Stop
-{
+class Stop {
 public:
-    // Stop type.
     enum class Type { Unknown, Principal, Flute, Reed, String };
 
     // Zone - a grouping pipes for a range of keys.
@@ -46,16 +42,13 @@ public:
 
     explicit Stop() = default;
 
-    void initFromJson(const nlohmann::json& v);
-
     [[nodiscard]] Type getType() const noexcept { return _type; }
     void setType(const Type t) noexcept { _type = t; }
 
     [[nodiscard]] std::string getName() const { return _name; }
     void setName(const std::string& name) { _name = name; }
 
-    [[nodiscard]] float getGain() const noexcept;
-
+    [[nodiscard]] float getGain() const noexcept { return _gain; }
     void setGain(const float g) noexcept { _gain = g; }
 
     [[nodiscard]] float getChiffGain() const noexcept { return _chiffGain; }
@@ -67,33 +60,25 @@ public:
     [[nodiscard]] const std::vector<Zone>& getZones() const noexcept { return _zones; }
 
     /**
-     * Add a zone that consists of a single rankwave (pipe)
-     * that covers its entire range of keys.
-     */
-    void addZone(Rankwave *ptr);
-
-    /**
-     * Add a zone composed of multiple pipes.
-     */
-    void addZone(const std::vector<Rankwave *> &rw);
-
-    /**
      * Returns the range of keys this stop can be triggered by.
      */
-    Range getKeyRange() const;
-
-    // Convert stop type from its string name.
-    static Type getTypeFromString(const std::string& n);
+    Range getKeyRange() const {
+        if (_zones.empty()) {
+            return {};
+        }
+        auto range(_zones[0].keyRange);
+        for (const auto&[keyRange, rankwaves] : _zones)
+            range = range.getUnionWith(keyRange);
+        return range;
+    }
 
 private:
-    std::vector<Rankwave *> getRankwavesFromPipeVar(const nlohmann::json &v) const;
-
     Type _type{Type::Unknown};
     std::string _name{};
     std::vector<Zone> _zones{};
     float _gain{1.0f};
     float _chiffGain{0.0f};
     bool _enabled{false};
+
+    friend class StopFactory;
 };
-
-

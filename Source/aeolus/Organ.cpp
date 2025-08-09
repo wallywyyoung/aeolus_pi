@@ -19,39 +19,13 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/Organ.h"
-
-#include <fstream>
-#include <memory>
-
-#include "IOManager.h"
-#include "aeolus/EngineGlobal.h"
 #include "aeolus/DivisionFactory.h"
 
-Organ::Organ() : _voicePool(std::make_shared<VoicePool>(*this)) {
-    populateDivisions();
+#include <memory>
+
+Organ::Organ(std::function<Rankwave*(const std::string&)> getStopByName) : _voicePool(std::make_shared<VoicePool>()) {
+    DivisionFactory::initFromJson(_voicePool, _divisions, getStopByName);
 }
-
-void Organ::prepareToPlay() {
-    // Select the first IR for reverb by default
-    setReverbIR(_selectedIR);
-    _convolver.setDryWet(1.0f, 0.25f, true);
-}
-
-void Organ::setReverbIR(const int num) {
-    if (const auto&[irs, longestIRLength] = EngineGlobal::getInstance()->getIRs(); num >= 0 && num < irs.size()) {
-        const auto& ir = irs[num];
-        _convolver.setLength(static_cast<int>(ir.getNumSamples() / dsp::Convolver::BlockSize + 1) * dsp::Convolver::BlockSize);
-        _convolver.setIR(ir);
-        _convolver.prepareToPlay(); // these parameters are irrelevant
-        _convolver.setZeroDelay(ir.zeroDelay);
-        _reverbTailCounter = _convolver.length();
-        _selectedIR = num;
-    }
-}
-
-void Organ::setReverbWet(const float v) { _convolver.setDryWet(1.0f, v); }
-
-void Organ::setVolume(const float v, const bool immediate) { _volume.setValue(v, immediate); }
 
 void Organ::setDivisionNoteOn(const int &division, const int &note) {
     clearDivisionsTriggerFlag();
@@ -162,45 +136,10 @@ GlobalPiston Organ::captureStateAsPiston() const {
     return globalPiston;
 }
 
-Division *Organ::getDivisionByName(const std::string &name) const {
-    for (auto &division : _divisions) {
-        if (division->getName() == name)
-            return division.get();
-    }
-
-    return nullptr;
-}
-
 void Organ::clearDivisionsTriggerFlag() const {
     for (auto& division : _divisions) {
         division->clearTriggerFlag();
     }
-}
-
-bool Organ::processSubFrame() {
-    generateTremulant();
-
-    _subFrameBuffer.clear();
-
-    bool wasAudioGenerated = false;
-
-    for (const auto &division : _divisions) {
-
-        _divisionFrameBuffer.clear();
-
-        const bool hasVoices = division->process(_divisionFrameBuffer, _voiceFrameBuffer);
-        wasAudioGenerated |= hasVoices;
-
-        if (!hasVoices) {
-            division->modulate(_divisionFrameBuffer, _tremulantBuffer);
-
-            for (int ch = 0; ch < _subFrameBuffer.getNumChannels(); ++ch) {
-                _subFrameBuffer.addFrom(ch, 0, _divisionFrameBuffer, ch, 0, AUDIO_SUB_FRAME_LENGTH);
-            }
-        }
-    }
-
-    return wasAudioGenerated;
 }
 
 void Organ::generateTremulant() {
@@ -212,81 +151,5 @@ void Organ::generateTremulant() {
         if (_tremulantPhase >= std::numbers::pi_v<float> * 2) {
             _tremulantPhase -= std::numbers::pi_v<float> * 2;
         }
-    }
-}
-
-void Organ::applyVolume(AudioBuffer& out) {
-    if (_volume.isSmoothing()) {
-        for (int i = 0; i < out.getNumSamples(); ++i) {
-            const float g = _volume.nextValue() * VOLUME_GAIN;
-
-            for (int ch = 0; ch < out.getNumChannels(); ++ch)
-                out.getWritePointer(ch)[i] *= g;
-        }
-    } else {
-        const float g = _volume.target() * VOLUME_GAIN;
-        out.applyGain(g);
-    }
-}
-
-void Organ::applyVolume(float* inOut, const size_t framesPerChannel) {
-    if (_volume.isSmoothing()) {
-        for (int i = 0; i < framesPerChannel; ++i) {
-            const float g = _volume.nextValue() * VOLUME_GAIN;
-            inOut[i*2] *= g;
-            inOut[i*2+1] *= g;
-        }
-    } else {
-        const float g = _volume.target() * VOLUME_GAIN;
-        for (int i = 0; i < framesPerChannel; ++i) {
-            inOut[i*2] *= g;
-            inOut[i*2+1] *= g;
-        }
-    }
-}
-
-auto Organ::populateDivisions() -> void {
-    const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
-
-    if (!exists(configFile)) {
-        return;
-    }
-
-    std::ifstream stream(configFile);
-    auto config = nlohmann::json::parse(stream);
-
-    for (auto divisionDef : config["divisions"]) {
-        auto division = DivisionFactory::initFromJson(divisionDef, *this);
-        _divisions.push_back(std::move(division));
-    }
-
-    // if (config.contains("sequencer")) {
-    //     auto sequencer = config["sequencer"];
-    //     if (sequencer.contains("backward_key")) {
-    //         auto& v= sequencer["backward_key"];
-    //         _sequencerStepBackwardKeySwitches.clear();
-    //         if (v.is_number_integer()) {
-    //             _sequencerStepBackwardKeySwitches.push_back(v);
-    //         } else if (v.is_array()) {
-    //             for (const auto& key : v)
-    //                 _sequencerStepBackwardKeySwitches.push_back(key);
-    //         }
-    //     }
-    //
-    //     if (sequencer.contains("forward_key")) {
-    //         auto& v= sequencer["forward_key"];
-    //         _sequencerStepForwardKeySwitches.clear();
-    //         if (v.is_number_integer()) {
-    //             _sequencerStepForwardKeySwitches.push_back(v);
-    //         } else if (v.is_array()) {
-    //             for (const auto& key : v)
-    //                 _sequencerStepForwardKeySwitches.push_back(key);
-    //         }
-    //     }
-    // }
-
-    // Update division links after they've been loaded.
-    for (const auto& division : _divisions) {
-        division->init();
     }
 }
