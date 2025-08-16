@@ -19,41 +19,25 @@
 
 #include "AlsaInterface.h"
 #include "aeolus/globals.h"
-#include "aeolus/EngineGlobal.h"
+#include "EngineGlobal.h"
 #include "MemoryUtilities.h"
 
 #include <alsa/asoundlib.h>
-#include <pthread.h>
-#include <linux/sched.h>
-#include <linux/sched/types.h>
-#include <syscall.h>
+#include <thread>
 
 #include <nlohmann/json.hpp>
 #include <fstream>
 
-AlsaInterface::AlsaInterface(std::function<void(const MidiData&)> submitMidiEvent) : midiThreadObjects{ submitMidiEvent } {
+AlsaInterface::AlsaInterface(std::function<void(float (&out)[NUMBER_SAMPLES])> processAudio, std::function<void(const MidiData&)> submitMidi) : midiThreadObjects{ submitMidi }, audioThreadObjects{ processAudio } {
     std::ifstream stream(CONFIG_FILE);
     auto config = nlohmann::json::parse(stream);
     auto midiClientName = static_cast<std::string>(config["midiClientName"]);
     auto playbackDeviceName = static_cast<std::string>(config["playbackDeviceName"]);
 
-    // initMidi(midiClientName);
+    initMidi(midiClientName);
     initAudio(playbackDeviceName);
 
-    // beginPollMidi();
-    beginPlayback();
-}
-
-AlsaInterface::AlsaInterface() {
-    std::ifstream stream(CONFIG_FILE);
-    auto config = nlohmann::json::parse(stream);
-    auto midiClientName = static_cast<std::string>(config["midiClientName"]);
-    auto playbackDeviceName = static_cast<std::string>(config["playbackDeviceName"]);
-
-    // initMidi(midiClientName);
-    initAudio(playbackDeviceName);
-
-    // beginPollMidi();
+    beginPollMidi();
     beginPlayback();
 }
 
@@ -68,47 +52,6 @@ inline static void AlsaErrorChecker(const int& error, const std::string& method)
     }
 }
 
- void AlsaInterface::createThread(pthread_t& tid, void* func, void* arg) {
-    pthread_attr_t attr;
-    int ret;
-
-    if (ret = pthread_attr_init(&attr); ret < 0) {
-        throw std::runtime_error("pthread_attr_init failed");
-    }
-
-    if (ret = pthread_attr_setschedpolicy(&attr, SCHED_DEADLINE); ret < 0) {
-        pthread_attr_destroy(&attr);
-        throw std::runtime_error("pthread_attr_setschedpolicy failed");
-    }
-
-    sched_param schedParam;
-    schedParam.sched_priority = sched_get_priority_max(SCHED_DEADLINE);
-    if (ret = pthread_attr_setschedparam(&attr, &schedParam); ret < 0) {
-        pthread_attr_destroy(&attr);
-        throw std::runtime_error("pthread_attr_setschedparam failed");
-    }
-    sched_attr attr2 {
-        .size = sizeof(sched_attr),
-        .sched_policy = SCHED_DEADLINE,
-        .sched_runtime = 5 * 1000 * 1000,
-        .sched_deadline = 10 * 1000 * 1000,
-        .sched_period = 10 * 1000 * 1000,
-    };
-
-    syscall(SYS_sched_setattr, &attr2, sizeof(attr2));
-    if (ret = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); ret < 0) {
-        pthread_attr_destroy(&attr);
-        throw std::runtime_error("pthread_attr_setinheritsched failed");
-    }
-
-    if (ret = pthread_create(&tid, &attr, reinterpret_cast<void *(*)(void *)>(func), &arg); ret < 0) {
-        pthread_attr_destroy(&attr);
-        throw std::runtime_error("pthread_create failed");
-    }
-
-    pthread_attr_destroy(&attr);
-}
-
 int AlsaInterface::getMidiClientId(const std::string &clientName) {
     int clientStatus = 0;
     snd_seq_client_info_t* info = nullptr;
@@ -117,6 +60,7 @@ int AlsaInterface::getMidiClientId(const std::string &clientName) {
     do {
         const auto name = snd_seq_client_info_get_name(info);
         const auto id = snd_seq_client_info_get_client(info);
+        std::cout << clientName << " : " << id << std::endl;
         if (std::strcmp(name, clientName.c_str()) == 0) {
             return id;
         }
@@ -132,50 +76,44 @@ void AlsaInterface::initMidi(const std::string &clientName) {
         SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE, SND_SEQ_PORT_TYPE_APPLICATION |
         SND_SEQ_PORT_TYPE_MIDI_GM | SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_SYNTHESIZER), "snd_seq_create_simple_port");
 
-	AlsaErrorChecker(snd_seq_connect_from(midiThreadObjects.sequencer, 0, getMidiClientId(clientName), 0), "snd_seq_connect_from");
+    AlsaErrorChecker(snd_seq_connect_from(midiThreadObjects.sequencer, 0, getMidiClientId(clientName), 0), "snd_seq_connect_from");
 
-	midiThreadObjects.npfd = snd_seq_poll_descriptors_count(midiThreadObjects.sequencer, POLLIN);
-	midiThreadObjects.pfd = std::make_unique<pollfd>();
+    midiThreadObjects.npfd = snd_seq_poll_descriptors_count(midiThreadObjects.sequencer, POLLIN);
+    midiThreadObjects.pfd = std::make_unique<pollfd>();
 
-	AlsaErrorChecker(snd_seq_nonblock(midiThreadObjects.sequencer, 1), "snd_seq_nonblock");
+    AlsaErrorChecker(snd_seq_nonblock(midiThreadObjects.sequencer, 1), "snd_seq_nonblock");
 }
 
 void AlsaInterface::beginPollMidi() {
     midiThreadObjects.runningMidi = true;
-    createThread(midiTID, reinterpret_cast<void*>(&midiHandler), &midiThreadObjects);
+    midiThread = std::thread(&midiHandler, &midiThreadObjects);
 }
 
-void* AlsaInterface::midiHandler(void *stateStruct) {
-    const auto& ms = *static_cast<MidiThreadObjects*>(stateStruct);
-   	do {
-   // 		// TODO: Poll doesn't work in debug for some reason.
-		 // snd_seq_poll_descriptors(ms.sequencer,ms.pfd.get(), ms.npfd, POLLIN);
-   // 		 if (poll(ms.pfd.get(), ms.npfd, -1) < 0) {
-			// continue;
-   // 		 }
-		snd_seq_event_t *event;
-		if (const int err = snd_seq_event_input(ms.sequencer, &event); err < 0 || !event) {
-    	    continue;
-    	}
-   	    if (MidiData midiData(*event); midiData.valid()) {
-   	        try {
-   	            ms.submitMidiEvent(midiData);
-   	        } catch (const std::exception& e) {
-   	            std::cerr << "AlsaInterface::beginPollMidi - Exception thrown: " << e.what() << std::endl;
-   	        } catch (...) {
-   	            std::cerr << "AlsaInterface::beginPollMidi - Unknown exception in MIDI processing!" << std::endl;
-   	        }
-   	        snd_seq_free_event(event);
-   	    }
-   	    sched_yield();
-    } while (ms.runningMidi);
+void* AlsaInterface::midiHandler(MidiThreadObjects *m) {
+    do {
+        snd_seq_event_t *event;
+        if (const int err = snd_seq_event_input(m->sequencer, &event); err < 0 || !event) {
+            continue;
+        }
+        if (MidiData midiData(*event); midiData.valid()) {
+            try {
+                m->submitMidiEvent(midiData);
+            } catch (const std::exception& e) {
+                std::cerr << "AlsaInterface::beginPollMidi - Exception thrown: " << e.what() << std::endl;
+            } catch (...) {
+                std::cerr << "AlsaInterface::beginPollMidi - Unknown exception in MIDI processing!" << std::endl;
+            }
+            snd_seq_free_event(event);
+        }
+        sched_yield();
+    } while (m->runningMidi);
     return nullptr;
 }
 
 void AlsaInterface::endPollMidi() {
     midiThreadObjects.runningMidi = false;
-    if (midiTID) {
-        pthread_join(midiTID, nullptr);
+    if (midiThread.joinable()) {
+        midiThread.join();
     }
 }
 
@@ -208,73 +146,47 @@ void AlsaInterface::initAudio(const std::string &deviceName) {
     snd_pcm_sw_params_t* swParams{};
     AlsaErrorChecker(snd_pcm_sw_params_malloc(&swParams), "snd_pcm_sw_params_malloc");
     AlsaErrorChecker(snd_pcm_sw_params_current(audioThreadObjects.playback, swParams), "snd_pcm_sw_params_current");
-    AlsaErrorChecker(snd_pcm_sw_params_set_start_threshold(audioThreadObjects.playback, swParams, THRESHOLD_PCM), "snd_pcm_sw_params_set_start_threshold");
+    AlsaErrorChecker(snd_pcm_sw_params_set_start_threshold(audioThreadObjects.playback, swParams, NUMBER_SAMPLES - PERIOD_SIZE), "snd_pcm_sw_params_set_start_threshold");
+    AlsaErrorChecker(snd_pcm_sw_params_set_avail_min(audioThreadObjects.playback, swParams, PERIOD_SIZE), "snd_pcm_sw_params_set_avail_min");
     AlsaErrorChecker(snd_pcm_sw_params(audioThreadObjects.playback, swParams), "snd_pcm_sw_params");
     snd_pcm_sw_params_free(swParams);
 
     AlsaErrorChecker(snd_pcm_nonblock(audioThreadObjects.playback, 1), "snd_pcm_nonblock");
     AlsaErrorChecker(snd_pcm_prepare(audioThreadObjects.playback), "snd_pcm_prepare");
+
+    int16_t buffer[PERIOD_SIZE * 2 * OUTPUT_CHANNELS];
+    memset(buffer, 0, sizeof(buffer));
+    snd_pcm_writei(audioThreadObjects.playback, buffer, PERIOD_SIZE * 2);
 }
 
 void AlsaInterface::beginPlayback() {
     audioThreadObjects.runningAudio = true;
-
-    audioHandler(&audioThreadObjects);
-    // createThread(audioTID, reinterpret_cast<void*>(&audioHandler), &audioThreadObjects);
+    audioThread = std::thread(&audioHandler, &audioThreadObjects);
 }
 
-void* AlsaInterface::audioHandler(AudioThreadObjects * stateStruct) {
+void AlsaInterface::audioHandler(AudioThreadObjects* a) {
     MemoryUtilities::enableFlushToZero();
-    const auto& ts = *static_cast<AudioThreadObjects*>(stateStruct);
-
-    alignas(CACHE_LINE_SIZE) float fBuffer[NUMBER_SAMPLES];
-    alignas(CACHE_LINE_SIZE) int16_t oBuffer[NUMBER_SAMPLES * 3];
-
-    // constexpr auto timeRequiredMicroseconds = NUMBER_FRAMES * SAMPLE_RATE_R * 1000000;
-
+    snd_pcm_sframes_t available = snd_pcm_avail_update(a->playback);
+    alignas(CACHE_LINE_SIZE) static float fBuffer[NUMBER_SAMPLES];
+    alignas(CACHE_LINE_SIZE) static uint8_t oBuffer[NUMBER_SAMPLES * 3];
+    AlsaErrorChecker(snd_pcm_start(a->playback), "snd_pcm_start");
     do {
-        // if (snd_pcm_avail_update(ts.playback) < NUMBER_FRAMES) {
-        //     continue;
-        // }
-        std::cout << "Audio loop has frames available." << std::endl;
-        // auto timer = std::chrono::high_resolution_clock::now();
-        // EngineGlobal::getInstance()->audioCallbackStereo(fBuffer);
-        for (int i = 0; i < NUMBER_FRAMES; ++i) {
-            auto time = static_cast<float>(i) * SAMPLE_RATE_R;
-            auto val = sinf(2.0f * std::numbers::pi_v<float> * 110.0f * time);;
-            fBuffer[i * 2 + 1] = val;
-            fBuffer[i * 2 + 0] = val;
+        a->processAudio(fBuffer);
+        MemoryUtilities::ConvertF32toS24(fBuffer, oBuffer);
+        snd_pcm_writei(a->playback, oBuffer, NUMBER_FRAMES);
+
+        available = snd_pcm_avail_update(a->playback);
+        if (available < PERIOD_SIZE) {
+            std::this_thread::yield();
         }
-        for (int i = 0; i < NUMBER_FRAMES; ++i) {
-            oBuffer[i*2] = static_cast<uint16_t>(std::ranges::clamp(fBuffer[i*2], -1.0f, 1.0f) * 32767.0f) >> 3;
-            oBuffer[i*2+1] = oBuffer[i*2];
-        }
-        // TODO: Fix S24 conversion.
-        MemoryUtilities::ConvertF32toS16(fBuffer, oBuffer);
-        snd_pcm_writei(ts.playback, oBuffer, NUMBER_FRAMES);
-        // auto end = std::chrono::high_resolution_clock::now();
-        // auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - timer).count();
-        // auto result = timeRequiredMicroseconds - time;
-        // if (result > 0) {
-        //     std::cout << "Audio loop completed in " << time << " microseconds, or " << result << " microseconds ahead of time." << std::endl;
-        // } else {
-        //     std::cerr << "Audio loop completed in " << time << " microseconds, or " << time - timeRequiredMicroseconds << " microseconds late." << std::endl;
-        // }
-            std::cout << snd_pcm_state_name(snd_pcm_state(ts.playback)) << std::endl;
-        if (snd_pcm_state(ts.playback) == SND_PCM_STATE_PREPARED) {
-            std::cout << "Audio Prepared, Playing" << std::endl;
-            AlsaErrorChecker(snd_pcm_start(ts.playback), "snd_pcm_start");
-        }
-        sched_yield();
-    } while (ts.runningAudio);
+    } while (a->runningAudio);
     MemoryUtilities::disableFlushToZero();
-    return nullptr;
 }
 
 void AlsaInterface::endPlayback() {
     audioThreadObjects.runningAudio = false;
-    if (audioTID) {
-        pthread_join(audioTID, nullptr);
+    if (audioThread.joinable()) {
+        audioThread.join();
     }
     snd_pcm_drain(audioThreadObjects.playback);
     snd_pcm_close(audioThreadObjects.playback);

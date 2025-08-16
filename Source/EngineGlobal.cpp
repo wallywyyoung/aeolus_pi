@@ -18,7 +18,7 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/EngineGlobal.h"
+#include "EngineGlobal.h"
 #include "IOManager.h"
 #include "aeolus/Organ.h"
 
@@ -28,11 +28,15 @@ EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::Equal
     irs = IOManager::loadIRs();
     loadRankwaves();
     updateStops();
-    engine = new Organ(std::bind(&EngineGlobal::getStopByName, this, std::placeholders::_1));
-    organInterface = static_cast<OrganInterface *>(engine);
+    organ = new Organ(std::bind(&EngineGlobal::getStopByName, this, std::placeholders::_1));
+    organInterface = static_cast<OrganInterface *>(organ);
     _reverbTailCounter = _convolver.setIR(irs.irs[0]);
-    _volume.setValue(0.005f, true);
-    engine->setGlobalAllStopsOn();
+    // _volume.setValue(0.005f, true);
+    organ->setGlobalAllStopsOn();
+    organ->setDivisionNoteOn(0, 50);
+    organ->setDivisionNoteOn(1, 50);
+    organ->setDivisionNoteOn(2, 50);
+    organ->setDivisionNoteOn(3, 24);
 }
 
 void EngineGlobal::updateStops() const {

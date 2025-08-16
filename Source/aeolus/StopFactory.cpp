@@ -20,7 +20,7 @@
 
 #include "StopFactory.h"
 
-#include "EngineGlobal.h"
+#include "../EngineGlobal.h"
 
 std::vector<Rankwave *> StopFactory::getRankwavesFromPipeVar(const nlohmann::json &json, std::function<Rankwave *(const std::string &)> stopByName) {
     std::vector<Rankwave*> rankwaves;

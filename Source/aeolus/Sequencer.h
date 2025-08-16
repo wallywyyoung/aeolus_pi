@@ -40,7 +40,7 @@ public:
     [[nodiscard]] int getCurrentStep() const noexcept { return _currentStep; }
 
     /**
-     * Capture the organ state from the engine into the current step.
+     * Capture the organ state into the current step.
      */
     void captureCurrentStep();
 

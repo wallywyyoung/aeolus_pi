@@ -28,13 +28,29 @@
  */
 class VoicePool final {
 public:
-    constexpr static int DefaultMaxVoices = 512;
+    constexpr static int MAX_VOICES = 512;
 
-    explicit VoicePool(int maxVoices = DefaultMaxVoices);
+    VoicePool(const int maxVoices = MAX_VOICES): _voices(maxVoices, Voice()), _voiceCount{0}, _idleVoices(_voices) { }
 
     [[nodiscard]] int getNumberOfActiveVoices() const noexcept { return _voiceCount; }
-    [[nodiscard]] Voice* trigger(const Pipewave::State& state);
-    void resetAndReturnToPool(Voice* voice);
+    [[nodiscard]] Voice* trigger(const Pipewave::State& state) {
+        if (_idleVoices.size() > 0) {
+            auto voice = _idleVoices.begin();
+            voice->trigger(state);
+            _idleVoices.erase(voice);
+            ++_voiceCount;
+            return voice.base();
+        }
+        // No more voices.
+        return nullptr;
+    }
+
+    void resetAndReturnToPool(Voice* voice) {
+        assert(voice != nullptr);
+        voice->reset();
+        _idleVoices.emplace_back(*voice);
+        --_voiceCount;
+    }
 
 private:
     std::vector<Voice> _voices{}; ///< All the voices.

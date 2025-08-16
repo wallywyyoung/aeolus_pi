@@ -117,7 +117,3 @@ int Voice::getNote() const {
     }
     return -1;
 }
-
-void Voice::resetAndReturnToPool() {
-    _resetAndReturn(this);
-}

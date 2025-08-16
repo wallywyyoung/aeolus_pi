@@ -20,13 +20,13 @@
 
 #include "aeolus/Division.h"
 #include "aeolus/globals.h"
-#include "aeolus/EngineGlobal.h"
+#include "../EngineGlobal.h"
 
 Division::Division(const std::string& name) : _name{name}, _mnemonic{name},
-    _hasSwell{false}, _hasTremulant{false},
-    _tremulantEnabled{false} /* Select all MIDI channels by default */,
-    _swellFilterSpec{dsp::BiquadFilter::LowPass, 0.4f * SAMPLE_RATE_F, 0.7071f, 0.0f},
-    _swellFilterStateL{}, _swellFilterStateR{}, _triggerFlag{} {
+                                              _hasSwell{false}, _hasTremulant{false},
+                                              _tremulantEnabled{false} /* Select all MIDI channels by default */,
+                                              _swellFilterSpec{dsp::BiquadFilter::LowPass, 0.4f * SAMPLE_RATE_F, 0.7071f, 0.0f},
+                                              _swellFilterStateL{}, _swellFilterStateR{}, _triggerFlag{} {
     dsp::BiquadFilter::updateSpec(_swellFilterSpec);
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateL);
     dsp::BiquadFilter::resetState(_swellFilterSpec, _swellFilterStateR);
@@ -146,7 +146,7 @@ void Division::setAllStopsOff() {
 void Division::setAllStopsOn() {
     for (auto& stop : _stops) {
         if (!stop.isEnabled()) {
-            stop.setEnabled(false);
+            stop.setEnabled(true);
         }
     }
     setAllCouplersOn();
@@ -244,7 +244,7 @@ bool Division::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS
         targetBuffer.addFrom(0, 0, voiceBuffer, 0, 0, AUDIO_SUB_FRAME_LENGTH);
         targetBuffer.addFrom(1, 0, voiceBuffer, 1, 0, AUDIO_SUB_FRAME_LENGTH);
         if ((*i)->isOver()) {
-            (*i)->resetAndReturnToPool();
+            _voicePool->resetAndReturnToPool(*i);
             i = _activeVoices.erase(i);
         } else {
             ++i;

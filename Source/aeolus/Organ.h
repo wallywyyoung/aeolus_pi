@@ -92,7 +92,7 @@ public:
     [[nodiscard]] GlobalPiston captureStateAsPiston() const;
 
     template<auto OUT_BUFFER_SIZE> // Generate audio. Audio thread only.
-    bool processNoninterpolatedRealtimeStereo(float (&out)[OUT_BUFFER_SIZE]) {
+    bool process(float (&out)[OUT_BUFFER_SIZE]) {
         bool wasAudioGenerated = false;
         memset(out, 0.0f, sizeof(float) * OUT_BUFFER_SIZE);
 

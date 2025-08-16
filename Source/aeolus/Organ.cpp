@@ -142,6 +142,7 @@ void Organ::clearDivisionsTriggerFlag() const {
     }
 }
 
+// TODO: Index, batch, vectorize
 void Organ::generateTremulant() {
     float* buf = _tremulantBuffer.getWritePointer(0);
     for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {

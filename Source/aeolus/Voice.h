@@ -31,7 +31,6 @@
  * @brief Single voice associated with a single pipe.
  */
 class Voice {
-    std::function<void(Voice*)> _resetAndReturn;
     Pipewave::State _state; ///< Pipe state associated with this voice.
     int _stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
     float _buffer[AUDIO_SUB_FRAME_LENGTH]{};
@@ -41,13 +40,10 @@ class Voice {
     dsp::SpatialSource _spatialSource{}; /// Stereo spatial modeller.
     size_t _postReleaseCounter{0}; /// Counter to account for the delayed sound before recycling the voice.
 public:
-    Voice() = delete;
-
-    explicit Voice(const std::function<void(Voice *)> &resetAndReturn) : _resetAndReturn {resetAndReturn} { }
+    Voice() = default;
 
     Voice& operator=(const Voice& other) {
         if (this != &other) {
-            _resetAndReturn = other._resetAndReturn;
             _state = other._state;
             _stopIndex = other._stopIndex;
             for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
@@ -66,7 +62,6 @@ public:
     void reset();
     void process(float* outL, float* outR);
     void setStopIndex(const int idx) noexcept { _stopIndex = idx; }
-    void resetAndReturnToPool();
 
     [[nodiscard]] bool isOver() const noexcept;
     [[nodiscard]] bool isActive() const noexcept;

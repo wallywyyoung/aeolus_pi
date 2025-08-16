@@ -18,7 +18,7 @@
 // ----------------------------------------------------------------------------
 
 #include "AlsaInterface.h"
-#include "aeolus/EngineGlobal.h"
+#include "EngineGlobal.h"
 #include <csignal>
 #include <functional>
 
@@ -32,9 +32,10 @@ void signalHandler(const int signal) {
 
 int main (int, char*[]) {
     std::signal(SIGINT | SIGTERM | SIGSEGV | SIGABRT | SIGFPE | SIGILL | SIGBUS, signalHandler);
-    // const auto* engineGlobal = new EngineGlobal();
-    // const auto* alsaInterface = new AlsaInterface(std::bind(&EngineGlobal::pushMidi, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1));
-    const auto* alsaInterface = new AlsaInterface();
+    const auto* engineGlobal = new EngineGlobal();
+    const auto* alsaInterface = new AlsaInterface(
+        std::bind(&EngineGlobal::process<NUMBER_SAMPLES>, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1),
+        std::bind(&EngineGlobal::pushMidi, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1));
     std::cout << "Aeolus is Ready" << std::endl;
     do {
         sleep(1);

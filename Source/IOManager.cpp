@@ -22,7 +22,7 @@
 #include "IOManager.h"
 #include "aeolus/Addsynth.h"
 #include "aeolus/Division.h"
-#include "aeolus/EngineGlobal.h"
+#include "EngineGlobal.h"
 #include "aeolus/dsp/convolver.h"
 #include <fstream>
 #include <algorithm>

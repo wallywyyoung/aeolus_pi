@@ -19,7 +19,7 @@
 //
 // ---------------------------------------------------------------------------
 
-#include "aeolus/EngineGlobal.h"
+#include "../EngineGlobal.h"
 #include "aeolus/Rankwave.h"
 
 Rankwave::Rankwave(Addsynth model, const Scale& scale, const float tuningFreq) : _noteMin(model.getNoteMin()), _noteMax(model.getNoteMax()), model(std::make_shared<Addsynth>(model)), _pipes{2} {

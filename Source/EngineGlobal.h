@@ -42,11 +42,18 @@ public:
     void pushMidi(const MidiData& midiData) { push(midiData); }
 
     template<auto OUT_BUFFER_SIZE>
-    void audioCallbackStereo(float (&out)[OUT_BUFFER_SIZE]) {
+    void process(float (&out)[OUT_BUFFER_SIZE]) {
+        // for (int i = 0; i < NUMBER_FRAMES; ++i) {
+        //     auto time = static_cast<float>(i) * SAMPLE_RATE_R;
+        //     auto val = sinf(2.0f * std::numbers::pi_v<float> * 110.0f * time);;
+        //     out[i * 2 + 1] = val;
+        //     out[i * 2 + 0] = val;
+        // }
+        // return;
         // Midi / Configuration Block
         ProcessMidiBuffer();
         // Organ Block
-        bool wasAudioGenerated = engine->processNoninterpolatedRealtimeStereo<OUT_BUFFER_SIZE>(out);
+        bool wasAudioGenerated = organ->process<OUT_BUFFER_SIZE>(out);
         // Reverb Block
         constexpr auto OUT_PER_CHANNEL_SIZE = OUT_BUFFER_SIZE / OUTPUT_CHANNELS;
         // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
@@ -55,19 +62,19 @@ public:
             _convolver.process(out, OUT_PER_CHANNEL_SIZE);
         }
         // Volume Block
-        if (_volume.isSmoothing()) {
-            for (int i = 0; i < OUT_PER_CHANNEL_SIZE; ++i) {
-                const float g = _volume.nextValue();
-                out[i*2] *= g;
-                out[i*2+1] *= g;
-            }
-        } else {
-            const float g = _volume.target();
-            for (int i = 0; i < OUT_PER_CHANNEL_SIZE; ++i) {
-                out[i*2] *= g;
-                out[i*2+1] *= g;
-            }
-        }
+        // if (_volume.isSmoothing()) {
+        //     for (int i = 0; i < OUT_PER_CHANNEL_SIZE; ++i) {
+        //         const float g = _volume.nextValue();
+        //         out[i*2] *= g;
+        //         out[i*2+1] *= g;
+        //     }
+        // } else {
+        //     const float g = _volume.target();
+        //     for (int i = 0; i < OUT_PER_CHANNEL_SIZE; ++i) {
+        //         out[i*2] *= g;
+        //         out[i*2+1] *= g;
+        //     }
+        // }
     }
 
 private:
@@ -78,7 +85,7 @@ private:
     void rebuildRankwaves();
 
     Model model;
-    Organ *engine;
+    Organ *organ;
     std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName{};
     std::vector<IR> _irs{};
     IRs irs;
@@ -86,7 +93,7 @@ private:
     int _longestIRLength{};   ///< Longest IR length in samples
     float _tuningFrequency;
 
-    AudioParameter _volume;
+    // AudioParameter _volume;
     dsp::Convolver _convolver;
     int _reverbTailCounter{0};
 };

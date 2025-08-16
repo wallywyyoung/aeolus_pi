@@ -26,6 +26,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
 include_directories(Source)
 
 add_executable(aeolus_pi
+        Source/EngineGlobal.cpp
+        Source/EngineGlobal.h
         Source/main.cpp
         Source/MemoryUtilities.cpp
         Source/MemoryUtilities.h
@@ -45,7 +47,6 @@ add_executable(aeolus_pi
         Source/aeolus/Division.h
         Source/aeolus/DivisionFactory.cpp
         Source/aeolus/DivisionFactory.h
-        Source/aeolus/EngineGlobal.cpp
         Source/aeolus/globals.cpp
         Source/aeolus/HN_func.cpp
         Source/aeolus/HN_func.h
@@ -68,7 +69,6 @@ add_executable(aeolus_pi
         Source/aeolus/SIMD.h
         Source/aeolus/Stop.h
         Source/aeolus/Voice.cpp
-        Source/aeolus/VoicePool.cpp
         Source/aeolus/Worker.cpp
         Source/aeolus/Worker.h
         Source/aeolus/utilities/Range.cpp
