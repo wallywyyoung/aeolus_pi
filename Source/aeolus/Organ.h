@@ -59,7 +59,7 @@ class Organ final : public MidiManager::OrganInterface {
 
 public:
     explicit Organ(std::function<Rankwave*(const std::string&)> getStopByName);
-    ~Organ() = default;
+    ~Organ() override = default;
 
     // Notes
     void setDivisionNoteOn(const int& division, const int& note) override;

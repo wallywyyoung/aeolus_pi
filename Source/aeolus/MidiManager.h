@@ -27,6 +27,8 @@ class MidiManager : public ObjectBuffer<MidiData> {
 public:
     class OrganInterface {
     public:
+        virtual ~OrganInterface() = default;
+
         // Notes
         virtual void setDivisionNoteOn(const int& division, const int& note) = 0;
         virtual void setDivisionNoteOff(const int& division, const int& note) = 0;
