@@ -22,7 +22,7 @@
 #pragma once
 
 #include "aeolus/Addsynth.h"
-#include "aeolus/Pipewave.h"
+#include "aeolus/PipeWave.h"
 #include "aeolus/Scale.h"
 
 #include <vector>
@@ -34,25 +34,20 @@
  * This class is a collection of pipes based on the same
  * additive synth model.
  */
-
-class Rankwave {
+class RankWave {
 public:
-    explicit Rankwave(Addsynth model, const Scale& scale, float tuningFreq);
-    Rankwave(const Rankwave&);
-    Rankwave& operator=(const Rankwave& other);
-
-    // Recalculate pipes tuning based on the current global scale and A4 frequency,
-    // or global MTS tuning if enabed.
-    void retunePipes(const Scale& scale, float tuningFreq);
+    explicit RankWave(Addsynth model, const Scale& scale, float tuningFreq);
+    RankWave(const RankWave&);
+    RankWave& operator=(const RankWave& other);
 
     [[nodiscard]] const std::string& getStopName() const { return model->getStopName(); }
     [[nodiscard]] bool isForNote(const int note) const noexcept { return note >= _noteMin && note <= _noteMax; }
     [[nodiscard]] int getNoteMin() const noexcept { return _noteMin; }
     [[nodiscard]] int getNoteMax() const noexcept { return _noteMax; }
 
-    void prepareToPlay();
+    void generateWavetables();
 
-    Pipewave::State trigger(int note);
+    PipeWave::State trigger(int note);
 
 private:
     void createPipes(const Scale& scale, float tuningFrequency);
@@ -61,7 +56,7 @@ private:
     std::shared_ptr<Addsynth> model;
     // Two sets of pipes to be able to switch between tunings
     // without releasing all the voices.
-    std::vector<std::vector<Pipewave>> _pipes{};
+    std::vector<std::vector<std::shared_ptr<PipeWave>>> _pipes{};
     std::atomic<int> _pipeSetIndex{ 0 };
 };
 

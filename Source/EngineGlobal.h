@@ -22,10 +22,10 @@
 
 #include <unordered_map>
 
-#include "aeolus/Rankwave.h"
-#include "aeolus/Scale.h"
-#include "aeolus/Organ.h"
 #include "aeolus/Model.h"
+#include "aeolus/Organ.h"
+#include "aeolus/RankWave.h"
+#include "aeolus/Scale.h"
 
 /**
  * @brief A global shared instance of the organ engine.
@@ -38,7 +38,7 @@ public:
     EngineGlobal();
     ~EngineGlobal() = default;
 
-    [[nodiscard]] Rankwave *getStopByName(const std::string &name) const { return _rankwavesByName.at(name).get(); }
+    [[nodiscard]] RankWave *getStopByName(const std::string &name) const { return _rankwavesByName.at(name).get(); }
     void pushMidi(const MidiData& midiData) { push(midiData); }
 
     template<auto OUT_BUFFER_SIZE>
@@ -81,12 +81,11 @@ private:
     constexpr static float TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
 
     void loadRankwaves();
-    void updateStops() const;
-    void rebuildRankwaves();
+    void generateWavetables() const;
 
     Model model;
     Organ *organ;
-    std::unordered_map<std::string, std::unique_ptr<Rankwave>> _rankwavesByName{};
+    std::unordered_map<std::string, std::unique_ptr<RankWave>> _rankwavesByName{};
     std::vector<IR> _irs{};
     IRs irs;
     std::shared_ptr<Scale> _scale;

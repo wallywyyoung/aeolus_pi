@@ -41,8 +41,6 @@ class Organ final : public MidiManager::OrganInterface {
     constexpr static float TREMULANT_PHASE_INCREMENT = std::numbers::pi_v<float> * 2.0f * TREMULANT_FREQUENCY * SAMPLE_RATE_R;
     constexpr static float TREMULANT_LEVEL = 1.0f; /// Tremulant OSC wavetable amplitude.
 
-    void clearDivisionsTriggerFlag() const;
-
     void generateTremulant(); // Generate tremulant osc waveform for a subframe.
 
     std::shared_ptr<VoicePool> _voicePool{};
@@ -58,7 +56,7 @@ class Organ final : public MidiManager::OrganInterface {
     float _tremulantPhase{0.0f};
 
 public:
-    explicit Organ(std::function<Rankwave*(const std::string&)> getStopByName);
+    explicit Organ(std::function<RankWave*(const std::string&)> getStopByName);
     ~Organ() override = default;
 
     // Notes

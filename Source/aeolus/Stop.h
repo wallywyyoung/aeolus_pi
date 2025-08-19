@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "aeolus/Rankwave.h"
+#include "aeolus/RankWave.h"
 #include "aeolus/utilities/Range.h"
 
 /**
@@ -36,49 +36,42 @@ public:
     // Zone - a grouping pipes for a range of keys.
     struct Zone {
         Range keyRange;
-        std::vector<Rankwave *> rankwaves;
+        std::vector<RankWave *> rankWaves;
         [[nodiscard]] bool isForKey(const int key) const noexcept { return keyRange.contains(key); }
     };
 
     explicit Stop() = default;
 
-    [[nodiscard]] Type getType() const noexcept { return _type; }
-    void setType(const Type t) noexcept { _type = t; }
+    [[nodiscard]] Type getType() const noexcept { return type; }
+    [[nodiscard]] std::string getName() const { return name; }
+    [[nodiscard]] float getGain() const noexcept { return gain; }
+    [[nodiscard]] float getChiffGain() const noexcept { return chiffGain; }
+    [[nodiscard]] const std::vector<Zone>& getZones() const noexcept { return zones; }
 
-    [[nodiscard]] std::string getName() const { return _name; }
-    void setName(const std::string& name) { _name = name; }
+    [[nodiscard]] bool isEnabled() const noexcept { return enabled; }
+    void setEnabled(const bool enable) noexcept { enabled = enable; }
 
-    [[nodiscard]] float getGain() const noexcept { return _gain; }
-    void setGain(const float g) noexcept { _gain = g; }
-
-    [[nodiscard]] float getChiffGain() const noexcept { return _chiffGain; }
-    void setChiffGain(const float g) noexcept { _chiffGain = g; }
-
-    [[nodiscard]] bool isEnabled() const noexcept { return _enabled; }
-    void setEnabled(const bool shouldBeEnabled) noexcept { _enabled = shouldBeEnabled; }
-
-    [[nodiscard]] const std::vector<Zone>& getZones() const noexcept { return _zones; }
 
     /**
      * Returns the range of keys this stop can be triggered by.
      */
     Range getKeyRange() const {
-        if (_zones.empty()) {
+        if (zones.empty()) {
             return {};
         }
-        auto range(_zones[0].keyRange);
-        for (const auto&[keyRange, rankwaves] : _zones)
+        auto range(zones[0].keyRange);
+        for (const auto&[keyRange, rankWaves] : zones)
             range = range.getUnionWith(keyRange);
         return range;
     }
 
 private:
-    Type _type{Type::Unknown};
-    std::string _name{};
-    std::vector<Zone> _zones{};
-    float _gain{1.0f};
-    float _chiffGain{0.0f};
-    bool _enabled{false};
+    Type type{Type::Unknown};
+    std::string name{};
+    std::vector<Zone> zones{};
+    float gain{1.0f};
+    float chiffGain{0.0f};
+    bool enabled{false};
 
     friend class StopFactory;
 };

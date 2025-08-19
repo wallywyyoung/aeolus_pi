@@ -19,108 +19,54 @@
 //
 // ---------------------------------------------------------------------------
 
-#include "aeolus/Pipewave.h"
+#include "aeolus/PipeWave.h"
 
 #include <cmath>
-#include <random>
 #include <cstring>
 #include <memory>
+#include <random>
 #include <vector>
 
 #include "MemoryUtilities.h"
 
-Pipewave::Pipewave(const std::shared_ptr<Addsynth> &model, const int note, const float freq) : _model(model), _note(note), _freq(freq) , _needsToBeRebuilt(std::make_shared<std::atomic<bool>>(true)) { }
+PipeWave::PipeWave(const std::shared_ptr<Addsynth> &model, const int note, const float freq) : _model(model), _note(note), _freq(freq) { }
+//
+// PipeWave::PipeWave(const PipeWave& other)
+//         : _model{ other._model }
+//         , _note{ other._note }
+//         , _freq{ other._freq }
+//         , _attackLength{ other._attackLength }
+//         , _loopLength{ other._loopLength }
+//         , _sampleStep{ other._sampleStep }
+//         , _releaseLength{ other._releaseLength }
+//         , _releaseMultiplier{ other._releaseMultiplier }
+//         , _releaseDetune{ other._releaseDetune }
+//         , _instability{ other._instability }
+//         , _wavetable{ other._wavetable }
+//         , _attackStartPtr{}
+//         , _loopStartPtr{}
+//         , _loopEndPtr{}
+// {
+//     // Adjust pointers to the copied wavetable.
+//     // TODO: Added const_cast is undefined and this will probably break. FIX
+//     const auto wavetable{ const_cast<float*>(other._wavetable.data()) };
+//     const auto attackOffset = other._attackStartPtr - wavetable;
+//     const auto loopStartOffset = other._loopStartPtr - wavetable;
+//     const auto loopEndOffset = other._loopEndPtr - wavetable;
+//
+//     _attackStartPtr = _wavetable.data() + attackOffset;
+//     _loopStartPtr = _wavetable.data() + loopStartOffset;
+//     _loopEndPtr = _wavetable.data() + loopEndOffset;
+// }
 
-Pipewave::Pipewave(const Pipewave& other)
-        : _model{ other._model }
-        , _note{ other._note }
-        , _freq{ other._freq }
-        , _needsToBeRebuilt(std::make_shared<std::atomic<bool>>(other._needsToBeRebuilt->load()))
-        , _attackLength{ other._attackLength }
-        , _loopLength{ other._loopLength }
-        , _sampleStep{ other._sampleStep }
-        , _releaseLength{ other._releaseLength }
-        , _releaseMultiplier{ other._releaseMultiplier }
-        , _releaseDetune{ other._releaseDetune }
-        , _instability{ other._instability }
-        , _wavetable{ other._wavetable }
-        , _attackStartPtr{}
-        , _loopStartPtr{}
-        , _loopEndPtr{}
-{
-    // Adjust pointers to the copied wavetable.
-    // TODO: Added const_cast is undefined and this will probably break. FIX
-    const auto wavetable{ const_cast<float*>(other._wavetable.data()) };
-    const auto attackOffset = other._attackStartPtr - wavetable;
-    const auto loopStartOffset = other._loopStartPtr - wavetable;
-    const auto loopEndOffset = other._loopEndPtr - wavetable;
-
-    _attackStartPtr = _wavetable.data() + attackOffset;
-    _loopStartPtr = _wavetable.data() + loopStartOffset;
-    _loopEndPtr = _wavetable.data() + loopEndOffset;
-}
-
-float Pipewave::getPipeFrequency() const noexcept
-{
+float PipeWave::getPipeFrequency() const noexcept {
     return _freq * static_cast<float>(_model->getFn()) / static_cast<float>(_model->getFd());
 }
 
-void Pipewave::prepareToPlay() {
-    if (_wavetable.empty() || _needsToBeRebuilt->load()) {
-        genwave();
-    }
-}
-
-Pipewave::State Pipewave::trigger()
-{
-    State state = {};
-
-    if (!_needsToBeRebuilt->load()) {
-        state.pipewave = this;
-        state.env = Attack;
-    }
-
-    return state;
-}
-
-void Pipewave::release(State& state)
-{
-    assert(state.env == Pipewave::Attack || state.env == Pipewave::Release);
-    assert(state.pipewave == this);
-    state.env = Release;
-}
-
-void Pipewave::play(State& state, float* out)
-{
+void PipeWave::play(State& state, float* out) {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
     std::uniform_real_distribution dist(-0.5f, 0.5f);
-
-    if (out == nullptr) {
-        throw std::invalid_argument("Pipewave::play: out is nullptr");
-    }
-    if (state.env == Idle) {
-        throw std::invalid_argument("Pipewave::play: env is Idle");
-    }
-    if (_attackStartPtr == nullptr) {
-        throw std::invalid_argument("Pipewave::play: _attackStartPtr is nullptr");
-    }
-    if (_loopStartPtr == nullptr) {
-        throw std::invalid_argument("Pipewave::play: _loopStartPtr is nullptr");
-    }
-    if (_loopEndPtr == nullptr) {
-        throw std::invalid_argument("Pipewave::play: _loopEndPtr is nullptr");
-    }
-
-    if (_needsToBeRebuilt->load()) {
-        // Drastic measures - pipe has been retuned while playing.
-        // Data pointers may be invalid at this point - terminate the voice immediately.
-        memset(out, 0, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
-        state.env = Over;
-        state.playPtr = nullptr;
-        state.releasePtr = nullptr;
-        return;
-    }
 
     float* p = state.playPtr;
     float* r = state.releasePtr;
@@ -143,32 +89,28 @@ void Pipewave::play(State& state, float* out)
         assert(false); // Invalid envelope state
     }
 
-    if (r != nullptr) {
+    if (r) {
         int k = AUDIO_SUB_FRAME_LENGTH;
         float* q = out;
         float g = state.releaseGain;
         const int i = state.releaseCount - 1;
 
-        float dg = g / AUDIO_SUB_FRAME_LENGTH;
+        float dg = g / static_cast<float>(AUDIO_SUB_FRAME_LENGTH);
 
-        if (i > 0)
+        if (i > 0) {
             dg *= _releaseMultiplier;
+        }
 
         if (r < _loopStartPtr) {
-
             while (k--) {
                 *q++ += g * *r++;
                 g -= dg;
             }
-
         } else {
-
             float y = state.releaseInterpolation;
             const auto dy = _releaseDetune;
-
             while (k--) {
                 y += dy;
-
                 if (y > 1.0f) {
                     y -= 1.0f;
                     r += 1;
@@ -176,18 +118,15 @@ void Pipewave::play(State& state, float* out)
                     y += 1.0f;
                     r -= 1;
                 }
-
                 *q++ += g * (r [0] + y * (r [1] - r [0]));
                 g -= dg;
                 r += _sampleStep;
-
-                if (r >= _loopEndPtr)
+                if (r >= _loopEndPtr) {
                     r -= _loopLength;
+                }
             }
-
             state.releaseInterpolation = y;
         }
-
         if (i > 0) {
             state.releaseGain = g;
             state.releaseCount = i;
@@ -197,7 +136,7 @@ void Pipewave::play(State& state, float* out)
         }
     }
 
-    if (p != nullptr) {
+    if (p) {
         int k = AUDIO_SUB_FRAME_LENGTH;
         float* q = out;
 
@@ -212,7 +151,6 @@ void Pipewave::play(State& state, float* out)
 
             while (k--) {
                 y += dy;
-
                 if (y > 1.0f) {
                     y -= 1.0f;
                     p += 1;
@@ -220,27 +158,27 @@ void Pipewave::play(State& state, float* out)
                     y += 1.0f;
                     p -= 1;
                 }
-
                 *q++ += p [0] + y * (p [1] - p [0]);
                 p += _sampleStep;
-
-                if (p >= _loopEndPtr)
+                if (p >= _loopEndPtr) {
                     p -= _loopLength;
+                }
             }
-
             state.playInterpolation = y;
         }
     }
-
-    if (p == nullptr && r == nullptr)
+    if (p == nullptr && r == nullptr) {
         state.env = Over;
-
+    }
     state.playPtr = p;
     state.releasePtr = r;
 }
 
-void Pipewave::genwave()
-{
+void PipeWave::generateWavetable() {
+    if (!_wavetable.empty()) {
+        return;
+    }
+
     // TODO: Is this right?
     thread_local std::random_device rnd;
     std::mt19937 gen(rnd());
@@ -281,7 +219,7 @@ void Pipewave::genwave()
 
     int nc = 0;
 
-    looplen(f1 * SAMPLE_RATE_F, static_cast<int>(SAMPLE_RATE_F / 6.0f), _loopLength, nc);
+    looplen(f1 * SAMPLE_RATE_F, SAMPLE_RATE_F * _sampleStep, static_cast<int>(SAMPLE_RATE_F / 6.0f), _loopLength, nc);
     assert(_loopLength > 0);
     assert(nc > 0);
 
@@ -363,18 +301,16 @@ void Pipewave::genwave()
     for (int i = 0; i < _sampleStep * (AUDIO_SUB_FRAME_LENGTH + 4); ++i) {
         _attackStartPtr[i + _attackLength + _loopLength] = _attackStartPtr[i + _attackLength];
     }
-
-    _needsToBeRebuilt->store(false);
 }
 
-void Pipewave::looplen(const float f, const int lmax, int& aa, int& bb)
+void PipeWave::looplen(const float f, float sampleStepRate, const int lmax, int &aa, int &bb)
 {
     constexpr int N = 8;
     int z[N];
     int a, b;
     float d;
 
-    float g = SAMPLE_RATE_F / f;
+    float g = sampleStepRate / f;
 
     for (int i = 0; i < N; ++i) {
         a = z[i] = static_cast<int>(floor(g + 0.5));
@@ -394,16 +330,16 @@ void Pipewave::looplen(const float f, const int lmax, int& aa, int& bb)
         }
 
         if (a <= lmax) {
-            d = SAMPLE_RATE_F * b / a - f;
+            d = sampleStepRate * b / a - f;
 
             if (fabs(d) < 0.1f && fabs(d) < 3e-4f * f)
                 break;
 
             g = (fabs(g) < 1e-6f) ? 1e6f : 1.0f / g;
         } else  {
-            b = static_cast<int>(static_cast<float>(lmax) * f / SAMPLE_RATE_F);
-            a = static_cast<int>(b * SAMPLE_RATE_F / f + 0.5f);
-            d = SAMPLE_RATE_F * b / a - f;
+            b = static_cast<int>(static_cast<float>(lmax) * f / sampleStepRate);
+            a = static_cast<int>(b * sampleStepRate / f + 0.5f);
+            d = sampleStepRate * b / a - f;
             break;
         }
     }
@@ -413,7 +349,7 @@ void Pipewave::looplen(const float f, const int lmax, int& aa, int& bb)
     bb = std::max(1, b);
 }
 
-void Pipewave::attgain(float* att, const int n, const float p)
+void PipeWave::attgain(float* att, const int n, const float p)
 {
     float y = 0.6f;
 

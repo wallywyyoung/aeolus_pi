@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "aeolus/Rankwave.h"
+#include "aeolus/RankWave.h"
 #include "aeolus/dsp/chiff.h"
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/spatial.h"
@@ -31,41 +31,42 @@
  * @brief Single voice associated with a single pipe.
  */
 class Voice {
-    Pipewave::State _state; ///< Pipe state associated with this voice.
-    int _stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
-    float _buffer[AUDIO_SUB_FRAME_LENGTH]{};
-    dsp::DelayLineStatic<SAMPLE_RATE> _delayLine; /// Delay after chiff.
-    int _delay{};
-    dsp::Chiff _chiff; /// Attack chiff.
-    dsp::SpatialSource _spatialSource{}; /// Stereo spatial modeller.
-    size_t _postReleaseCounter{0}; /// Counter to account for the delayed sound before recycling the voice.
+    PipeWave::State state{}; ///< Pipe state associated with this voice.
+    int stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
+    std::array<float, AUDIO_SUB_FRAME_LENGTH> buffer{ 0.0f };
+    dsp::DelayLineStatic<SAMPLE_RATE> delayLine{}; /// Delay after chiff.
+    int delay{};
+    dsp::Chiff chiff{}; /// Attack chiff.
+    dsp::SpatialSource spatialSource{}; /// Stereo spatial modeller.
+    size_t postReleaseCounter{0}; /// Counter to account for the delayed sound before recycling the voice.
 public:
     Voice() = default;
 
     Voice& operator=(const Voice& other) {
         if (this != &other) {
-            _state = other._state;
-            _stopIndex = other._stopIndex;
+            state = other.state;
+            stopIndex = other.stopIndex;
             for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
-                _buffer[i] = other._buffer[i];
+                buffer[i] = other.buffer[i];
             }
-            _delayLine = other._delayLine;
-            _delay = other._delay;
-            _chiff = other._chiff;
-            _spatialSource = other._spatialSource;
-            _postReleaseCounter = other._postReleaseCounter;
+            delayLine = other.delayLine;
+            delay = other.delay;
+            chiff = other.chiff;
+            spatialSource = other.spatialSource;
+            postReleaseCounter = other.postReleaseCounter;
         }
         return *this;
     }
-    void trigger(const Pipewave::State& state);
+    void trigger(const PipeWave::State &newState);
     void release();
     void reset();
     void process(float* outL, float* outR);
-    void setStopIndex(const int idx) noexcept { _stopIndex = idx; }
+    void setStopIndex(const int idx) noexcept { stopIndex = idx; }
 
     [[nodiscard]] bool isOver() const noexcept;
+    [[nodiscard]] bool isIdle() const noexcept { return state.env == PipeWave::Idle; }
     [[nodiscard]] bool isActive() const noexcept;
     [[nodiscard]] bool isForNote(int note) const noexcept;
     [[nodiscard]] int getNote() const;
-    [[nodiscard]] int stopIndex() const noexcept { return _stopIndex; }
+    [[nodiscard]] int getStopIndex() const noexcept { return stopIndex; }
 };

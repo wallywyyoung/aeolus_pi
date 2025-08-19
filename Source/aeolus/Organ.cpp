@@ -23,27 +23,25 @@
 
 #include <memory>
 
-Organ::Organ(std::function<Rankwave*(const std::string&)> getStopByName) : _voicePool(std::make_shared<VoicePool>()) {
+Organ::Organ(std::function<RankWave*(const std::string&)> getStopByName) : _voicePool(std::make_shared<VoicePool>()) {
     DivisionFactory::initFromJson(_voicePool, _divisions, getStopByName);
 }
 
 void Organ::setDivisionNoteOn(const int &division, const int &note) {
-    clearDivisionsTriggerFlag();
-    _divisions[division]->setNoteOn(note, false);
+    _divisions[division]->setNoteOn(note);
 }
 
 void Organ::setDivisionNoteOff(const int &division, const int &note) {
-    clearDivisionsTriggerFlag();
-    _divisions[division]->setNoteOff(note, false);
+    _divisions[division]->setNoteOff(note);
 }
 
 void Organ::setDivisionAllNotesOff(const int& division) {
-    _divisions[division]->setAllNotesOff(false);
+    _divisions[division]->setAllNotesOff();
 }
 
 void Organ::setGlobalAllNotesOff() {
     for (const auto &division : _divisions) {
-        division->setAllNotesOff(false);
+        division->setAllNotesOff();
     }
 }
 
@@ -134,12 +132,6 @@ GlobalPiston Organ::captureStateAsPiston() const {
         globalPiston.divisions.emplace_back(division->captureStateAsPiston());
     }
     return globalPiston;
-}
-
-void Organ::clearDivisionsTriggerFlag() const {
-    for (auto& division : _divisions) {
-        division->clearTriggerFlag();
-    }
 }
 
 // TODO: Index, batch, vectorize

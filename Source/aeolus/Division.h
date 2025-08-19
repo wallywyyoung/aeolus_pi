@@ -54,9 +54,9 @@ public:
     [[nodiscard]] std::string getMnemonic() const { return _mnemonic; }
 
     // Notes
-    void setNoteOn(const int& note, const bool& isLinkedDivision);
-    void setNoteOff(const int& note, const bool& updateLinkedDivisions);
-    void setAllNotesOff(const bool& isLinkedDivision);
+    void setNoteOn(const int &note);
+    void setNoteOff(const int &note);
+    void setAllNotesOff();
     // Modifiers
     void handleSwell(const int& value);
     // Stops
@@ -83,19 +83,6 @@ public:
     void releaseVoicesOfDisabledStops();
     void triggerVoicesOfEnabledStops();
 
-    /**
-     * Tells the division has been already triggered by a linked division,
-     * so that it should not be receiving the same note on/off event.
-     */
-    bool hasBeenTriggered() const noexcept { return _triggerFlag; }
-
-    /**
-     * Clears trigger flag.
-     * This must be called on all divisions before processing the
-     * next note on/off event.
-     */
-    void clearTriggerFlag() noexcept { _triggerFlag = false; }
-
 private:
     /// Total number of MIDI notes.
     constexpr static int TOTAL_NOTES = 128;
@@ -106,6 +93,7 @@ private:
     void setAllCouplersOff();
     void setAllCouplersOn();
 
+    void recursiveKeyState(std::bitset<TOTAL_NOTES>& aggregated);
     void updateAggregatedKeysState(); // Aggregates key state from this division's and coulpled divisions' key states.
     bool triggerVoicesForStop(int stopIndex, int note);
     bool isAlreadyVoiced(int stopIndex, int node);
@@ -139,13 +127,8 @@ private:
     std::vector<Stop> _stops{};   // All the stops this division has.
     std::vector<Voice*> _activeVoices;  // Active voices on this division.
 
-    std::bitset<TOTAL_NOTES> _keysState; // Key state for this division.
+    std::bitset<TOTAL_NOTES> keysState; // Key state for this division.
     std::bitset<TOTAL_NOTES> _aggregatedKeysState;   // Key state aggregated from coupled divisions.
-
-    /// Tells whether this division has been triggered.
-    /// This is used to avoid triggering a division multiple times by the same note on/off event,
-    /// which is the case for linked divisions.
-    bool _triggerFlag;
 
     friend class DivisionFactory;
 };

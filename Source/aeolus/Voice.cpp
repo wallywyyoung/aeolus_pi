@@ -23,97 +23,92 @@
 
 #include <cstring>
 
-void Voice::trigger(const Pipewave::State& state) {
-    assert(_state.isIdle());
-    _state = state;
+void Voice::trigger(const PipeWave::State &newState) {
+    assert(newState.isIdle());
+    state = newState;
     // Chiff
-    const auto freq = _state.pipewave->getPipeFrequency();
+    const auto freq = newState.pipeWave->getPipeFrequency();
     const auto dt = 1.0f / freq;
     // Delay pipe harmonic signal so that chiff noise builds up first
-    _delay = static_cast<int>(std::min<float>(SAMPLE_RATE_F, 0.5f * dt * SAMPLE_RATE_F));
-    _chiff.setAttack(5.0f * dt);
-    _chiff.setDecay(100.0f * dt);
-    _chiff.setSustain(0.01f);
-    _chiff.setRelease(100.0f * dt);
+    delay = static_cast<int>(std::min<float>(buffer.size(), 0.5f * dt * SAMPLE_RATE_F));
+    chiff.setAttack(5.0f * dt);
+    chiff.setDecay(100.0f * dt);
+    chiff.setSustain(0.01f);
+    chiff.setRelease(100.0f * dt);
     // Frequency-dependant chiff attenuation
     const float att = 1.0f - expf(-freq / 3000.0f);
-    _chiff.setGain(std::min<float>(1.0f, 0.02f * _state.chiffGain * att));
-    _chiff.setFrequency(freq);
-    _chiff.trigger();
+    chiff.setGain(std::min<float>(1.0f, 0.02f * newState.chiffGain * att));
+    chiff.setFrequency(freq);
+    chiff.trigger();
     // Spatialization
-    const int note = _state.pipewave->getNote();
+    const int note = newState.pipeWave->getNote();
     const float k = note % 2 != 0 ? 1.0f : -1.0f;
     // Wider spread for low-pitched pipes
-    const auto& model = _state.pipewave->getModel();
+    const auto& model = newState.pipeWave->getModel();
     const float width = 0.15f * static_cast<float>(model->getFd()) / static_cast<float>(model->getFn());
     const float x = width * k * static_cast<float>(abs(note - 65));
-    _spatialSource.setSourcePosition(x, 5.0f);
-    _spatialSource.recalculate();
-    _postReleaseCounter = _spatialSource.getPostFxSamplesCount() + 2 * _delay + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
+    spatialSource.setSampleRate(SAMPLE_RATE_F);
+    spatialSource.setSourcePosition(x, 5.0f);
+    spatialSource.recalculate();
+    postReleaseCounter = spatialSource.getPostFxSamplesCount() + 2 * delay + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
 }
 
 void Voice::release() {
-    // This voice is pending to be reclaimed.
-    if (_state.env == Pipewave::Over) {
+    if (state.env == PipeWave::Over) {
+        std::cerr << "Release was called before the voice was over!" << std::endl;
         return;
     }
-    _state.release();
-    _chiff.release();
+    state.release();
+    chiff.release();
 }
 
 void Voice::reset() {
-    _state.reset();
-    _stopIndex = -1;
-    memset(_buffer, 0, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
-    _delayLine.reset();
-    _chiff.reset();
-    _spatialSource.reset();
+    state.reset();
+    stopIndex = -1;
+    delayLine.reset();
+    chiff.reset();
+    spatialSource.reset();
 }
 
 void Voice::process(float* outL, float* outR) {
-    memset(_buffer, 0, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
-    const auto gain = _state.gain;
-    if (_state.env == Pipewave::Over) {
-        _postReleaseCounter -= std::min(static_cast<int>(_postReleaseCounter), AUDIO_SUB_FRAME_LENGTH);
-        for (float & i : _buffer) {
-            _delayLine.write(0.0f);
-            i = _delayLine.readNearest(_delay) * gain;
+    buffer.fill(0.0f);
+    const auto gain = state.gain;
+    if (state.env == PipeWave::Over) {
+        postReleaseCounter -= std::min(static_cast<int>(postReleaseCounter), AUDIO_SUB_FRAME_LENGTH);
+        for (float & i : buffer) {
+            delayLine.write(0.0f);
+            i = delayLine.readNearest(delay) * gain;
         }
     } else {
-        auto* pipe = _state.pipewave;
-        pipe->play(_state, _buffer);
-        for (float & i : _buffer) {
-            _delayLine.write(i);
-            i = _delayLine.readNearest(_delay) * gain;
+        const auto pipeWave = state.pipeWave;
+        pipeWave->play(state, buffer);
+        for (float & i : buffer) {
+            delayLine.write(i);
+            i = delayLine.readNearest(delay) * gain;
         }
     }
-    _chiff.process(_buffer, AUDIO_SUB_FRAME_LENGTH);
-    // Spatial modeling is only applied on stereo voice output
-    if (outL != outR) {
-        _spatialSource.process(_buffer, outL, outR, AUDIO_SUB_FRAME_LENGTH);
-    } else {
-        memcpy(outL, _buffer, sizeof(float) * AUDIO_SUB_FRAME_LENGTH);
-    }
+    chiff.process(buffer, AUDIO_SUB_FRAME_LENGTH);
+    spatialSource.process(buffer, outL, outR, AUDIO_SUB_FRAME_LENGTH);
 }
 
 bool Voice::isOver() const noexcept {
-    return (_state.env == Pipewave::Over) && _postReleaseCounter == 0;
+    return (state.env == PipeWave::Over) && postReleaseCounter == 0;
 }
 
 bool Voice::isActive() const noexcept {
-    return _state.env == Pipewave::Attack;
+    return state.env == PipeWave::Attack;
 }
 
 bool Voice::isForNote(const int note) const noexcept {
-    if (_state.pipewave != nullptr) {
-        return _state.pipewave->getNote() == note;
+    if (state.pipeWave != nullptr) {
+        return state.pipeWave->getNote() == note;
     }
     return false;
 }
 
 int Voice::getNote() const {
-    if (_state.pipewave != nullptr) {
-        return _state.pipewave->getNote();
+    if (state.pipeWave != nullptr) {
+        return state.pipeWave->getNote();
     }
     return -1;
 }

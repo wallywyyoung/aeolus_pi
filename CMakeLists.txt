@@ -57,9 +57,10 @@ add_executable(aeolus_pi
         Source/aeolus/N_func.cpp
         Source/aeolus/N_func.h
         Source/aeolus/Organ.cpp
-        Source/aeolus/Pipewave.cpp
-        Source/aeolus/Pipewave.h
-        Source/aeolus/Rankwave.cpp
+        Source/aeolus/PipeWave.cpp
+        Source/aeolus/PipeWave.h
+        Source/aeolus/RankWave.cpp
+        Source/aeolus/RankWave.h
         Source/aeolus/Scale.cpp
         Source/aeolus/Scale.h
         Source/aeolus/Semaphore.cpp

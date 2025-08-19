@@ -22,7 +22,7 @@
 #include "aeolus/StopFactory.h"
 #include "aeolus/Organ.h"
 
-void DivisionFactory::initFromJson(const std::shared_ptr<VoicePool> voicePool, std::vector<std::unique_ptr<Division>> &divisions, std::function<Rankwave *(const std::string &)> getStopByName) {
+void DivisionFactory::initFromJson(const std::shared_ptr<VoicePool> voicePool, std::vector<std::unique_ptr<Division>> &divisions, std::function<RankWave *(const std::string &)> getStopByName) {
     const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
     if (!exists(configFile)) {
         return;
@@ -48,7 +48,7 @@ void DivisionFactory::initFromJson(const std::shared_ptr<VoicePool> voicePool, s
     }
 }
 
-std::unique_ptr<Division> DivisionFactory::initFromJson(nlohmann::json &json, std::shared_ptr<VoicePool> voicePool, std::function<Rankwave *(const std::string &)> getStopByName) {
+std::unique_ptr<Division> DivisionFactory::initFromJson(nlohmann::json &json, std::shared_ptr<VoicePool> voicePool, std::function<RankWave *(const std::string &)> getStopByName) {
     auto division = std::make_unique<Division>();
 
     division->_name = json["name"];

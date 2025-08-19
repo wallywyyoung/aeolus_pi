@@ -21,7 +21,6 @@
 #pragma once
 
 #include "aeolus/Voice.h"
-#include <functional>
 
 /**
  * @brief A collection of all the voices.
@@ -30,30 +29,19 @@ class VoicePool final {
 public:
     constexpr static int MAX_VOICES = 512;
 
-    VoicePool(const int maxVoices = MAX_VOICES): _voices(maxVoices, Voice()), _voiceCount{0}, _idleVoices(_voices) { }
+    VoicePool() = default;
 
-    [[nodiscard]] int getNumberOfActiveVoices() const noexcept { return _voiceCount; }
-    [[nodiscard]] Voice* trigger(const Pipewave::State& state) {
-        if (_idleVoices.size() > 0) {
-            auto voice = _idleVoices.begin();
-            voice->trigger(state);
-            _idleVoices.erase(voice);
-            ++_voiceCount;
-            return voice.base();
+    [[nodiscard]] Voice* trigger(const PipeWave::State& state) {
+        for (auto& voice : voices) {
+            if (voice.isIdle()) {
+                voice.trigger(state);
+                return &voice;
+            }
         }
         // No more voices.
         return nullptr;
     }
 
-    void resetAndReturnToPool(Voice* voice) {
-        assert(voice != nullptr);
-        voice->reset();
-        _idleVoices.emplace_back(*voice);
-        --_voiceCount;
-    }
-
 private:
-    std::vector<Voice> _voices{}; ///< All the voices.
-    std::vector<Voice> _idleVoices; ///< Voices available to be triggered.
-    std::atomic<int> _voiceCount; ///< Number of taken voices.
+    Voice voices[MAX_VOICES]; ///< Voices available to be triggered.
 };

@@ -27,46 +27,36 @@
 EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _tuningFrequency(TUNING_FREQUENCY_DEFAULT) {
     irs = IOManager::loadIRs();
     loadRankwaves();
-    updateStops();
+    generateWavetables();
     organ = new Organ(std::bind(&EngineGlobal::getStopByName, this, std::placeholders::_1));
     organInterface = static_cast<OrganInterface *>(organ);
     _reverbTailCounter = _convolver.setIR(irs.irs[0]);
     // _volume.setValue(0.005f, true);
+    std::cout << "Setting all stops on" << std::endl;
     organ->setGlobalAllStopsOn();
+    std::cout << "Setting notes on" << std::endl;
     organ->setDivisionNoteOn(0, 50);
     organ->setDivisionNoteOn(1, 50);
     organ->setDivisionNoteOn(2, 50);
     organ->setDivisionNoteOn(3, 24);
 }
 
-void EngineGlobal::updateStops() const {
+void EngineGlobal::generateWavetables() const {
     dp::thread_pool pool(_rankwavesByName.size());
     for (const auto &val: _rankwavesByName | std::views::values) {
         auto rwp = val.get();
         pool.enqueue_detach([rwp] {
             MemoryUtilities::enableFlushToZero();
-            rwp->prepareToPlay();
+            rwp->generateWavetables();
             MemoryUtilities::disableFlushToZero();
         });
     }
     pool.wait_for_tasks();
 }
 
-void EngineGlobal::rebuildRankwaves() {
-    // Prepare all the rankwaves to be retuned
-    for (const auto &val: _rankwavesByName | std::views::values) {
-        val->retunePipes(*_scale, _tuningFrequency);
-    }
-
-    // @note We don't kill active voices - they will be using pipes from a parallel set.
-    //       However, switching tuning very fast (while keeping the voice sustained)
-    //       may result in voice to be killed.
-    updateStops();
-}
-
 void EngineGlobal::loadRankwaves() {
     for (int i = 0; i <  model.getStopsCount(); ++i) {
         // TODO: Fix this mapping in JSON.
-        _rankwavesByName.emplace(model[i].getFileName(), std::make_unique<Rankwave>(model[i], *_scale, _tuningFrequency));
+        _rankwavesByName.emplace(model[i].getFileName(), std::make_unique<RankWave>(model[i], *_scale, _tuningFrequency));
     }
 }
