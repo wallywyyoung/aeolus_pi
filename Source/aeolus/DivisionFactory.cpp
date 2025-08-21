@@ -22,7 +22,7 @@
 #include "aeolus/StopFactory.h"
 #include "aeolus/Organ.h"
 
-void DivisionFactory::initFromJson(const std::shared_ptr<VoicePool> voicePool, std::vector<std::unique_ptr<Division>> &divisions, std::function<RankWave *(const std::string &)> getStopByName) {
+void DivisionFactory::initFromJson(const std::shared_ptr<VoicePool> voicePool, std::vector<std::shared_ptr<Division>> &divisions, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName) {
     const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
     if (!exists(configFile)) {
         return;
@@ -34,41 +34,42 @@ void DivisionFactory::initFromJson(const std::shared_ptr<VoicePool> voicePool, s
     }
     divisions.reserve(json.count("divisions"));
     for (auto divisionDef : json["divisions"]) {
-        auto division = DivisionFactory::initFromJson(divisionDef, voicePool, getStopByName);
+        auto division = initFromJson(divisionDef, voicePool, getStopByName);
         divisions.push_back(std::move(division));
     }
     for (auto& division : divisions) {
-        for (auto &divisionName : division->_linkedDivisionNames) {
-            auto it = std::ranges::find_if(divisions,[&](const std::unique_ptr<Division>& d) { return d->_name == divisionName; });
+        for (auto &divisionName : division->linkedDivisionNames) {
+            auto it = std::ranges::find_if(divisions,[&](const std::shared_ptr<Division>& d) { return d->name == divisionName; });
             if (it != divisions.end()) {
-                division->_linkedDivisions.push_back(Division::Coupler{ it->get(), false });
-                it->get()->_linkedFromDivisions.push_back(division.get());
+                auto coupler = std::make_shared<Division::Coupler>(*it, false);
+                division->linkedDivisions.push_back(coupler);
+                it->get()->linkedFromDivisions.push_back(coupler);
             }
         }
     }
 }
 
-std::unique_ptr<Division> DivisionFactory::initFromJson(nlohmann::json &json, std::shared_ptr<VoicePool> voicePool, std::function<RankWave *(const std::string &)> getStopByName) {
-    auto division = std::make_unique<Division>();
+std::shared_ptr<Division> DivisionFactory::initFromJson(nlohmann::json &json, std::shared_ptr<VoicePool> voicePool, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName) {
+    auto division = std::make_shared<Division>();
 
-    division->_name = json["name"];
-    division->_mnemonic = json["mnemonic"];
+    division->name = json["name"];
+    division->mnemonic = json["mnemonic"];
 
     if (json.contains("link")) {
-        division->_linkedDivisionNames.reserve(json.count("link"));
+        division->linkedDivisionNames.reserve(json.count("link"));
         if (const auto link = json["link"]; link.is_array()) {
             for (const auto& item : link)
-                division->_linkedDivisionNames.push_back(item);
+                division->linkedDivisionNames.push_back(item);
         }
     }
 
-    division->_voicePool = voicePool;
+    division->voicePool = voicePool;
 
-    division->_hasSwell = json.contains("swell") && json["swell"];
-    division->_hasTremulant = json.contains("tremulant") && json["tremulant"];
-    division->_tremulantLevel.setRange(0.0f, division->_hasTremulant ? static_cast<float>(json["tremulant_level"]) : 0.0f);
+    division->hasSwell = json.contains("swell") && json["swell"];
+    division->hasTremulant = json.contains("tremulant") && json["tremulant"];
+    division->tremulantLevel.setRange(0.0f, division->hasTremulant ? static_cast<float>(json["tremulant_level"]) : 0.0f);
 
-    StopFactory::initFromJson(json, division->_stops, getStopByName);
+    StopFactory::initFromJson(json, division->stops, getStopByName);
 
     return std::move(division);
 }

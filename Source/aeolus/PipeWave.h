@@ -21,11 +21,12 @@
 
 #pragma once
 
+#include "MemoryConstants.h"
 #include "aeolus/Addsynth.h"
 
-#include <atomic>
 #include <iostream>
 #include <memory>
+
 
 /**
  * @brief Single pipe wavetable.
@@ -37,15 +38,6 @@ class PipeWave final {
 public:
     enum EnvelopeState { Idle, Attack, Release, Over }; /// Envelope state.
 
-    static std::string stateToString(EnvelopeState envState) {
-        switch (envState) {
-            case Idle: return "Idle";
-            case Attack: return "Attack";
-            case Release: return "Release";
-            case Over: return "Over";
-            default: return "Unknown";
-        }
-    }
     /// Playback state.
     struct State {
         std::shared_ptr<PipeWave> pipeWave = nullptr;
@@ -84,9 +76,10 @@ public:
 
     void generateWavetable();
 
-    void play(State& state, float* out);
+    void play(State &state, std::array<float, AUDIO_SUB_FRAME_LENGTH> &out);
 
 private:
+    static constexpr auto CENTS_IN_OCTAVE = 1200.0f;
     static void looplen(float f, float sampleStepRate, int lmax, int &aa, int &bb);
     static void attgain(float* att, int n, float p);
 

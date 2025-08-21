@@ -21,12 +21,11 @@
 #pragma once
 
 #include "StaticAudioBuffer.h"
-#include "aeolus/globals.h"
 #include "aeolus/Division.h"
-#include "aeolus/Sequencer.h"
-#include "aeolus/dsp/convolver.h"
 #include "aeolus/MidiManager.h"
 #include "aeolus/VoicePool.h"
+#include "aeolus/dsp/convolver.h"
+#include "aeolus/globals.h"
 
 #include <vector>
 
@@ -43,20 +42,19 @@ class Organ final : public MidiManager::OrganInterface {
 
     void generateTremulant(); // Generate tremulant osc waveform for a subframe.
 
-    std::shared_ptr<VoicePool> _voicePool{};
-    std::vector<std::unique_ptr<Division>> _divisions{};
+    std::shared_ptr<VoicePool> voicePool{};
+    std::vector<std::shared_ptr<Division>> divisions{};
     std::vector<GlobalPiston> pistons{};
-    std::unique_ptr<Sequencer> _sequencer{};
 
-    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _summingFrameBuffer;
-    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _divisionFrameBuffer;
-    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> _voiceFrameBuffer;
-    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1> _tremulantBuffer;
+    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> summingFrameBuffer;
+    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> divisionFrameBuffer;
+    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> voiceFrameBuffer;
+    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1> tremulantFrameBuffer;
 
-    float _tremulantPhase{0.0f};
+    float tremulantPhase{0.0f};
 
 public:
-    explicit Organ(std::function<RankWave*(const std::string&)> getStopByName);
+    explicit Organ(const std::function<std::shared_ptr<RankWave>(const std::string&)> &getStopByName);
     ~Organ() override = default;
 
     // Notes
@@ -91,22 +89,22 @@ public:
 
     template<auto OUT_BUFFER_SIZE> // Generate audio. Audio thread only.
     bool process(float (&out)[OUT_BUFFER_SIZE]) {
-        bool wasAudioGenerated = false;
+        auto wasAudioGenerated = false;
         memset(out, 0.0f, sizeof(float) * OUT_BUFFER_SIZE);
 
         constexpr auto STEREO_SUB_FRAME_LENGTH = AUDIO_SUB_FRAME_LENGTH * 2;
         for (int i = 0; i < OUT_BUFFER_SIZE; i += STEREO_SUB_FRAME_LENGTH) {
             generateTremulant();
-            for (const auto &division : _divisions) {
-                _divisionFrameBuffer.clear();
+            for (const auto &division : divisions) {
+                divisionFrameBuffer.clear();
                 // TODO: Consider per var array in struct for locality and SIMD parallelization.
-                const bool hasVoices = division->process(_divisionFrameBuffer, _voiceFrameBuffer);
+                const bool hasVoices = division->process(divisionFrameBuffer, voiceFrameBuffer);
                 wasAudioGenerated |= hasVoices;
                 if (hasVoices) {
-                    division->modulate(_divisionFrameBuffer, _tremulantBuffer);
-                    const auto leftBuffer = _divisionFrameBuffer.getReadPointer(0);
-                    const auto rightBuffer = _divisionFrameBuffer.getReadPointer(1);
-                    for (int j = 0; j < AUDIO_SUB_FRAME_LENGTH; ++j) {
+                    division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
+                    const auto leftBuffer = divisionFrameBuffer.getReadPointer(0);
+                    const auto rightBuffer = divisionFrameBuffer.getReadPointer(1);
+                    for (auto j = 0; j < AUDIO_SUB_FRAME_LENGTH; ++j) {
                         out[j * 2 + i] += leftBuffer[j];
                         out[j * 2 + 1 + i] += rightBuffer[j];
                     }

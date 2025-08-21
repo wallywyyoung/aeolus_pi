@@ -19,80 +19,72 @@
 
 #pragma once
 
-#include "MemoryUtilities.h"
-#include "aeolus/globals.h"
+#include "MemoryConstants.h"
+#include "StaticAudioBuffer.h"
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/filter.h"
+#include "aeolus/globals.h"
 
 namespace dsp {
 
-/**
- * @brief Sound source spatial modeller.
- *
- * This class take mono audio source and models a stereo output
- * based on the source and listener relative positions.
- * All positioning is performed in 2D space. Positions are specified in meters.
- */
-class SpatialSource
-{
-public:
+    /**
+     * @brief Sound source spatial modeller.
+     *
+     * This class take mono audio source and models a stereo output
+     * based on the source and listener relative positions.
+     * All positioning is performed in 2D space. Positions are specified in meters.
+     */
+    class SpatialSource {
+    public:
+        struct Position {
+            float x;
+            float y;
 
-    struct Position
-    {
-        float x;
-        float y;
+            void rotate(const float a) {
+                const float c = cosf(a);
+                const float s = sinf(a);
+                const float x2 = c * x - s * y;
+                const float y2 = s * x + s * y;
+                x = x2;
+                y = y2;
+            }
 
-        void rotate(const float a)
-        {
-            const float c = cosf(a);
-            const float s = sinf(a);
-            const float x2 = c * x - s * y;
-            const float y2 = s * x + s * y;
-            x = x2;
-            y = y2;
-        }
+            float distanceTo(const Position &other) const noexcept {
+                return sqrt((other.x - x) * (other.x - x) + (other.y - y) * (other.y - y));
+            }
 
-        float distanceTo(const Position& other) const noexcept
-        {
-            return sqrt((other.x - x) * (other.x - x) + (other.y - y) * (other.y - y));
-        }
+            float angleTo(const Position &other) const noexcept { return atan2f(other.y, other.x) - atan2f(y, x); }
+        };
 
-        float angleTo(const Position& other) const noexcept
-        {
-            return atan2f(other.y, other.x) - atan2f(y, x);
-        }
+        SpatialSource();
+
+        void reset();
+
+        void process(const std::array<float, AUDIO_SUB_FRAME_LENGTH> &in,
+                     StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &out);
+        void setSourcePosition(const float x, const float y) noexcept { _sourcePosition = {x, y}; }
+        void setListenerPosition(const float x, const float y) noexcept { _listenerPosition = {x, y}; }
+
+        void recalculate();
+
+        size_t getPostFxSamplesCount() const { return _delayLine.size(); }
+
+    private:
+        Position _sourcePosition;
+        Position _listenerPosition;
+        float _listenerOrientation;
+        float _listenerLeftRightDistance;
+
+        DelayLine _delayLine;
+        int _leftDelay;
+        int _rightDelay;
+        float _leftAttenuation{};
+        float _rightAttenuation{};
+
+        // Attenuation filters
+        BiquadFilter::Spec _filterSpec[2];
+        BiquadFilter::State _filterState[2];
     };
-
-    SpatialSource();
-
-    void reset();
-
-    void tick(float x, float& l, float& r);
-
-    void process(const float* in, float* outL, float* outR, int numFrames);
-    void setSourcePosition(const float x, const float y) noexcept { _sourcePosition = {x, y}; }
-    void setListenerPosition(const float x, const float y) noexcept { _listenerPosition = {x, y}; }
-
-    void recalculate();
-
-    size_t getPostFxSamplesCount() const { return _delayLine.size(); }
-
-private:
-    Position _sourcePosition;
-    Position _listenerPosition;
-    float _listenerOrientation;
-    float _listenerLeftRightDistance;
-
-    DelayLine _delayLine;
-    int _leftDelay;
-    int _rightDelay;
-    float _leftAttenuation{};
-    float _rightAttenuation{};
-
-    // Attenuation filters
-    BiquadFilter::Spec _filterSpec[2];
-    BiquadFilter::State _filterState[2];
-};
 
 } // namespace dsp
 

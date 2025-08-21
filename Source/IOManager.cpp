@@ -78,7 +78,7 @@ std::vector<Addsynth> IOManager::loadPipes() {
         } else if (extension == ".json") {
             addsynthFromJson(entry, synth);
         } else {
-            std::cout << "Skipping rankwave file " << entry.path() << std::endl;
+            std::cout << "Skipping Addsynth file " << entry.path() << std::endl;
             continue;
         }
         synths.push_back(synth);

@@ -18,6 +18,8 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/chiff.h"
+
+#include <array>
 #include <random>
 
 
@@ -90,7 +92,7 @@ bool Chiff::isActive() const noexcept
     return _envelope.state() != Envelope::Off;
 }
 
-void Chiff::process(float* out, const int numFrames)
+void Chiff::process(std::array<float, AUDIO_SUB_FRAME_LENGTH> &out)
 {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
@@ -106,7 +108,7 @@ void Chiff::process(float* out, const int numFrames)
         if (envelopeLevel < 1e-4f)
             return; // Noise is too quiet
 
-        for (int i = 0; i < numFrames; ++i) {
+        for (int i = 0; i < out.size(); ++i) {
             const float x0{ 2.0f * dist(gen) - 1.0f };
             const float x{ x0 * noiseLevel };
             float y{ _pipeResonator.read(_pipeDelay) };
@@ -120,7 +122,7 @@ void Chiff::process(float* out, const int numFrames)
         return;
     }
 
-    for (int i = 0; i < numFrames; ++i) {
+    for (int i = 0; i < out.size(); ++i) {
         const float x0 = 2.0f * dist(gen) - 1.0f;
         const float x = x0 * _noiseEnvelope.next();
         float y = _pipeResonator.read(_pipeDelay);

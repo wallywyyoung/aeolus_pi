@@ -24,12 +24,17 @@
 #include <thread>
 #include <alsa/asoundlib.h>
 
-#include "MemoryUtilities.h"
+#include "MemoryConstants.h"
 
 class MidiData;
 
 class AlsaInterface {
     //    General
+    enum SampleFormat {
+        S24 = SND_PCM_FORMAT_S24_3LE,
+        S16 = SND_PCM_FORMAT_S16_LE
+    };
+    static constexpr auto SAMPLE_FORMAT = S24;
     static constexpr auto CONFIG_FILE = "./Resources/configs/audio.json";
 
     //    Midi

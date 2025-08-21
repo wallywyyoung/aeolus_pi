@@ -19,70 +19,42 @@
 //
 // ---------------------------------------------------------------------------
 
-#include "../EngineGlobal.h"
 #include "aeolus/RankWave.h"
+#include "EngineGlobal.h"
 
-RankWave::RankWave(Addsynth model, const Scale& scale, const float tuningFreq) : _noteMin(model.getNoteMin()), _noteMax(model.getNoteMax()), model(std::make_shared<Addsynth>(model)), _pipes{2} {
-    assert(_noteMax - _noteMin + 1 > 0);
+RankWave::RankWave(Addsynth model, const Scale& scale, const float tuningFreq) : noteMin(model.getNoteMin()), noteMax(model.getNoteMax()), model(std::make_shared<Addsynth>(model)) {
+    assert(noteMax - noteMin + 1 > 0);
     createPipes(scale, tuningFreq);
 }
 
-RankWave::RankWave(const RankWave& other) : _noteMin(other._noteMin), _noteMax(other._noteMax), model(other.model), _pipes{2}, _pipeSetIndex(other._pipeSetIndex.load()) {
-
-}
-
-RankWave & RankWave::operator=(const RankWave &other) {
-    if (this != &other) {
-        _noteMin = other._noteMin;
-        _noteMax = other._noteMax;
-        model = other.model;
-        _pipes = other._pipes;
-        _pipeSetIndex = other._pipeSetIndex.load();
-    }
-    return *this;
-}
-
 auto RankWave::createPipes(const Scale &scale, const float tuningFrequency) -> void {
-    for (auto& p : _pipes)
-        p.clear();
-
-    _pipeSetIndex = 0;
-
+    pipeWaves.clear();
     const auto fn = model->getFn();
     const auto fd = model->getFd();
     const auto& s = scale.getTable();
     const float fbase = tuningFrequency * static_cast<float>(fn) / static_cast<float>(fd);
 
-    for (int i = _noteMin; i <= _noteMax; ++i) {
-        for (size_t j = 0; j < _pipes.size(); ++j) {
-            _pipes[j].push_back(std::make_shared<PipeWave>(model, i - _noteMin, scale.getFrequencyForMidiNote(i, fbase)));
-        }
+    for (int i = noteMin; i <= noteMax; ++i) {
+        pipeWaves.push_back(std::make_shared<PipeWave>(model, i - noteMin, scale.getFrequencyForMidiNote(i, fbase)));
     }
 }
 
 void RankWave::generateWavetables() {
-    const int pipeSetIndex{ _pipeSetIndex.load() };
-    const int nextPipeSetIndex{ (pipeSetIndex + 1) % static_cast<int>(_pipes.size()) };
-
-    for (auto& pipe : _pipes[nextPipeSetIndex]) {
-        pipe->generateWavetable();
+    for (const auto & pipeWave : pipeWaves) {
+        pipeWave->generateWavetable();
     }
-
-    _pipeSetIndex.store(nextPipeSetIndex);
 }
 
 PipeWave::State RankWave::trigger(const int note) {
-    if (note < _noteMin || note > _noteMax)
+    if (note < noteMin || note > noteMax) {
         return {};
+    }
 
-    const int index = note - _noteMin;
+    const int index = note - noteMin;
+    assertIsPositiveAndBelow(index, pipeWaves.size());
 
-    const int pipeSetIndex{ _pipeSetIndex.load() };
-
-    isPositiveAndBelow(index, _pipes[pipeSetIndex].size());
-
-
-    return {.pipeWave = _pipes[pipeSetIndex][note - _noteMin], .env = PipeWave::Attack };
+    auto state = PipeWave::State(pipeWaves[index],PipeWave::Attack);
+    return state;
 }
 
 

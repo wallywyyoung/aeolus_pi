@@ -17,28 +17,28 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "MemoryUtilities.h"
+#include "aeolus/utilities/SimdUtilities.h"
 
+#include <algorithm>
 #include <arm_neon.h>
 #include <cassert>
 #include <cmath>
-#include <algorithm>
 
-void MemoryUtilities::enableFlushToZero() {
+void SimdUtilities::enableFlushToZero() {
     uint64_t fpsr;
     constexpr uint64_t ftz = 1UL << 24;
     asm volatile("mrs %0, fpcr" : "=r"(fpsr));
     asm volatile("msr fpcr, %0" : : "ri"(fpsr | ftz));
 }
 
-void MemoryUtilities::disableFlushToZero() {
+void SimdUtilities::disableFlushToZero() {
     uint64_t fpsr;
     constexpr uint64_t ftz = 1UL << 24;
     asm volatile("mrs %0, fpcr" : "=r"(fpsr));
     asm volatile("msr fpcr, %0" : : "ri"(fpsr & ~ftz));
 }
 
-void MemoryUtilities::ConvertF32toS16(float (&in)[NUMBER_SAMPLES], int16_t* out) {
+void SimdUtilities::ConvertF32toS16(float (&in)[NUMBER_SAMPLES], std::int16_t* out) {
     const float32x4_t min = vdupq_n_f32(-1.0f);
     const float32x4_t max = vdupq_n_f32(1.0f);
     const float32x4_t scale = vdupq_n_f32(32767.0f);
@@ -59,7 +59,7 @@ void MemoryUtilities::ConvertF32toS16(float (&in)[NUMBER_SAMPLES], int16_t* out)
     }
 }
 
-void MemoryUtilities::ConvertF32toS24(float(&in)[NUMBER_SAMPLES], uint8_t* out) {
+void SimdUtilities::ConvertF32toS24(float(&in)[NUMBER_SAMPLES], std::uint8_t* out) {
     const float32x4_t min = vdupq_n_f32(-1.0f);
     const float32x4_t max = vdupq_n_f32(1.0f);
     const float32x4_t scale = vdupq_n_f32(8388607.0f);

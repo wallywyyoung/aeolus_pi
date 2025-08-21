@@ -23,86 +23,86 @@
 
 #include <memory>
 
-Organ::Organ(std::function<RankWave*(const std::string&)> getStopByName) : _voicePool(std::make_shared<VoicePool>()) {
-    DivisionFactory::initFromJson(_voicePool, _divisions, getStopByName);
+Organ::Organ(const std::function<std::shared_ptr<RankWave>(const std::string&)> &getStopByName) : voicePool(std::make_shared<VoicePool>()) {
+    DivisionFactory::initFromJson(voicePool, divisions, getStopByName);
 }
 
 void Organ::setDivisionNoteOn(const int &division, const int &note) {
-    _divisions[division]->setNoteOn(note);
+    divisions[division]->setNoteOn(note);
 }
 
 void Organ::setDivisionNoteOff(const int &division, const int &note) {
-    _divisions[division]->setNoteOff(note);
+    divisions[division]->setNoteOff(note);
 }
 
 void Organ::setDivisionAllNotesOff(const int& division) {
-    _divisions[division]->setAllNotesOff();
+    divisions[division]->setAllNotesOff();
 }
 
 void Organ::setGlobalAllNotesOff() {
-    for (const auto &division : _divisions) {
+    for (const auto &division : divisions) {
         division->setAllNotesOff();
     }
 }
 
 void Organ::handleDivisionSwell(const int& division, const float& value) {
-    _divisions[division]->handleSwell(value);
+    divisions[division]->handleSwell(value);
 };
 
 void Organ::setDivisionStopOn(const int& division, const int& stop) {
-    _divisions[division]->setStopOn(stop);
+    divisions[division]->setStopOn(stop);
 }
 
 void Organ::setDivisionStopOff(const int& division, const int& stop) {
-    _divisions[division]->setStopOff(stop);
+    divisions[division]->setStopOff(stop);
 }
 
 void Organ::setDivisionStopToggle(const int& division, const int& stop) {
-    _divisions[division]->setStopToggle(stop);
+    divisions[division]->setStopToggle(stop);
 }
 
 void Organ::setDivisionAllStopsOff(const int& division) {
-    _divisions[division]->setAllStopsOff();
+    divisions[division]->setAllStopsOff();
 }
 
 void Organ::setDivisionAllStopsOn(const int& division) {
-    _divisions[division]->setAllStopsOn();
+    divisions[division]->setAllStopsOn();
 }
 
 void Organ::setGlobalAllStopsOff() {
-    for (auto& division : _divisions) {
+    for (const auto & division : divisions) {
         division->setAllStopsOff();
     }
 }
 
 void Organ::setGlobalAllStopsOn() {
-    for (auto& division : _divisions) {
+    for (const auto & division : divisions) {
         division->setAllStopsOn();
     }
 }
 
 void Organ::setDivisionCouplerOn(const int& division, const int& coupler) {
-    _divisions[division]->setCouplerOn(coupler);
+    divisions[division]->setCouplerOn(coupler);
 }
 
 void Organ::setDivisionCouplerOff(const int& division, const int& coupler) {
-    _divisions[division]->setCouplerOff(coupler);
+    divisions[division]->setCouplerOff(coupler);
 }
 
 void Organ::setDivisionTremulantOn(const int& division) {
-    _divisions[division]->setTremulantOn();
+    divisions[division]->setTremulantOn();
 }
 
 void Organ::setDivisionTremulantOff(const int& division) {
-    _divisions[division]->setTremulantOff();
+    divisions[division]->setTremulantOff();
 }
 
 void Organ::setDivisionPiston(const int& division, const int& piston) {
-    _divisions[division]->setPiston(piston);
+    divisions[division]->setPiston(piston);
 }
 
 void Organ::recallDivisionPiston(const int& division, const int& piston) {
-    _divisions[division]->recallPiston(piston);
+    divisions[division]->recallPiston(piston);
 }
 
 void Organ::setGlobalPiston(const int& piston) {
@@ -121,14 +121,14 @@ void Organ::recallGlobalPiston(const int& piston) {
 
 void Organ::recallGlobalPiston(const GlobalPiston& piston) {
     for (int i = 0; i < piston.divisions.size(); ++i) {
-        _divisions[i]->recallPiston(piston.divisions[i]);
+        divisions[i]->recallPiston(piston.divisions[i]);
     }
 }
 
 GlobalPiston Organ::captureStateAsPiston() const {
     GlobalPiston globalPiston{};
-    globalPiston.divisions.resize(_divisions.size());
-    for (const auto& division : _divisions) {
+    globalPiston.divisions.resize(divisions.size());
+    for (const auto& division : divisions) {
         globalPiston.divisions.emplace_back(division->captureStateAsPiston());
     }
     return globalPiston;
@@ -136,13 +136,13 @@ GlobalPiston Organ::captureStateAsPiston() const {
 
 // TODO: Index, batch, vectorize
 void Organ::generateTremulant() {
-    float* buf = _tremulantBuffer.getWritePointer(0);
+    float* buf = tremulantFrameBuffer.getWritePointer(0);
     for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
-        const float s = sinf(_tremulantPhase);
+        const float s = sinf(tremulantPhase);
         buf[i] = s * TREMULANT_LEVEL;
-        _tremulantPhase += TREMULANT_PHASE_INCREMENT;
-        if (_tremulantPhase >= std::numbers::pi_v<float> * 2) {
-            _tremulantPhase -= std::numbers::pi_v<float> * 2;
+        tremulantPhase += TREMULANT_PHASE_INCREMENT;
+        if (tremulantPhase >= std::numbers::pi_v<float> * 2) {
+            tremulantPhase -= std::numbers::pi_v<float> * 2;
         }
     }
 }

@@ -38,7 +38,7 @@ public:
     EngineGlobal();
     ~EngineGlobal() = default;
 
-    [[nodiscard]] RankWave *getStopByName(const std::string &name) const { return _rankwavesByName.at(name).get(); }
+    [[nodiscard]] std::shared_ptr<RankWave> getStopByName(const std::string &name) const { return _rankwavesByName.at(name); }
     void pushMidi(const MidiData& midiData) { push(midiData); }
 
     template<auto OUT_BUFFER_SIZE>
@@ -49,7 +49,6 @@ public:
         //     out[i * 2 + 1] = val;
         //     out[i * 2 + 0] = val;
         // }
-        // return;
         // Midi / Configuration Block
         ProcessMidiBuffer();
         // Organ Block
@@ -85,8 +84,7 @@ private:
 
     Model model;
     Organ *organ;
-    std::unordered_map<std::string, std::unique_ptr<RankWave>> _rankwavesByName{};
-    std::vector<IR> _irs{};
+    std::unordered_map<std::string, std::shared_ptr<RankWave>> _rankwavesByName{};
     IRs irs;
     std::shared_ptr<Scale> _scale;
     int _longestIRLength{};   ///< Longest IR length in samples

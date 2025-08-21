@@ -21,7 +21,7 @@
 
 #include <cmath>
 #include <vector>
-#include <cstring>
+#include <array>
 
 #include "aeolus/globals.h"
 
@@ -51,7 +51,7 @@ namespace dsp {
 
         void reset() {
             _writeIndex = 0;
-            memset(_buffer, 0, sizeof(float) * BUFFER_SIZE);
+            _buffer.fill(0);
         }
 
         void write (const float x) {
@@ -81,8 +81,10 @@ namespace dsp {
             const int index{ static_cast<int>((delay + _writeIndex) % BUFFER_SIZE) };
             return _buffer[index];
         }
+
+        size_t size() const { return _buffer.size(); }
     private:
-        float _buffer[BUFFER_SIZE] = {};
+        std::array<float, BUFFER_SIZE> _buffer{};
         size_t _writeIndex{};
     };
 } // namespace dsp

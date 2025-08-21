@@ -24,30 +24,29 @@
 #include <cstring>
 
 void Voice::trigger(const PipeWave::State &newState) {
-    assert(newState.isIdle());
+    assert(state.isIdle());
     state = newState;
     // Chiff
-    const auto freq = newState.pipeWave->getPipeFrequency();
+    const auto freq = state.pipeWave->getPipeFrequency();
     const auto dt = 1.0f / freq;
     // Delay pipe harmonic signal so that chiff noise builds up first
-    delay = static_cast<int>(std::min<float>(buffer.size(), 0.5f * dt * SAMPLE_RATE_F));
+    delay = static_cast<int>(std::min<float>(delayLine.size(), 0.5f * dt * SAMPLE_RATE_F));
     chiff.setAttack(5.0f * dt);
     chiff.setDecay(100.0f * dt);
     chiff.setSustain(0.01f);
     chiff.setRelease(100.0f * dt);
     // Frequency-dependant chiff attenuation
     const float att = 1.0f - expf(-freq / 3000.0f);
-    chiff.setGain(std::min<float>(1.0f, 0.02f * newState.chiffGain * att));
+    chiff.setGain(std::min<float>(1.0f, 0.02f * state.chiffGain * att));
     chiff.setFrequency(freq);
     chiff.trigger();
     // Spatialization
-    const int note = newState.pipeWave->getNote();
+    const int note = state.pipeWave->getNote();
     const float k = note % 2 != 0 ? 1.0f : -1.0f;
     // Wider spread for low-pitched pipes
-    const auto& model = newState.pipeWave->getModel();
+    const auto& model = state.pipeWave->getModel();
     const float width = 0.15f * static_cast<float>(model->getFd()) / static_cast<float>(model->getFn());
     const float x = width * k * static_cast<float>(abs(note - 65));
-    spatialSource.setSampleRate(SAMPLE_RATE_F);
     spatialSource.setSourcePosition(x, 5.0f);
     spatialSource.recalculate();
     postReleaseCounter = spatialSource.getPostFxSamplesCount() + 2 * delay + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
@@ -70,7 +69,7 @@ void Voice::reset() {
     spatialSource.reset();
 }
 
-void Voice::process(float* outL, float* outR) {
+void Voice::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &out) {
     buffer.fill(0.0f);
     const auto gain = state.gain;
     if (state.env == PipeWave::Over) {
@@ -87,8 +86,14 @@ void Voice::process(float* outL, float* outR) {
             i = delayLine.readNearest(delay) * gain;
         }
     }
-    chiff.process(buffer, AUDIO_SUB_FRAME_LENGTH);
-    spatialSource.process(buffer, outL, outR, AUDIO_SUB_FRAME_LENGTH);
+    chiff.process(buffer);
+    // spatialSource.process(buffer, out);
+    auto l=out.getWritePointer(0);
+    auto r=out.getWritePointer(1);
+    for (auto i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
+        l[i] = buffer[i];
+        r[i] = buffer[i];
+    }
 }
 
 bool Voice::isOver() const noexcept {

@@ -36,7 +36,7 @@ public:
     // Zone - a grouping pipes for a range of keys.
     struct Zone {
         Range keyRange;
-        std::vector<RankWave *> rankWaves;
+        std::vector<std::shared_ptr<RankWave>> rankWaves;
         [[nodiscard]] bool isForKey(const int key) const noexcept { return keyRange.contains(key); }
     };
 

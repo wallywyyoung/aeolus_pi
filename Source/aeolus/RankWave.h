@@ -26,7 +26,6 @@
 #include "aeolus/Scale.h"
 
 #include <vector>
-#include <atomic>
 
 /**
  * @brief Pipes across the key range.
@@ -37,13 +36,13 @@
 class RankWave {
 public:
     explicit RankWave(Addsynth model, const Scale& scale, float tuningFreq);
-    RankWave(const RankWave&);
-    RankWave& operator=(const RankWave& other);
+    RankWave(const RankWave&) = delete;
+    RankWave& operator=(const RankWave& other) = delete;
 
     [[nodiscard]] const std::string& getStopName() const { return model->getStopName(); }
-    [[nodiscard]] bool isForNote(const int note) const noexcept { return note >= _noteMin && note <= _noteMax; }
-    [[nodiscard]] int getNoteMin() const noexcept { return _noteMin; }
-    [[nodiscard]] int getNoteMax() const noexcept { return _noteMax; }
+    [[nodiscard]] bool isForNote(const int note) const noexcept { return note >= noteMin && note <= noteMax; }
+    [[nodiscard]] int getNoteMin() const noexcept { return noteMin; }
+    [[nodiscard]] int getNoteMax() const noexcept { return noteMax; }
 
     void generateWavetables();
 
@@ -51,13 +50,10 @@ public:
 
 private:
     void createPipes(const Scale& scale, float tuningFrequency);
-    int _noteMin;
-    int _noteMax;
+    int noteMin;
+    int noteMax;
     std::shared_ptr<Addsynth> model;
-    // Two sets of pipes to be able to switch between tunings
-    // without releasing all the voices.
-    std::vector<std::vector<std::shared_ptr<PipeWave>>> _pipes{};
-    std::atomic<int> _pipeSetIndex{ 0 };
+    std::vector<std::shared_ptr<PipeWave>> pipeWaves{};
 };
 
 

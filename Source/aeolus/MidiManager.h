@@ -129,6 +129,8 @@ private:
             case DivisionTremulantOff:
                 organInterface->setDivisionTremulantOff(event.channel);
                 break;
+            default:
+                assert(false);
         }
     }
 

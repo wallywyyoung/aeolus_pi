@@ -29,8 +29,7 @@ add_executable(aeolus_pi
         Source/EngineGlobal.cpp
         Source/EngineGlobal.h
         Source/main.cpp
-        Source/MemoryUtilities.cpp
-        Source/MemoryUtilities.h
+        Source/MemoryConstants.h
         Source/MidiData.cpp
         Source/MidiData.h
         Source/ObjectBuffer.h
@@ -50,7 +49,6 @@ add_executable(aeolus_pi
         Source/aeolus/globals.cpp
         Source/aeolus/HN_func.cpp
         Source/aeolus/HN_func.h
-        Source/aeolus/list.h
         Source/aeolus/memory.h
         Source/aeolus/Model.cpp
         Source/aeolus/Model.h
@@ -85,6 +83,8 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/interpolator.h
         Source/aeolus/dsp/spatial.cpp
         Source/aeolus/StopFactory.cpp
+        Source/aeolus/utilities/SimdUtilities.cpp
+        Source/aeolus/utilities/SimdUtilities.h
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)

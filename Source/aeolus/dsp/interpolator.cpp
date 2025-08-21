@@ -18,6 +18,9 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/interpolator.h"
+
+#include <cassert>
+
 #include "aeolus/globals.h"
 
 #include <cstring>
@@ -26,22 +29,12 @@
 
 namespace dsp {
 
-Interpolator::Interpolator(const float ratio, const size_t nChannels)
-    : _acc(nChannels)
-    , _accIndex{0}
-    , _accFrac{0.0f}
-    , _ratio{ratio}
-{
-    if (nChannels <= 0) {
-        throw std::invalid_argument("Interpolator: number of channels must be greater than zero");
-    }
+Interpolator::Interpolator(const float ratio, const size_t nChannels) : _acc(nChannels), _accIndex{0}, _accFrac{0.0f}, _ratio{ratio} {
+    assert(nChannels > 0);
 }
 
-void Interpolator::setNumberOfChannels(const size_t n)
-{
-    if (n <= 0) {
-        throw std::invalid_argument("Interpolator: number of channels must be greater than zero");
-    }
+void Interpolator::setNumberOfChannels(const size_t n) {
+    assert(n > 0);
     _acc.resize(n);
     reset();
 }
@@ -61,55 +54,41 @@ bool Interpolator::canRead() const noexcept
     return _accFrac < 1.0f;
 }
 
-bool Interpolator::readAllChannels(float* x) noexcept
-{
-    if (x == nullptr) {
-        throw std::invalid_argument("Interpolator: x cannot be null");
-    }
+bool Interpolator::readAllChannels(float* x) noexcept {
+    assert(x != nullptr);
 
-    if (_accFrac >= 1.0f)
+    if (_accFrac >= 1.0f) {
         return false;
+    }
 
     for (size_t i = 0; i < _acc.size(); ++i) {
         x[i] = math::lagr(&_acc[i].data()[_accIndex], _accFrac);
     }
 
     _accFrac += _ratio;
-
     return true;
 }
 
-float Interpolator::readUnchecked(const size_t channel) const noexcept
-{
-    if (_accFrac >= 1.0f) {
-        throw std::invalid_argument("Interpolator: _accFrac must be less than 1.0");
-    }
-
+float Interpolator::readUnchecked(const size_t channel) const noexcept {
+    assert(_accFrac < 1.0f);
     return math::lagr(&_acc[channel].data()[_accIndex], _accFrac);
 }
 
-float Interpolator::readLinearUnchecked(const size_t channel) const noexcept
-{
-    if (_accFrac >= 1.0f) {
-        throw std::invalid_argument("Interpolator: _accFrac must be less than 1.0");
-    }
-
+float Interpolator::readLinearUnchecked(const size_t channel) const noexcept {
+    assert(_accFrac < 1.0f);
     return math::lerp(_acc[channel].data()[_accIndex], _acc[channel].data()[_accIndex + 1], _accFrac);
 }
 
-void Interpolator::readIncrement()
-{
+void Interpolator::readIncrement() {
     _accFrac += _ratio;
 }
 
-bool Interpolator::read(float& l, float& r) noexcept
-{
-    if (_acc.size() <= 1) {
-        throw std::invalid_argument("Interpolator: number of channels must be greater than one");
-    }
+bool Interpolator::read(float& l, float& r) noexcept {
+    assert(_acc.size() > 1);
 
-    if (_accFrac >= 1.0f)
+    if (_accFrac >= 1.0f) {
         return false;
+    }
 
     l = math::lagr(&_acc[0].data()[_accIndex], _accFrac);
     r = math::lagr(&_acc[1].data()[_accIndex], _accFrac);
@@ -119,19 +98,16 @@ bool Interpolator::read(float& l, float& r) noexcept
     return true;
 }
 
-bool Interpolator::canWrite() const noexcept
-{
+bool Interpolator::canWrite() const noexcept {
     return _accFrac >= 1.0f;
 }
 
-bool Interpolator::writeAllChannels(const float* const x) noexcept
-{
-    if (x == nullptr) {
-        throw std::invalid_argument("Interpolator: x cannot be null");
-    }
+bool Interpolator::writeAllChannels(const float* const x) noexcept {
+    assert(x != nullptr);
 
-    if (_accFrac < 1.0f)
+    if (_accFrac < 1.0f) {
         return false;
+    }
 
     for (size_t i = 0; i < _acc.size(); ++i) {
         _acc[i][_accIndex] = _acc[i][_accIndex + 4] = x[i];
@@ -143,29 +119,23 @@ bool Interpolator::writeAllChannels(const float* const x) noexcept
     return true;
 }
 
-void Interpolator::writeUnchecked(const float x, const size_t channel)
-{
-    if (_acc.size() <= 1) {
-        throw std::invalid_argument("Interpolator: number of channels must be greater than one");
-    }
-
+void Interpolator::writeUnchecked(const float x, const size_t channel) {
+    assert(_acc.size() > 1);
     _acc[channel][_accIndex] = _acc[channel][_accIndex + 4] = x;
 }
 
-void Interpolator::writeIncrement()
-{
+void Interpolator::writeIncrement() {
     _accIndex = (_accIndex + 1) % 4;
     _accFrac -= 1.0f;
 }
 
 bool Interpolator::write(const float l, const float r) noexcept
 {
-    if (_acc.size() <= 1) {
-        throw std::invalid_argument("Interpolator: number of channels must be greater than one");
-    }
+    assert(_acc.size() > 1);
 
-    if (_accFrac < 1.0f)
+    if (_accFrac < 1.0f) {
         return false;
+    }
 
     _acc[0][_accIndex] = _acc[0][_accIndex + 4] = l;
     _acc[1][_accIndex] = _acc[1][_accIndex + 4] = r;

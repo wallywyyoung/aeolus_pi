@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "aeolus/dsp/filter.h"
-#include "aeolus/dsp/delay.h"
+#include "MemoryConstants.h"
 #include "aeolus/dsp/adsrenv.h"
-#include "MemoryUtilities.h"
+#include "aeolus/dsp/delay.h"
+#include "aeolus/dsp/filter.h"
 
 namespace dsp {
 
@@ -48,7 +48,7 @@ public:
     void release();
     bool isActive() const noexcept;
 
-    void process(float* out, int numFrames);
+    void process(std::array<float, AUDIO_SUB_FRAME_LENGTH> &out);
 
 private:
 

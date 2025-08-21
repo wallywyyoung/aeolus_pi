@@ -18,6 +18,9 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/delay.h"
+
+#include <cstring>
+
 #include "aeolus/globals.h"
 
 namespace dsp {
@@ -30,7 +33,7 @@ namespace dsp {
 
     void DelayLine::reset() {
         _writeIndex = 0;
-        memset(_buffer.data(), 0, sizeof (float) * _buffer.size());
+        std::memset(_buffer.data(), 0, sizeof (float) * _buffer.size());
     }
 
     void DelayLine::write (const float x) {

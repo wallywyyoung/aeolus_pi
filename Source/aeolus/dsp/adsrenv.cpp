@@ -21,7 +21,7 @@
 
 #include <cmath>
 
-#include "MemoryUtilities.h"
+#include "MemoryConstants.h"
 
 
 namespace dsp {

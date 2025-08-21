@@ -28,11 +28,15 @@
 #include "aeolus/Stop.h"
 
 class StopFactory {
-    static std::vector<RankWave *> getRankwavesFromPipeVar(const nlohmann::json &json, std::function<RankWave *(const std::string &)> stopByName);
+    static std::vector<std::shared_ptr<RankWave>>
+    getRankWavesFromPipeVar(const nlohmann::json &json,
+                            std::function<std::shared_ptr<RankWave>(const std::string &)> stopByName);
     static Stop::Type getTypeFromString(const std::string& n);
-    static void addZone(Stop &stop, const std::vector<RankWave *> &rw);
-    static void initFromJson(const nlohmann::json& json, Stop& stop, std::function<RankWave *(const std::string &)> getStopByName);
+    static void addZone(Stop &stop, const std::vector<std::shared_ptr<RankWave>> &rw);
+    static void initFromJson(const nlohmann::json &json, Stop &stop,
+                             std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName);
 
 public:
-    static void initFromJson(const nlohmann::json& json, std::vector<Stop>& stops, std::function<RankWave *(const std::string &)> getStopByName);
+    static void initFromJson(const nlohmann::json &json, std::vector<Stop> &stops,
+                             std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName);
 };

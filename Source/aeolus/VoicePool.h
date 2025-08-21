@@ -27,7 +27,6 @@
  */
 class VoicePool final {
 public:
-    constexpr static int MAX_VOICES = 512;
 
     VoicePool() = default;
 
@@ -43,5 +42,6 @@ public:
     }
 
 private:
-    Voice voices[MAX_VOICES]; ///< Voices available to be triggered.
+    constexpr static int MAX_VOICES = 512;
+    std::array<Voice, MAX_VOICES> voices{}; ///< Voices available to be triggered.
 };

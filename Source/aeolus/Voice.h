@@ -42,25 +42,12 @@ class Voice {
 public:
     Voice() = default;
 
-    Voice& operator=(const Voice& other) {
-        if (this != &other) {
-            state = other.state;
-            stopIndex = other.stopIndex;
-            for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
-                buffer[i] = other.buffer[i];
-            }
-            delayLine = other.delayLine;
-            delay = other.delay;
-            chiff = other.chiff;
-            spatialSource = other.spatialSource;
-            postReleaseCounter = other.postReleaseCounter;
-        }
-        return *this;
-    }
+    Voice& operator=(const Voice& other) = delete;
+
     void trigger(const PipeWave::State &newState);
     void release();
     void reset();
-    void process(float* outL, float* outR);
+    void process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &out);
     void setStopIndex(const int idx) noexcept { stopIndex = idx; }
 
     [[nodiscard]] bool isOver() const noexcept;

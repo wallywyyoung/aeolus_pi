@@ -21,6 +21,7 @@
 #include "EngineGlobal.h"
 #include "IOManager.h"
 #include "aeolus/Organ.h"
+#include "aeolus/utilities/SimdUtilities.h"
 
 #include <thread_pool/thread_pool.h>
 
@@ -46,9 +47,9 @@ void EngineGlobal::generateWavetables() const {
     for (const auto &val: _rankwavesByName | std::views::values) {
         auto rwp = val.get();
         pool.enqueue_detach([rwp] {
-            MemoryUtilities::enableFlushToZero();
+            SimdUtilities::enableFlushToZero();
             rwp->generateWavetables();
-            MemoryUtilities::disableFlushToZero();
+            SimdUtilities::disableFlushToZero();
         });
     }
     pool.wait_for_tasks();
@@ -57,6 +58,6 @@ void EngineGlobal::generateWavetables() const {
 void EngineGlobal::loadRankwaves() {
     for (int i = 0; i <  model.getStopsCount(); ++i) {
         // TODO: Fix this mapping in JSON.
-        _rankwavesByName.emplace(model[i].getFileName(), std::make_unique<RankWave>(model[i], *_scale, _tuningFrequency));
+        _rankwavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *_scale, _tuningFrequency));
     }
 }

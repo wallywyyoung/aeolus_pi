@@ -20,17 +20,15 @@
 
 #pragma once
 
+#include "StaticAudioBuffer.h"
+#include "aeolus/AudioParameter.h"
 #include "aeolus/Stop.h"
 #include "aeolus/Voice.h"
-#include "aeolus/AudioParameter.h"
+#include "aeolus/VoicePool.h"
 #include "aeolus/dsp/filter.h"
-#include "StaticAudioBuffer.h"
 
-#include <atomic>
-#include <vector>
 #include <bitset>
-
-#include "VoicePool.h"
+#include <vector>
 
 class Organ;
 /**
@@ -44,14 +42,14 @@ public:
     constexpr static size_t TREMULANT_DELAY_LENGTH = 32; // Frequency modulation delay line length (in samples).
 
     struct Coupler {
-        Division* division;
+        std::shared_ptr<Division> division;
         bool enabled = false;
     };
 
     explicit Division(const std::string& name = std::string());
 
-    [[nodiscard]] std::string getName() const { return _name; }
-    [[nodiscard]] std::string getMnemonic() const { return _mnemonic; }
+    [[nodiscard]] std::string getName() const { return name; }
+    [[nodiscard]] std::string getMnemonic() const { return mnemonic; }
 
     // Notes
     void setNoteOn(const int &note);
@@ -84,51 +82,49 @@ public:
     void triggerVoicesOfEnabledStops();
 
 private:
-    /// Total number of MIDI notes.
-    constexpr static int TOTAL_NOTES = 128;
+    constexpr static int TOTAL_NOTES = 128; ///< Total number of MIDI notes.
     /// Tremulant OSC wavetable amplitude.
-    constexpr static float TREMULANT_TARGET_LEVEL = 0.5f; // Amplitude modulation level.
-    constexpr static float TREMULANT_DELAY_MODULATION_LEVEL = 0.9f; // Frequency modulation level.
+    constexpr static float TREMULANT_TARGET_LEVEL = 0.5f; ///< Amplitude modulation level.
+    constexpr static float TREMULANT_DELAY_MODULATION_LEVEL = 0.9f; ///< Frequency modulation level.
 
     void setAllCouplersOff();
     void setAllCouplersOn();
 
-    void recursiveKeyState(std::bitset<TOTAL_NOTES>& aggregated);
-    void updateAggregatedKeysState(); // Aggregates key state from this division's and coulpled divisions' key states.
+    void recursiveKeyState(std::bitset<TOTAL_NOTES> &aggregated, std::vector<Division *> &traversed);
     bool triggerVoicesForStop(int stopIndex, int note);
     bool isAlreadyVoiced(int stopIndex, int node);
 
-    std::string _name;     ///< The division name.
-    std::string _mnemonic; ///< Short mnemonic name.
+    std::string name;     ///< The division name.
+    std::string mnemonic; ///< Short mnemonic name.
 
-    /// List of linked divisions names.
-    std::vector<std::string> _linkedDivisionNames{};
-    std::vector<Coupler> _linkedDivisions{};
-    std::vector<Division*> _linkedFromDivisions{};
+    std::vector<std::string> linkedDivisionNames{};              ///< List of linked divisions names.
+    std::vector<std::shared_ptr<Coupler>> linkedDivisions{};     ///< List of divisions here links to.
+    std::vector<std::shared_ptr<Coupler>> linkedFromDivisions{}; ///< List of divisions that link to here.
     std::vector<DivisionPiston> pistons{};
 
-    bool _hasSwell;         ///< Whether this division has a swell control.
-    bool _hasTremulant;     ///< Whether this division has a tremulant control.
-    std::atomic<bool> _tremulantEnabled;    ///< Whether tremulant is enabled.
-    std::shared_ptr<VoicePool> _voicePool;
-    AudioParameter _tremulantLevel {0.0f, 0.0f, TREMULANT_TARGET_LEVEL, 0.1f};
+    bool hasSwell;         ///< Whether this division has a swell control.
+    bool hasTremulant;     ///< Whether this division has a tremulant control.
+    bool tremulantEnabled; ///< Whether tremulant is enabled.
 
-    AudioParameter _paramGain{1};
+
+    AudioParameter tremulantLevel {0.0f, 0.0f, TREMULANT_TARGET_LEVEL, 0.1f};
+    AudioParameter gain{ 1.0f };
 
     /// Swell low-pass filter.
-    dsp::BiquadFilter::Spec _swellFilterSpec;
-    dsp::BiquadFilter::State _swellFilterStateL;
-    dsp::BiquadFilter::State _swellFilterStateR;
+    dsp::BiquadFilter::Spec swellFilterSpec;
+    dsp::BiquadFilter::State swellFilterStateL;
+    dsp::BiquadFilter::State swellFilterStateR;
 
     /// Delay lines used for tremulant frequency modulation.
-    dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> _tremulantDelayL;
-    dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> _tremulantDelayR;
+    dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> tremulantDelayL;
+    dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> tremulantDelayR;
 
-    std::vector<Stop> _stops{};   // All the stops this division has.
-    std::vector<Voice*> _activeVoices;  // Active voices on this division.
+    std::vector<Stop> stops{};            ///< All the stops this division has.
+    std::shared_ptr<VoicePool> voicePool; ///< Shared pool of Idle voices to request into active voices.
+    std::vector<Voice*> activeVoices;     ///< Active voices on this division.
 
-    std::bitset<TOTAL_NOTES> keysState; // Key state for this division.
-    std::bitset<TOTAL_NOTES> _aggregatedKeysState;   // Key state aggregated from coupled divisions.
+    std::bitset<TOTAL_NOTES> keysState;           ///< Key state for this division.
+    std::bitset<TOTAL_NOTES> aggregatedKeysState; ///< Key state aggregated from coupled divisions.
 
     friend class DivisionFactory;
 };

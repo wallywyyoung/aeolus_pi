@@ -27,60 +27,32 @@
 #include <random>
 #include <vector>
 
-#include "MemoryUtilities.h"
+#include "MemoryConstants.h"
 
 PipeWave::PipeWave(const std::shared_ptr<Addsynth> &model, const int note, const float freq) : _model(model), _note(note), _freq(freq) { }
-//
-// PipeWave::PipeWave(const PipeWave& other)
-//         : _model{ other._model }
-//         , _note{ other._note }
-//         , _freq{ other._freq }
-//         , _attackLength{ other._attackLength }
-//         , _loopLength{ other._loopLength }
-//         , _sampleStep{ other._sampleStep }
-//         , _releaseLength{ other._releaseLength }
-//         , _releaseMultiplier{ other._releaseMultiplier }
-//         , _releaseDetune{ other._releaseDetune }
-//         , _instability{ other._instability }
-//         , _wavetable{ other._wavetable }
-//         , _attackStartPtr{}
-//         , _loopStartPtr{}
-//         , _loopEndPtr{}
-// {
-//     // Adjust pointers to the copied wavetable.
-//     // TODO: Added const_cast is undefined and this will probably break. FIX
-//     const auto wavetable{ const_cast<float*>(other._wavetable.data()) };
-//     const auto attackOffset = other._attackStartPtr - wavetable;
-//     const auto loopStartOffset = other._loopStartPtr - wavetable;
-//     const auto loopEndOffset = other._loopEndPtr - wavetable;
-//
-//     _attackStartPtr = _wavetable.data() + attackOffset;
-//     _loopStartPtr = _wavetable.data() + loopStartOffset;
-//     _loopEndPtr = _wavetable.data() + loopEndOffset;
-// }
 
 float PipeWave::getPipeFrequency() const noexcept {
     return _freq * static_cast<float>(_model->getFn()) / static_cast<float>(_model->getFd());
 }
 
-void PipeWave::play(State& state, float* out) {
+void PipeWave::play(State &state, std::array<float, AUDIO_SUB_FRAME_LENGTH> &out) {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
     std::uniform_real_distribution dist(-0.5f, 0.5f);
 
-    float* p = state.playPtr;
-    float* r = state.releasePtr;
+    float* play = state.playPtr;
+    float* release = state.releasePtr;
 
     if (state.env == Attack) {
-        if (p == nullptr) {
-            p = _attackStartPtr;
+        if (play == nullptr) {
+            play = _attackStartPtr;
             state.playInterpolation = 0.0f;
             state.playInterpolationSpeed = 0.0f;
         }
     } else if (state.env == Release) {
-        if (r == nullptr) {
-            r = p;
-            p = nullptr;
+        if (release == nullptr) {
+            release = play;
+            play = nullptr;
             state.releaseGain = 1.0f;
             state.releaseInterpolation = state.playInterpolation;
             state.releaseCount = _releaseLength;
@@ -89,89 +61,95 @@ void PipeWave::play(State& state, float* out) {
         assert(false); // Invalid envelope state
     }
 
-    if (r) {
-        int k = AUDIO_SUB_FRAME_LENGTH;
-        float* q = out;
-        float g = state.releaseGain;
-        const int i = state.releaseCount - 1;
+    if (release) {
+        int period = AUDIO_SUB_FRAME_LENGTH;
+        auto playHead = out.begin();
+        float releaseGain = state.releaseGain;
+        const int releaseCount = state.releaseCount - 1;
 
-        float dg = g / static_cast<float>(AUDIO_SUB_FRAME_LENGTH);
+        float dg = releaseGain / static_cast<float>(AUDIO_SUB_FRAME_LENGTH);
 
-        if (i > 0) {
+        if (releaseCount > 0) {
             dg *= _releaseMultiplier;
         }
 
-        if (r < _loopStartPtr) {
-            while (k--) {
-                *q++ += g * *r++;
-                g -= dg;
+        if (release < _loopStartPtr) {
+            while (period--) {
+                *playHead += releaseGain * *release;
+                ++release;
+                ++playHead;
+                releaseGain -= dg;
             }
         } else {
-            float y = state.releaseInterpolation;
-            const auto dy = _releaseDetune;
-            while (k--) {
-                y += dy;
-                if (y > 1.0f) {
-                    y -= 1.0f;
-                    r += 1;
-                } else if (y < 0.0f) {
-                    y += 1.0f;
-                    r -= 1;
+            float releaseInterpolation = state.releaseInterpolation;
+            const auto releaseDetune = _releaseDetune;
+            while (period--) {
+                releaseInterpolation += releaseDetune;
+                if (releaseInterpolation > 1.0f) {
+                    --releaseInterpolation;
+                    ++release;
+                } else if (releaseInterpolation < 0.0f) {
+                    ++releaseInterpolation;
+                    --release -= 1;
                 }
-                *q++ += g * (r [0] + y * (r [1] - r [0]));
-                g -= dg;
-                r += _sampleStep;
-                if (r >= _loopEndPtr) {
-                    r -= _loopLength;
+                *playHead += releaseGain * (release[0] + releaseInterpolation * (release[1] - release[0]));
+                ++playHead;
+                releaseGain -= dg;
+                release += _sampleStep;
+                if (release >= _loopEndPtr) {
+                    release -= _loopLength;
                 }
             }
-            state.releaseInterpolation = y;
+            state.releaseInterpolation = releaseInterpolation;
         }
-        if (i > 0) {
-            state.releaseGain = g;
-            state.releaseCount = i;
+        if (releaseCount > 0) {
+            state.releaseGain = releaseGain;
+            state.releaseCount = releaseCount;
         } else {
-            r = nullptr;
+            release = nullptr;
             state.env = Over;
         }
     }
 
-    if (p) {
-        int k = AUDIO_SUB_FRAME_LENGTH;
-        float* q = out;
+    if (play) {
+        int period = AUDIO_SUB_FRAME_LENGTH;
+        auto playHead = out.begin();
 
-        if (p < _loopStartPtr) {
-            while (k--) {
-                *q++ += *p++;
+        if (play < _loopStartPtr) {
+            while (period--) {
+                *playHead += *play;
+                ++playHead;
+                ++play;
             }
         } else {
-            float y = state.playInterpolation;
+            float playInterpolation = state.playInterpolation;
             state.playInterpolationSpeed += _instability * 0.0005f * (0.05f * _instability * dist(gen) - state.playInterpolationSpeed);
             const float dy = state.playInterpolationSpeed * static_cast<float>(_sampleStep);
 
-            while (k--) {
-                y += dy;
-                if (y > 1.0f) {
-                    y -= 1.0f;
-                    p += 1;
-                } else if (y < 0.0f) {
-                    y += 1.0f;
-                    p -= 1;
+            while (period--) {
+                playInterpolation += dy;
+                if (playInterpolation > 1.0f) {
+                    --playInterpolation;
+                    ++play;
+                } else if (playInterpolation < 0.0f) {
+                    ++playInterpolation;
+                    --play;
                 }
-                *q++ += p [0] + y * (p [1] - p [0]);
-                p += _sampleStep;
-                if (p >= _loopEndPtr) {
-                    p -= _loopLength;
+                *playHead += play[0] + playInterpolation * (play[1] - play[0]);
+                ++playHead;
+                play += _sampleStep;
+                if (play >= _loopEndPtr) {
+                    play -= _loopLength;
                 }
             }
-            state.playInterpolation = y;
+            state.playInterpolation = playInterpolation;
         }
     }
-    if (p == nullptr && r == nullptr) {
+    if (play == nullptr && release == nullptr) {
         state.env = Over;
     }
-    state.playPtr = p;
-    state.releasePtr = r;
+    state.playPtr = play;
+    state.releasePtr = release;
 }
 
 void PipeWave::generateWavetable() {
@@ -179,74 +157,74 @@ void PipeWave::generateWavetable() {
         return;
     }
 
-    // TODO: Is this right?
     thread_local std::random_device rnd;
     std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(0.0f, 2.0f);
+    std::uniform_real_distribution dist(-1.0f, 1.0f);
 
-    float m = _model->getNoteAttack(_note);
+    float noteAttack = _model->getNoteAttack(_note);
 
-    for (int h = 0; h < HN_func::N_HARM; ++h) {
-        if (const float t = _model->getHarmonicAttack(h, _note); t > m)
-            m = t;
+    for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
+        if (const auto harmonicAttack = _model->getHarmonicAttack(harmonic, _note); harmonicAttack > noteAttack) {
+            noteAttack = harmonicAttack;
+        }
     }
 
     // Attack length aligned to the processing sub-frames
-    _attackLength = static_cast<int>(std::lround(SAMPLE_RATE_F * m + 0.5f));
+    _attackLength = static_cast<int>(std::lround(SAMPLE_RATE_F * noteAttack + 0.5f));
     _attackLength = (_attackLength + AUDIO_SUB_FRAME_LENGTH - 1) & ~(AUDIO_SUB_FRAME_LENGTH - 1);
 
     // Target frequency
-    const float f1 = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * (dist(gen) + 1.0f)) * SAMPLE_RATE_R;
+    const float targetFrequency = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * dist(gen)) * SAMPLE_RATE_R;
 
     // Attack frequency (detuned)
-    const float f0 = f1 * math::exp2ap(_model->getNoteAttackDetune(_note) / 1200.0f);
+    const float attackFrequency = targetFrequency * math::exp2ap(_model->getNoteAttackDetune(_note) / CENTS_IN_OCTAVE);
 
     float f = 0.0f;
-
-    for (int h = HN_func::N_HARM - 1; h >= 0; --h) {
-        f = (h + 1) * f1;
-
-        if (f < 0.45f && _model->getHarmonicLevel(h, _note) >= -40.0f)
+    for (int harmonic = HN_func::N_HARM - 1; harmonic >= 0; --harmonic) {
+        f = (harmonic + 1) * targetFrequency;
+        if (f < 0.45f && _model->getHarmonicLevel(harmonic, _note) >= -40.0f) {
             break;
+        }
     }
 
-    if (f > 0.25f)
+    // Oversample higher frequences to avoid aliasing.
+    if (f > 0.25f) {
         _sampleStep = 3;
-    else if (f > 0.125f)
+    } else if (f > 0.125f) {
         _sampleStep = 2;
-    else
+    } else {
         _sampleStep = 1;
+    }
 
-    int nc = 0;
-
-    looplen(f1 * SAMPLE_RATE_F, SAMPLE_RATE_F * _sampleStep, static_cast<int>(SAMPLE_RATE_F / 6.0f), _loopLength, nc);
+    int numberCyclesOfFundamental = 0;
+    const float frequencyHz = targetFrequency * SAMPLE_RATE_F;
+    const float effectiveSampleRate = SAMPLE_RATE_F / static_cast<float>(_sampleStep);
+    looplen(frequencyHz, effectiveSampleRate, static_cast<int>(SAMPLE_RATE_F / 6.0f), _loopLength, numberCyclesOfFundamental);
     assert(_loopLength > 0);
-    assert(nc > 0);
+    assert(numberCyclesOfFundamental > 0);
 
     if (_loopLength < _sampleStep * AUDIO_SUB_FRAME_LENGTH) {
         const int k = (_sampleStep * AUDIO_SUB_FRAME_LENGTH - 1) / _loopLength + 1;
         _loopLength *= k;
-        nc *= k;
+        numberCyclesOfFundamental *= k;
     }
 
     const int wavetableLength = _attackLength + _loopLength + _sampleStep * (AUDIO_SUB_FRAME_LENGTH + 4);
     _wavetable.resize(wavetableLength);
-
     std::vector<float> arg(wavetableLength);
     std::vector<float> att(wavetableLength);
 
     _attackStartPtr = _wavetable.data();
     _loopStartPtr = _attackStartPtr + _attackLength;
     _loopEndPtr = _loopStartPtr + _loopLength;
-
     memset(_attackStartPtr, 0, sizeof(float) * _wavetable.size());
 
     _releaseLength = static_cast<int>(ceilf(_model->getNoteRelease(_note) * SAMPLE_RATE_F / AUDIO_SUB_FRAME_LENGTH) + 1);
     _releaseMultiplier = 1.0f - powf(0.1f, 1.0f / static_cast<float>(_releaseLength));
-    _releaseDetune = static_cast<float>(_sampleStep) * (math::exp2ap(_model->getNoteReleaseDetune(_note) / 1200.0f) - 1.0f);
+    _releaseDetune = static_cast<float>(_sampleStep) * (math::exp2ap(_model->getNoteReleaseDetune(_note) / CENTS_IN_OCTAVE) - 1.0f);
     _instability = _model->getNoteInstability(_note);
 
-    int k = static_cast<int>(SAMPLE_RATE_F * _model->getNoteAttack(_note) + 0.5);
+    auto k = static_cast<int>(SAMPLE_RATE_F * _model->getNoteAttack(_note) + 0.5);
 
     // arg[i] will contain phase steps along the generated wavetable
 
@@ -256,45 +234,48 @@ void PipeWave::generateWavetable() {
         // Interpolate from frequency f1 to f0 during the attack
         for (int i = 0; i <= _attackLength; ++i) {
             arg [i] = t - floorf(t + 0.5f);
-            t += (i < k) ? ((static_cast<float>(k - i) * f0 + static_cast<float>(i) * f1) / static_cast<float>(k)) : f1;
+            t += (i < k) ? ((static_cast<float>(k - i) * attackFrequency + static_cast<float>(i) * targetFrequency) / static_cast<float>(k)) : targetFrequency;
         }
     }
 
     // Generate phase steps of the sustained loop
     for (int i = 1; i < _loopLength; ++i) {
-        const float t = arg[_attackLength] + static_cast<float>(i) * static_cast<float>(nc) / static_cast<float>(_loopLength);
+        const float t = arg[_attackLength] + static_cast<float>(i) * static_cast<float>(numberCyclesOfFundamental) / static_cast<float>(_loopLength);
         arg[i + _attackLength] = t - floorf(t + 0.5f);
     }
 
     const float v0 = math::exp2ap(0.1661f * _model->getNoteVolume(_note));
 
-    for (int h = 0; h < HN_func::N_HARM; ++h) {
-        if (static_cast<float>(h + 1) * f1 > 0.45f)
+    for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
+        if (static_cast<float>(harmonic + 1) * targetFrequency > 0.45f) {
             break;
+        }
 
-        float v = _model->getHarmonicLevel(h, _note);
+        float v = _model->getHarmonicLevel(harmonic, _note);
 
-        if (v < -80.0f)
+        if (v < -80.0f) {
             continue;
+        }
 
-        v = v0 * math::exp2ap(0.1661f * (v + _model->getHarmonicRandomisation(h, _note) * (dist(gen) - 1.0f)));
-        k = static_cast<int>(SAMPLE_RATE_F * _model->getHarmonicAttack(h, _note) + 0.5f);
+        v = v0 * math::exp2ap(0.1661f * (v + _model->getHarmonicRandomisation(harmonic, _note) * dist(gen)));
+        k = static_cast<int>(SAMPLE_RATE_F * _model->getHarmonicAttack(harmonic, _note) + 0.5f);
 
-        if (k > att.size())
+        if (k > att.size()) {
             att.resize(k);
+        }
 
-        attgain(att.data(), k, _model->getHarmonicAttackProfile(h, _note));
+        attgain(att.data(), k, _model->getHarmonicAttackProfile(harmonic, _note));
 
         for (int i = 0; i < _attackLength + _loopLength; ++i) {
-            float t = arg[i] * static_cast<float>(h + 1);
+            float t = arg[i] * static_cast<float>(harmonic + 1);
             t -= floorf(t);
-            m = v * sinf(std::numbers::pi_v<float> * 2.0f * t);
+            noteAttack = v * sinf(std::numbers::pi_v<float> * 2.0f * t);
 
             if (i < k) {
-                m *= att[i];
+                noteAttack *= att[i];
             }
 
-            _attackStartPtr[i] += m;
+            _attackStartPtr[i] += noteAttack;
         }
     }
 
@@ -303,14 +284,19 @@ void PipeWave::generateWavetable() {
     }
 }
 
+/**
+ * @brief Find a loop length _loopLength and cycle count nc
+ * Satisfies the constraints:
+ * 1) the loop contains exactly nc cycles of the fundamental frequency.
+ * 2) effectiveSampleRate * nc / _loopLength ≈ freqHz
+ */
 void PipeWave::looplen(const float f, float sampleStepRate, const int lmax, int &aa, int &bb)
 {
     constexpr int N = 8;
     int z[N];
     int a, b;
-    float d;
 
-    float g = sampleStepRate / f;
+    auto g = sampleStepRate / f;
 
     for (int i = 0; i < N; ++i) {
         a = z[i] = static_cast<int>(floor(g + 0.5));
@@ -330,16 +316,16 @@ void PipeWave::looplen(const float f, float sampleStepRate, const int lmax, int 
         }
 
         if (a <= lmax) {
-            d = sampleStepRate * b / a - f;
+            auto d = sampleStepRate * b / a - f;
 
-            if (fabs(d) < 0.1f && fabs(d) < 3e-4f * f)
+            if (fabs(d) < 0.1f && fabs(d) < 3e-4f * f) {
                 break;
+            }
 
             g = (fabs(g) < 1e-6f) ? 1e6f : 1.0f / g;
         } else  {
             b = static_cast<int>(static_cast<float>(lmax) * f / sampleStepRate);
             a = static_cast<int>(b * sampleStepRate / f + 0.5f);
-            d = sampleStepRate * b / a - f;
             break;
         }
     }
@@ -351,18 +337,19 @@ void PipeWave::looplen(const float f, float sampleStepRate, const int lmax, int 
 
 void PipeWave::attgain(float* att, const int n, const float p)
 {
+    constexpr int N = 24;
     float y = 0.6f;
 
-    if (p > 0.0f)
+    if (p > 0.0f) {
         y += 0.11f * p;
+    }
 
     float z = 0.0;
     int j = 0;
 
-    for (int i = 1; i <= 24; i++)
-    {
+    for (auto i = 1; i <= N; i++) {
         constexpr float w = 0.05f;
-        const int k = n * i / 24;
+        const int k = n * i / N;
         const float x =  1.0f - z - 1.5f * y;
         y += w * x;
         const float d = k == j ? 0.0f : w * y * p / static_cast<float>(k - j);
@@ -374,4 +361,3 @@ void PipeWave::attgain(float* att, const int n, const float p)
         }
     }
 }
-

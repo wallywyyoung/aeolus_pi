@@ -19,11 +19,11 @@
 
 #pragma once
 
-#include "MemoryUtilities.h"
+#include "MemoryConstants.h"
 
+#include <array>
 #include <atomic>
 #include <iostream>
-#include <array>
 #include <vector>
 
 // SPSC Lock-Free Ringbuffer

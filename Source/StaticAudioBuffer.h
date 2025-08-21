@@ -19,11 +19,11 @@
 
 #pragma once
 
-#include "MemoryUtilities.h"
+#include "MemoryConstants.h"
 
+#include <algorithm>
 #include <array>
 #include <functional>
-#include <algorithm>
 
 template <std::size_t SIZE, std::size_t CHANNELS>
 class StaticAudioBuffer {
@@ -46,10 +46,8 @@ public:
 
     [[nodiscard]] int getNumChannels() const { return CHANNELS; }
 
-    void addFrom(int toChannel, int toStartOffset, const StaticAudioBuffer& from, int fromChannel, int fromStartOffset, int sampleCount)  {
-        const auto toChannelStart = &audioBuffer[toChannel * SIZE + toStartOffset];
-        const auto fromChannelStart = from.getReadPointer(fromChannel)  + fromStartOffset;
-        std::transform(fromChannelStart, fromChannelStart + sampleCount, toChannelStart, toChannelStart, std::plus());
+    void addFrom(const StaticAudioBuffer &from)  {
+        std::transform(from.audioBuffer.begin(), from.audioBuffer.end(), audioBuffer.begin(), audioBuffer.begin(), std::plus());
     }
 
     void clear()  { audioBuffer.fill(0.0f); }

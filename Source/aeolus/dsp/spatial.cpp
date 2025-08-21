@@ -19,91 +19,91 @@
 
 #include "aeolus/dsp/spatial.h"
 
-#include "MemoryUtilities.h"
+#include <array>
+
+#include "MemoryConstants.h"
+#include "StaticAudioBuffer.h"
 
 
 namespace dsp {
 
-SpatialSource::SpatialSource() : _sourcePosition{0.0f, 0.0f}, _listenerPosition{0.0f, 0.0f}, _listenerOrientation{0.0f}, _listenerLeftRightDistance{0.3f}, _leftDelay{}, _rightDelay{}, _filterSpec{}, _filterState{}
-{
-    recalculate();
-}
-
-void SpatialSource::reset()
-{
-    _delayLine.reset();
-
-    BiquadFilter::resetState(_filterSpec[0], _filterState[0]);
-    BiquadFilter::resetState(_filterSpec[1], _filterState[1]);
-}
-
-void SpatialSource::tick(const float x, float& l, float& r)
-{
-    _delayLine.write(x);
-
-    l = BiquadFilter::tick(_filterSpec[0], _filterState[0], _delayLine.readNearest(_leftDelay) * _leftAttenuation);
-    r = BiquadFilter::tick(_filterSpec[1], _filterState[1], _delayLine.readNearest(_rightDelay) * _rightAttenuation);
-}
-
-void SpatialSource::process(const float* in, float* outL, float* outR, const int numFrames)
-{
-    for (int i = 0; i < numFrames; ++i) {
-        tick(in[i], outL[i], outR[i]);
+    SpatialSource::SpatialSource() :
+        _sourcePosition{0.0f, 0.0f}, _listenerPosition{0.0f, 0.0f}, _listenerOrientation{0.0f},
+        _listenerLeftRightDistance{0.3f}, _leftDelay{}, _rightDelay{}, _filterSpec{}, _filterState{} {
+        recalculate();
     }
-}
 
-static float distanceToCutOffFrequency(const float d)
+    void SpatialSource::reset() {
+        _delayLine.reset();
+
+        BiquadFilter::resetState(_filterSpec[0], _filterState[0]);
+        BiquadFilter::resetState(_filterSpec[1], _filterState[1]);
+    }
+
+    void SpatialSource::process(const std::array<float, AUDIO_SUB_FRAME_LENGTH> &in,
+                                StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &out) {
+        auto l = out.getWritePointer(0);
+        auto r = out.getWritePointer(1);
+        for (int i = 0; i < in.size(); ++i) {
+            _delayLine.write(in[i]);
+            l[i] = BiquadFilter::tick(_filterSpec[0], _filterState[0],
+                                      _delayLine.readNearest(_leftDelay) * _leftAttenuation);
+            r[i] = BiquadFilter::tick(_filterSpec[1], _filterState[1],
+                                      _delayLine.readNearest(_rightDelay) * _rightAttenuation);
+        }
+    }
+
+    static float distanceToCutOffFrequency(const float d)
 {
     return 22.0e3f * expf(-0.09f * d);
 }
 
-void SpatialSource::recalculate()
-{
-    constexpr float speedOfSound = 330.0f; // [m/s]
+    void SpatialSource::recalculate() {
+        constexpr float speedOfSound = 330.0f; // [m/s]
 
-    Position left{-0.5f * _listenerLeftRightDistance, 0.0f};
-    Position right{0.5f * _listenerLeftRightDistance, 0.0f};
-    left.rotate(_listenerOrientation);
-    right.rotate(_listenerOrientation);
+        Position left{-0.5f * _listenerLeftRightDistance, 0.0f};
+        Position right{0.5f * _listenerLeftRightDistance, 0.0f};
+        left.rotate(_listenerOrientation);
+        right.rotate(_listenerOrientation);
 
-    const Position sourceRelativeToListener{_sourcePosition.x - _listenerPosition.x, _sourcePosition.y - _listenerPosition.y};
-    const float leftAngle = left.angleTo(sourceRelativeToListener);
-    const float rightAngle = right.angleTo(sourceRelativeToListener);
+        const Position sourceRelativeToListener{_sourcePosition.x - _listenerPosition.x, _sourcePosition.y - _listenerPosition.y};
+        const float leftAngle = left.angleTo(sourceRelativeToListener);
+        const float rightAngle = right.angleTo(sourceRelativeToListener);
 
-    left.x += _listenerPosition.x;
-    left.y += _listenerPosition.y;
-    right.x += _listenerPosition.x;
-    right.y += _listenerPosition.y;
+        left.x += _listenerPosition.x;
+        left.y += _listenerPosition.y;
+        right.x += _listenerPosition.x;
+        right.y += _listenerPosition.y;
 
-    const float leftDistance = _sourcePosition.distanceTo(left);
-    const float rightDistance = _sourcePosition.distanceTo(right);
-    const float maxDistance = std::max(leftDistance, rightDistance);
-    const float maxT = maxDistance / speedOfSound;
-    const auto delayLengthInSamples = static_cast<size_t>(SAMPLE_RATE_F * maxT + 0.5f);
+        const float leftDistance = _sourcePosition.distanceTo(left);
+        const float rightDistance = _sourcePosition.distanceTo(right);
+        const float maxDistance = std::max(leftDistance, rightDistance);
+        const float maxT = maxDistance / speedOfSound;
+        const auto delayLengthInSamples = static_cast<size_t>(SAMPLE_RATE_F * maxT + 0.5f);
 
-    _delayLine.resize(delayLengthInSamples);
+        _delayLine.resize(delayLengthInSamples);
 
-    _leftDelay = static_cast<int>(roundf(leftDistance * SAMPLE_RATE_F / speedOfSound));
-    _rightDelay = static_cast<int>(roundf(rightDistance * SAMPLE_RATE_F / speedOfSound));
+        _leftDelay = static_cast<int>(roundf(leftDistance * SAMPLE_RATE_F / speedOfSound));
+        _rightDelay = static_cast<int>(roundf(rightDistance * SAMPLE_RATE_F / speedOfSound));
 
-    constexpr float att = 0.7f; // [0..1]
+        constexpr float att = 0.7f; // [0..1]
 
-    // Angular attenuation
-    _leftAttenuation = 0.5f * att * (cosf(leftAngle) + 1.0f) + 1.0f - att;
-    _rightAttenuation = 0.5f * att * (cosf(rightAngle) + 1.0f) + 1.0f - att;
+        // Angular attenuation
+        _leftAttenuation = 0.5f * att * (cosf(leftAngle) + 1.0f) + 1.0f - att;
+        _rightAttenuation = 0.5f * att * (cosf(rightAngle) + 1.0f) + 1.0f - att;
 
-    _filterSpec[0].type = BiquadFilter::LowPass;
-    _filterSpec[0].dbGain = 0.0f;
-    _filterSpec[0].q = 0.7071f;
+        _filterSpec[0].type = BiquadFilter::LowPass;
+        _filterSpec[0].dbGain = 0.0f;
+        _filterSpec[0].q = 0.7071f;
 
-    _filterSpec[1] = _filterSpec[0];
+        _filterSpec[1] = _filterSpec[0];
 
-    _filterSpec[0].freq = distanceToCutOffFrequency(leftDistance);
-    _filterSpec[1].freq = distanceToCutOffFrequency(rightDistance);
+        _filterSpec[0].freq = distanceToCutOffFrequency(leftDistance);
+        _filterSpec[1].freq = distanceToCutOffFrequency(rightDistance);
 
-    BiquadFilter::updateSpec(_filterSpec[0]);
-    BiquadFilter::updateSpec(_filterSpec[1]);
-}
+        BiquadFilter::updateSpec(_filterSpec[0]);
+        BiquadFilter::updateSpec(_filterSpec[1]);
+    }
 
 } // namespace dsp
 

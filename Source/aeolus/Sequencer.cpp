@@ -31,7 +31,7 @@ void Sequencer::captureCurrentStep() {
 }
 
 void Sequencer::captureStateToStep(const int index) {
-    isPositiveAndBelow(index, static_cast<int>(_steps.size()));
+    assertIsPositiveAndBelow(index, static_cast<int>(_steps.size()));
 
     _steps[index] = _engine.captureStateAsPiston();
 

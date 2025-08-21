@@ -20,6 +20,7 @@
 
 #include "aeolus/Scale.h"
 
+#include <cassert>
 #include <cmath>
 #include <stdexcept>
 
@@ -40,9 +41,7 @@ Scale::Scale(const Type type) : _type(type) { }
 
 const Scale::Table& Scale::getTable() const {
     const auto it = _scales.find(_type);
-    if (it == _scales.end()) {
-        throw std::runtime_error("Scale type not found");
-    }
+    assert(it != _scales.end());
     return it->second;
 }
 

@@ -19,11 +19,12 @@
 
 #include "aeolus/dsp/filter.h"
 
-#include <stdexcept>
+#include <cassert>
 #include <cmath>
 #include <cstring>
+#include <stdexcept>
 
-#include "MemoryUtilities.h"
+#include "MemoryConstants.h"
 
 namespace dsp {
 
@@ -59,7 +60,7 @@ void BiquadFilter::updateSpec(Spec& spec)
         alpha = sin_w0 / 2.0f * sqrt((A + 1.0f / A) * (1.0f / spec.q - 1.0f) + 2.0f);
         break;
     default:
-        throw std::runtime_error("filter.cpp - Unsupported filter type.");
+        assert(false);
     }
 
     switch (spec.type) {
@@ -129,7 +130,7 @@ void BiquadFilter::updateSpec(Spec& spec)
             spec.a[2] = (A + 1.0f) - (A - 1.0f) * cos_w0 - 2.0f * sqrt(A) * alpha;
             break;
         default:
-            throw std::runtime_error("Filter.cpp - Should never get here.");
+            assert(false);
     }
 
     // Normalize the coefficients.

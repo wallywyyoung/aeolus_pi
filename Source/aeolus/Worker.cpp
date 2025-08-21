@@ -22,39 +22,38 @@
 #include "aeolus/Semaphore.h"
 #include "aeolus/Worker.h"
 
-#include <thread_pool/thread_safe_queue.h>
 #include <atomic>
+#include <cassert>
 #include <thread>
+#include <thread_pool/thread_safe_queue.h>
+
+#include "utilities/SimdUtilities.h"
 
 struct Worker::Impl {
-    ObjectBuffer<Job*> jobsQueue;
-    Semaphore sema{};
-    std::atomic_bool running;
+    ObjectBuffer<Job*> jobsQueue {};
+    Semaphore sema{ 0 };
+    std::atomic_bool running { false };
     std::unique_ptr<std::thread> thread{};
 
-    Impl() = default; //jobsQueue(DefaultCapacity), sema(0), running(false) { }
+    Impl() = default;
 
     ~Impl() { stop(); }
 
     void run() {
-        MemoryUtilities::enableFlushToZero();
+        SimdUtilities::enableFlushToZero();
         while (running) {
             wait();
 
             if (Job* job = nullptr; running && jobsQueue.pop(job)) {
-                if (job == nullptr) {
-                    throw std::runtime_error("Worker::run: job is null");
-                }
+                assert(job != nullptr);
                 job->run();
             }
         }
-        MemoryUtilities::disableFlushToZero();
+        SimdUtilities::disableFlushToZero();
     }
 
     bool addJob (Job* job) {
-        if (job == nullptr) {
-            throw std::runtime_error("Worker::run: job is null");
-        }
+        assert(job != nullptr);
         const auto ok = jobsQueue.push(job);
         wakeUp();
         return ok;

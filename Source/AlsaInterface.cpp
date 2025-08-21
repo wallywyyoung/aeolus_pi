@@ -18,15 +18,14 @@
 // ----------------------------------------------------------------------------
 
 #include "AlsaInterface.h"
-#include "aeolus/globals.h"
 #include "EngineGlobal.h"
-#include "MemoryUtilities.h"
+#include "MemoryConstants.h"
+#include "aeolus/utilities/SimdUtilities.h"
 
 #include <alsa/asoundlib.h>
-#include <thread>
-
-#include <nlohmann/json.hpp>
 #include <fstream>
+#include <nlohmann/json.hpp>
+#include <thread>
 
 AlsaInterface::AlsaInterface(std::function<void(float (&out)[NUMBER_SAMPLES])> processAudio, std::function<void(const MidiData&)> submitMidi) : midiThreadObjects{ submitMidi }, audioThreadObjects{ processAudio } {
     std::ifstream stream(CONFIG_FILE);
@@ -165,14 +164,14 @@ void AlsaInterface::beginPlayback() {
 }
 
 void AlsaInterface::audioHandler(AudioThreadObjects* a) {
-    MemoryUtilities::enableFlushToZero();
+    SimdUtilities::enableFlushToZero();
     snd_pcm_sframes_t available = snd_pcm_avail_update(a->playback);
     alignas(CACHE_LINE_SIZE) static float fBuffer[NUMBER_SAMPLES];
     alignas(CACHE_LINE_SIZE) static uint8_t oBuffer[NUMBER_SAMPLES * 3];
     AlsaErrorChecker(snd_pcm_start(a->playback), "snd_pcm_start");
     do {
         a->processAudio(fBuffer);
-        MemoryUtilities::ConvertF32toS24(fBuffer, oBuffer);
+        SimdUtilities::ConvertF32toS24(fBuffer, oBuffer);
         snd_pcm_writei(a->playback, oBuffer, NUMBER_FRAMES);
 
         available = snd_pcm_avail_update(a->playback);
@@ -180,7 +179,7 @@ void AlsaInterface::audioHandler(AudioThreadObjects* a) {
             std::this_thread::yield();
         }
     } while (a->runningAudio);
-    MemoryUtilities::disableFlushToZero();
+    SimdUtilities::disableFlushToZero();
 }
 
 void AlsaInterface::endPlayback() {

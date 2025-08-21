@@ -27,9 +27,7 @@ N_func::N_func(const float& v) {
 }
 
 void N_func::setValue(const int idx, const float v) {
-    if (! isPositiveAndBelow(idx, N_NOTES)) {
-        return;
-    }
+    assertIsPositiveAndBelow(idx, N_NOTES);
 
     _v [idx] = v;
     _b |= 1 << idx;
@@ -66,9 +64,7 @@ void N_func::setValue(const int idx, const float v) {
 }
 
 void N_func::clearValue(const int idx) {
-    if (isPositiveAndBelow(idx, N_NOTES)) {
-        return;
-    }
+    assertIsPositiveAndBelow(idx, N_NOTES);
 
     const int m = 1 << idx;
 
@@ -106,12 +102,12 @@ void N_func::clearValue(const int idx) {
 }
 
 float N_func::getValue(const int idx) const {
-    isPositiveAndBelow(idx, _v.size());
+    assertIsPositiveAndBelow(idx, _v.size());
     return _v[idx];
 }
 
 bool N_func::isSet(const int idx) const {
-    isPositiveAndBelow(idx, _v.size());
+    assertIsPositiveAndBelow(idx, _v.size());
     return (_b & (1 << idx)) != 0;
 }
 
@@ -122,7 +118,7 @@ float N_func::operator[](const int note) const {
 
     if (k) {
         // Apply linear interpolation if falls into the gap.
-        isPositiveAndBelow(i + 1, _v.size());
+        assertIsPositiveAndBelow(i + 1, _v.size());
         v += k * (_v [i + 1] - v) / NOTES_GAP;
     }
 

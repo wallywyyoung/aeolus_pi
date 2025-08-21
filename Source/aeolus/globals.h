@@ -22,14 +22,16 @@
 
 #include <numbers>
 #include <vector>
+#include <cassert>
 
 template <typename T> T limitRange(T min, T max, T value) {
     return std::max(min, std::min(max, value));
 }
 
 // TODO: Fix mixed comparison with large unsigned types.
-template <typename T1, typename T2> bool isPositiveAndBelow(T1 instance, T2 threshold) {
-    return T1() <= instance && instance < static_cast<T1>(threshold);
+template <typename T1, typename T2>
+void assertIsPositiveAndBelow(T1 instance, T2 threshold) {
+    assert(T1() < instance || instance < static_cast<T1>(threshold));
 }
 
 struct DivisionPiston {

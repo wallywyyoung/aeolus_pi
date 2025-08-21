@@ -18,26 +18,25 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "StopFactory.h"
+#include "aeolus/StopFactory.h"
+#include "EngineGlobal.h"
 
-#include "../EngineGlobal.h"
-
-std::vector<RankWave *> StopFactory::getRankwavesFromPipeVar(const nlohmann::json &json, std::function<RankWave *(const std::string &)> stopByName) {
-    std::vector<RankWave*> rankWaves;
-    auto addRankwave = [&](const std::string& name) {
+std::vector<std::shared_ptr<RankWave>> StopFactory::getRankWavesFromPipeVar(const nlohmann::json &json, std::function<std::shared_ptr<RankWave>(const std::string &)> stopByName) {
+    std::vector<std::shared_ptr<RankWave>> rankWaves;
+    auto addRankWave = [&](const std::string& name) {
         if (const auto rankWave = stopByName(name)) {
             rankWaves.push_back(rankWave);
         } else {
-            throw std::runtime_error("Stop pipe " + name + " cannot be found.");
+            assert(false);
         }
     };
     if (json.is_array()) {
         for (const auto& i : json) {
-            addRankwave(i);
+            addRankWave(i);
         }
     } else {
         const std::string pipeName = json;
-        addRankwave(pipeName);
+        addRankWave(pipeName);
     }
     return rankWaves;
 }
@@ -63,7 +62,7 @@ Stop::Type StopFactory::getTypeFromString(const std::string& n) {
     return type;
 }
 
-void StopFactory::addZone(Stop &stop, const std::vector<RankWave *> &rw) {
+void StopFactory::addZone(Stop &stop, const std::vector<std::shared_ptr<RankWave>> &rw) {
     if (rw.empty()) {
         return;
     }
@@ -77,25 +76,27 @@ void StopFactory::addZone(Stop &stop, const std::vector<RankWave *> &rw) {
     stop.zones.push_back(zone);
 }
 
-void StopFactory::initFromJson(const nlohmann::json& json, Stop& stop, std::function<RankWave *(const std::string &)> getStopByName) {
+void StopFactory::initFromJson(const nlohmann::json &json, Stop &stop, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName) {
     stop.name = json["name"];
     stop.type = getTypeFromString(json["type"]);
 
-    if (json.contains("gain"))
+    if (json.contains("gain")) {
         stop.gain = json["gain"];
+    }
 
-    if (json.contains("chiff"))
+    if (json.contains("chiff")) {
         stop.chiffGain = json["chiff"];
+    }
 
     if (json.contains("pipe")) {
         const auto pipeObj = json["pipe"];
-        if (const auto rankWaves{getRankwavesFromPipeVar(pipeObj, getStopByName)}; !rankWaves.empty())
+        if (const auto rankWaves{getRankWavesFromPipeVar(pipeObj, getStopByName)}; !rankWaves.empty()) {
             addZone(stop, rankWaves);
-
+        }
     } else if (!json["zones"].is_null()) {
         for (auto &zoneDef: json["zones"]) {
             Stop::Zone zone{};
-            zone.rankWaves = getRankwavesFromPipeVar(zoneDef["pipe"], getStopByName);
+            zone.rankWaves = getRankWavesFromPipeVar(zoneDef["pipe"], getStopByName);
             if (zoneDef.contains("range") && zoneDef["range"].is_array()) {
                 zone.keyRange = Range(zoneDef["range"][0], zoneDef["range"][1]);
             }
@@ -106,7 +107,7 @@ void StopFactory::initFromJson(const nlohmann::json& json, Stop& stop, std::func
     }
 }
 
-void StopFactory::initFromJson(const nlohmann::json &json, std::vector<Stop> &stops, std::function<RankWave *(const std::string &)> getStopByName) {
+void StopFactory::initFromJson(const nlohmann::json &json, std::vector<Stop> &stops, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName) {
     if (const auto arr = json["stops"]; arr.is_array()) {
         stops.reserve(json.count("stops"));
         auto stop = Stop();
