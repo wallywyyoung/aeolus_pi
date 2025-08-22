@@ -30,7 +30,7 @@ public:
 
     VoicePool() = default;
 
-    [[nodiscard]] Voice* trigger(const PipeWave::State& state) {
+    [[nodiscard]] Voice* trigger(const PipeWave::State& state) noexcept {
         for (auto& voice : voices) {
             if (voice.isIdle()) {
                 voice.trigger(state);

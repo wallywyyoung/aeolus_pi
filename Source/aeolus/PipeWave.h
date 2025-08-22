@@ -41,24 +41,25 @@ public:
     /// Playback state.
     struct State {
         std::shared_ptr<PipeWave> pipeWave = nullptr;
-        EnvelopeState env = Idle;
-        float* playPtr = nullptr;               // _p_p
-        float playInterpolation = 0.0;          // _y_p
-        float playInterpolationSpeed = 0.0f;    // _z_p
-        float* releasePtr = nullptr;            // _p_r
-        float releaseInterpolation = 0.0f;      // _y_r
-        float releaseGain = 0.0f;               // _g_r
-        int releaseCount = 0;                   // _i_r
+        EnvelopeState envelopeState = Idle;
+        float* playbackPosition = nullptr;           // _p_p
+        float playInterpolationPhase = 0.0;          // _y_p
+        float playInterpolationSpeed = 0.0f;         // _z_p
 
-        float gain = 1.0f;
+        float* releasePosition = nullptr;            // _p_r
+        float releaseInterpolationPhase = 0.0f;      // _y_r
+        float releaseGain = 0.0f;                    // _g_r
+        int remainingReleaseFrames = 0;              // _i_r
+
+        float outputGain = 1.0f;
         float chiffGain = 0.0f;
 
-        void release() { env = Release; }
-        [[nodiscard]] bool isTriggered() const noexcept { return pipeWave != nullptr && env == Attack; }
-        [[nodiscard]] bool isIdle() const noexcept { return env == Idle; }
-        [[nodiscard]] bool isOver() const noexcept { return env == Over; }
+        void release() { envelopeState = Release; }
+        [[nodiscard]] bool isTriggered() const noexcept { return pipeWave != nullptr && envelopeState == Attack; }
+        [[nodiscard]] bool isIdle() const noexcept { return envelopeState == Idle; }
+        [[nodiscard]] bool isOver() const noexcept { return envelopeState == Over; }
         void reset() {
-            pipeWave = nullptr; env = Idle;
+            pipeWave = nullptr; envelopeState = Idle;
         }
     };
 
@@ -80,7 +81,7 @@ public:
 
 private:
     static constexpr auto CENTS_IN_OCTAVE = 1200.0f;
-    static void looplen(float f, float sampleStepRate, int lmax, int &aa, int &bb);
+    static void looplen(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength, int &cycleCount);
     static void attgain(float* att, int n, float p);
 
     std::shared_ptr<Addsynth> _model;
@@ -90,15 +91,15 @@ private:
     int _attackLength;          // _l0
     int _loopLength;            // _l1
     int _sampleStep;            // _k_s
-    int _releaseLength;         // _k_r
-    float _releaseMultiplier;   // _m_r
+    int releaseSampleCount;         // _k_r
+    float releaseDecayRate;   // _m_r
     float _releaseDetune;       // _d_r
     float _instability;         // _d_p
 
     std::vector<float> _wavetable;
 
-    float* _attackStartPtr; // _p0
-    float* _loopStartPtr;   // _p1
+    float* attackWaveformStart; // _p0
+    float* loopWaveformStart;   // _p1
     float* _loopEndPtr;     // _p2
 };
 

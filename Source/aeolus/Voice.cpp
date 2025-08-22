@@ -30,7 +30,7 @@ void Voice::trigger(const PipeWave::State &newState) {
     const auto freq = state.pipeWave->getPipeFrequency();
     const auto dt = 1.0f / freq;
     // Delay pipe harmonic signal so that chiff noise builds up first
-    delay = static_cast<int>(std::min<float>(delayLine.size(), 0.5f * dt * SAMPLE_RATE_F));
+    chiffDelaySampleCount = static_cast<int>(std::min<float>(delayLine.size(), 0.5f * dt * SAMPLE_RATE_F));
     chiff.setAttack(5.0f * dt);
     chiff.setDecay(100.0f * dt);
     chiff.setSustain(0.01f);
@@ -49,11 +49,11 @@ void Voice::trigger(const PipeWave::State &newState) {
     const float x = width * k * static_cast<float>(abs(note - 65));
     spatialSource.setSourcePosition(x, 5.0f);
     spatialSource.recalculate();
-    postReleaseCounter = spatialSource.getPostFxSamplesCount() + 2 * delay + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
+    framesUntilRelease = spatialSource.getPostFxSamplesCount() + 2 * chiffDelaySampleCount + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
 }
 
 void Voice::release() {
-    if (state.env == PipeWave::Over) {
+    if (state.envelopeState == PipeWave::Over) {
         std::cerr << "Release was called before the voice was over!" << std::endl;
         return;
     }
@@ -71,19 +71,19 @@ void Voice::reset() {
 
 void Voice::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &out) {
     buffer.fill(0.0f);
-    const auto gain = state.gain;
-    if (state.env == PipeWave::Over) {
-        postReleaseCounter -= std::min(static_cast<int>(postReleaseCounter), AUDIO_SUB_FRAME_LENGTH);
+    const auto gain = state.outputGain;
+    if (state.envelopeState == PipeWave::Over) {
+        framesUntilRelease -= std::min(static_cast<int>(framesUntilRelease), AUDIO_SUB_FRAME_LENGTH);
         for (float & i : buffer) {
             delayLine.write(0.0f);
-            i = delayLine.readNearest(delay) * gain;
+            i = delayLine.readNearest(chiffDelaySampleCount) * gain;
         }
     } else {
         const auto pipeWave = state.pipeWave;
         pipeWave->play(state, buffer);
-        for (float & i : buffer) {
+        for (float &i : buffer) {
             delayLine.write(i);
-            i = delayLine.readNearest(delay) * gain;
+            i = delayLine.readNearest(chiffDelaySampleCount) * gain;
         }
     }
     chiff.process(buffer);
@@ -97,11 +97,11 @@ void Voice::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &
 }
 
 bool Voice::isOver() const noexcept {
-    return (state.env == PipeWave::Over) && postReleaseCounter == 0;
+    return (state.envelopeState == PipeWave::Over) && framesUntilRelease == 0;
 }
 
 bool Voice::isActive() const noexcept {
-    return state.env == PipeWave::Attack;
+    return state.envelopeState == PipeWave::Attack;
 }
 
 bool Voice::isForNote(const int note) const noexcept {

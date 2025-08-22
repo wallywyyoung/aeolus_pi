@@ -291,15 +291,16 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
 
     for (const auto& zone : stop.getZones()) {
         if (zone.isForKey(note)) {
-            for (const auto rankWave : zone.rankWaves) {
-                if (auto state = rankWave->trigger(note); state.isTriggered()) {
-                    state.gain = stop.getGain();
-                    state.chiffGain = stop.getChiffGain();
-                    if (const auto voice = voicePool->trigger(state)) {
-                        voice->setStopIndex(stopIndex);
-                        activeVoices.emplace_back(voice);
-                        voiceTriggered = true;
-                    }
+            continue;
+        }
+        for (const auto rankWave : zone.rankWaves) {
+            if (auto state = rankWave->trigger(note); state.isTriggered()) {
+                state.outputGain = stop.getGain();
+                state.chiffGain = stop.getChiffGain();
+                if (const auto voice = voicePool->trigger(state)) {
+                    voice->setStopIndex(stopIndex);
+                    activeVoices.emplace_back(voice);
+                    voiceTriggered = true;
                 }
             }
         }

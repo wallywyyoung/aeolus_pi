@@ -35,10 +35,10 @@ class Voice {
     int stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
     std::array<float, AUDIO_SUB_FRAME_LENGTH> buffer{ 0.0f };
     dsp::DelayLineStatic<SAMPLE_RATE> delayLine{}; /// Delay after chiff.
-    int delay{};
+    int chiffDelaySampleCount{};
     dsp::Chiff chiff{}; /// Attack chiff.
     dsp::SpatialSource spatialSource{}; /// Stereo spatial modeller.
-    size_t postReleaseCounter{0}; /// Counter to account for the delayed sound before recycling the voice.
+    size_t framesUntilRelease{0}; /// Counter to account for the delayed sound before recycling the voice.
 public:
     Voice() = default;
 
@@ -51,7 +51,7 @@ public:
     void setStopIndex(const int idx) noexcept { stopIndex = idx; }
 
     [[nodiscard]] bool isOver() const noexcept;
-    [[nodiscard]] bool isIdle() const noexcept { return state.env == PipeWave::Idle; }
+    [[nodiscard]] bool isIdle() const noexcept { return state.envelopeState == PipeWave::Idle; }
     [[nodiscard]] bool isActive() const noexcept;
     [[nodiscard]] bool isForNote(int note) const noexcept;
     [[nodiscard]] int getNote() const;
