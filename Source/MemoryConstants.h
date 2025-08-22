@@ -18,6 +18,7 @@
 // ----------------------------------------------------------------------------
 
 #pragma once
+#include <cmath>
 
 /// Processing sample rate.
 /// There are few harmonics generated, so can be set this low.
@@ -29,12 +30,23 @@ enum SampleRate {
 enum Channels {
     Stereo = 2
 };
+
+constexpr int nearestPowerOfTwo(float n) {
+    int last = 0;
+    for (auto i = 1; i < 100; ++i) {
+        auto now = static_cast<int>(std::pow(2, i));
+        if (last < n && n <= now) {
+            return now;
+        }
+        last = now;
+    }
+}
 constexpr static Channels OUTPUT_CHANNELS = Stereo;
 constexpr static Channels VOICE_CHANNELS = Stereo;
 constexpr static SampleRate SAMPLE_RATE = kHz48000;
 constexpr static float SAMPLE_RATE_F = static_cast<float>(SAMPLE_RATE);
 constexpr static float SAMPLE_RATE_R = 1.0f / SAMPLE_RATE_F;
-constexpr static int PERIOD_SIZE = static_cast<int>(SAMPLE_RATE_F * 0.01f);
+constexpr static int PERIOD_SIZE = nearestPowerOfTwo(SAMPLE_RATE_F * 0.01f);
 constexpr static int NUMBER_FRAMES = PERIOD_SIZE * 2;
 constexpr static int NUMBER_SAMPLES = NUMBER_FRAMES * OUTPUT_CHANNELS;
 
