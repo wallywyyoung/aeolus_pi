@@ -148,7 +148,6 @@ void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, 
     addsynth._comments = v["comments"];
 
     N_func_fromJson(addsynth._n_vol, v["n_vol"]);
-    N_func_fromJson(addsynth._n_vol, v["n_vol"]);
     N_func_fromJson(addsynth._n_off, v["n_off"]);
     N_func_fromJson(addsynth._n_ran, v["n_ran"]);
 

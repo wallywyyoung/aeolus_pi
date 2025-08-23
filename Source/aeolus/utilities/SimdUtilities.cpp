@@ -67,6 +67,7 @@ void SimdUtilities::ConvertF32toS24(float(&in)[PROCESS_SAMPLES_SIZE], std::uint8
 
     int i = 0;
     for (; i + 4 <= ALSA_BUFFER_SAMPLES_SIZE; i += 8) {
+        // Convert f32 into s24
         float32x4_t in0 = vld1q_f32(in + i);                                 // Input
         float32x4_t clamped0 = vmaxq_f32(min, vminq_f32(max, in0));  // Clamp
         float32x4_t scaled0 = vmulq_f32(clamped0, scale);                 // Scale
@@ -80,31 +81,22 @@ void SimdUtilities::ConvertF32toS24(float(&in)[PROCESS_SAMPLES_SIZE], std::uint8
         int32x4_t attenuated1 = vcvtq_s32_f32(rounded1);                               // Cast
         // int32x4_t attenuated1 = vrshrq_n_s32(s321, 3);                        // Attenuate
 
-        // Cast the int32x4_t vectors to uint32x4_t for bit packing intrinsics
-        uint32x4_t u32_attenuated0 = vreinterpretq_u32_s32(attenuated0);
-        uint32x4_t u32_attenuated1 = vreinterpretq_u32_s32(attenuated1);
+        // Bitpack s24 into the output array
+        uint32x4_t u320 = vreinterpretq_u32_s32(attenuated0); // uint32x4_t required for bit packing intrinsics
+        uint32x4_t u321 = vreinterpretq_u32_s32(attenuated1); // uint32x4_t required for bit packing intrinsics
 
-        // Extract the lower 8 bits
-        uint16x4_t s16_0_low = vmovn_u32(u32_attenuated0);
-        uint16x4_t s16_1_low = vmovn_u32(u32_attenuated1);
-        uint8x8_t low_bytes = vmovn_u16(vcombine_u16(s16_0_low, s16_1_low));
+
+        uint16x4_t lowBits0 = vmovn_u32(u320); // Extract the lower 8 bits
+        uint16x4_t lowBits1 = vmovn_u32(u321); // Extract the lower 8 bits
+        uint8x8_t lowBytes = vmovn_u16(vcombine_u16(lowBits0, lowBits1)); // Store the lower 8 bits together
 
         // Extract the middle 8 bits by shifting and narrowing
-        uint8x8_t mid_bytes = vmovn_u16(vcombine_u16(
-            vmovn_u32(vrshrq_n_u32(u32_attenuated0, 8)),
-            vmovn_u32(vrshrq_n_u32(u32_attenuated1, 8))
-        ));
+        uint8x8_t midBytes = vmovn_u16(vcombine_u16(vmovn_u32(vrshrq_n_u32(u320, 8)), vmovn_u32(vrshrq_n_u32(u321, 8))));
 
         // Extract the high 8 bits by shifting and narrowing
-        uint8x8_t high_bytes = vmovn_u16(vcombine_u16(
-            vmovn_u32(vrshrq_n_u32(u32_attenuated0, 16)),
-            vmovn_u32(vrshrq_n_u32(u32_attenuated1, 16))
-        ));
+        uint8x8_t highBytes = vmovn_u16(vcombine_u16(vmovn_u32(vrshrq_n_u32(u320, 16)), vmovn_u32(vrshrq_n_u32(u321, 16))));
 
-        // Interleave the data for efficient storing
-        uint8x8x3_t packed_bytes = {low_bytes, mid_bytes, high_bytes};
-
-        // Store the interleaved data all at once
-        vst3_u8(out + i * 3, packed_bytes);
+        uint8x8x3_t packedBytes = {lowBytes, midBytes, highBytes}; // Interleave the data
+        vst3_u8(out + i * 3, packedBytes); // Write interleaved data all at once
     }
 }

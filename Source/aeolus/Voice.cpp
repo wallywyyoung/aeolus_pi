@@ -29,7 +29,7 @@ Voice::Voice(const PipeWave::State &newState, const int& newStopIndex) : state(n
     const auto freq = state.pipeWave->getPipeFrequency();
     const auto dt = 1.0f / freq;
     // Delay pipe harmonic signal so that chiff noise builds up first
-    chiffDelaySampleCount = static_cast<int>(std::min<float>(delayLine.size(), 0.5f * dt * SAMPLE_RATE_F));
+    chiffDelaySampleCount = static_cast<int>(std::min<float>(static_cast<float>(delayLine.size()), 0.5f * dt * SAMPLE_RATE_F));
     chiff.setAttack(5.0f * dt);
     chiff.setDecay(100.0f * dt);
     chiff.setSustain(0.01f);
@@ -80,19 +80,14 @@ void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out
     } else {
         const auto pipeWave = state.pipeWave;
         pipeWave->play(state, buffer);
+        // TODO: Delay line is broken?
         for (float &i : buffer) {
             delayLine.write(i);
             i = delayLine.readNearest(chiffDelaySampleCount) * gain;
         }
     }
     chiff.process(buffer);
-    // spatialSource.process(buffer, out);
-    auto l= out.getWritePointer(0);
-    auto r= out.getWritePointer(1);
-    for (auto i = 0; i < PROCESS_FRAMES_SIZE; ++i) {
-        l[i] = buffer[i];
-        r[i] = buffer[i];
-    }
+    spatialSource.process(buffer, out);
 }
 
 bool Voice::isOver() const noexcept {

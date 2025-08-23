@@ -75,7 +75,6 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/chiff.cpp
         Source/aeolus/dsp/convolve.h
         Source/aeolus/dsp/convolver.cpp
-        Source/aeolus/dsp/delay.cpp
         Source/aeolus/dsp/fft.cpp
         Source/aeolus/dsp/fft.h
         Source/aeolus/dsp/filter.cpp

@@ -19,9 +19,11 @@
 
 #pragma once
 
-#include <cmath>
-#include <vector>
 #include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <vector>
 
 #include "aeolus/globals.h"
 
@@ -31,60 +33,85 @@ namespace dsp {
     */
     class DelayLine {
     public:
-        explicit DelayLine(size_t size = 1024);
-        void resize(size_t size);
-        void reset();
-        void write(float x);
-        [[nodiscard]] float read(float delay) const;
-        [[nodiscard]] float readNearest(int delay) const;
-        [[nodiscard]] size_t size() const { return _buffer.size(); }
-    private:
-        std::vector<float> _buffer;
-        size_t _writeIndex;
-    };
+        explicit DelayLine(const size_t size = 1024) : buffer(size, 0.0f) { }
 
-    template <size_t BUFFER_SIZE>
-    class DelayLineStatic
-    {
-    public:
-        DelayLineStatic() = default;
+        void resize(const size_t size) {
+            buffer.resize(size);
+            reset();
+        }
 
         void reset() {
-            _writeIndex = 0;
-            _buffer.fill(0);
+            writeIndex = 0;
+            std::memset(buffer.data(), 0, sizeof (float) * buffer.size());
         }
 
-        void write (const float x) {
-            if (_writeIndex == 0) {
-                _writeIndex = BUFFER_SIZE - 1;
-            } else {
-                --_writeIndex;
-            }
-
-            _buffer[_writeIndex] = x;
+        void write(const float x) noexcept {
+            writeIndex = writeIndex == 0 ? buffer.size() - 1 : --writeIndex;
+            buffer[writeIndex] = x;
         }
 
-        float read(const float delay) const
-        {
-            int index = static_cast<int>(std::floor(delay));
-            const float frac = delay - static_cast<float>(index);
+        [[nodiscard]] float read(float delay) const {
+            assert(delay >= 0.0f);
+            const auto integral = std::floor(delay);
+            const auto fraction = delay - integral;
 
-            index = (index + _writeIndex) % static_cast<int>(BUFFER_SIZE);
-            const auto a = _buffer[index];
-            const auto b = index < BUFFER_SIZE - 1 ? _buffer[index + 1] : _buffer[0];
+            auto index = (static_cast<size_t>(integral) + writeIndex) % buffer.size();
+            assert(index < buffer.size());
+            const auto a = buffer[index];
+            const auto b = index < buffer.size() - 1 ? buffer[index + 1] : buffer[0];
 
-            return math::lerp(a, b, frac);
+            return math::lerp(a, b, fraction);
         }
 
-        float readNearest(const int delay) const
-        {
-            const int index{ static_cast<int>((delay + _writeIndex) % BUFFER_SIZE) };
-            return _buffer[index];
+        [[nodiscard]] float readNearest(int delay) const {
+            assert(delay >= 0 && (delay + writeIndex) % buffer.size() < buffer.size());
+            return buffer[(delay + writeIndex) % buffer.size()];
         }
 
-        size_t size() const { return _buffer.size(); }
+        [[nodiscard]] size_t size() const { return buffer.size(); }
     private:
-        std::array<float, BUFFER_SIZE> _buffer{};
-        size_t _writeIndex{};
+        std::vector<float> buffer;
+        size_t writeIndex{ 0 };
+    };
+
+    template <size_t BUFFER_SIZE = 1024>
+    class DelayLineStatic {
+    public:
+        explicit DelayLineStatic() {
+            buffer.fill(0);
+        }
+
+        void reset() noexcept {
+            writeIndex = 0;
+            buffer.fill(0);
+        }
+
+        void write (const float x) noexcept {
+            buffer[writeIndex] = x;
+            writeIndex = writeIndex == 0 ? BUFFER_SIZE - 1 : --writeIndex;
+        }
+
+        [[nodiscard]] float read(const float delay) const {
+            assert(delay >= 0.0f);
+            const auto integral = std::floor(delay);
+            const auto fraction = delay - integral;
+
+            auto index = (static_cast<size_t>(integral) + writeIndex) % BUFFER_SIZE;
+            assert(index < BUFFER_SIZE);
+            const auto a = buffer[index];
+            const auto b = index < BUFFER_SIZE - 1 ? buffer[index + 1] : buffer[0];
+
+            return math::lerp(a, b, fraction);
+        }
+
+        [[nodiscard]] float readNearest(const int delay) const noexcept{
+            assert(delay >= 0 && (delay + writeIndex) % BUFFER_SIZE < BUFFER_SIZE);
+            return buffer[(delay + writeIndex) % BUFFER_SIZE];
+        }
+
+        [[nodiscard]] size_t size() const noexcept { return buffer.size(); }
+    private:
+        std::array<float, BUFFER_SIZE> buffer{};
+        size_t writeIndex{0};
     };
 } // namespace dsp
