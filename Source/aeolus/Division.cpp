@@ -185,7 +185,11 @@ bool Division::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &
     releaseVoicesOfDisabledStops();
     triggerVoicesOfEnabledStops();
 
-    auto hasVoices = false;
+    if (activeVoices.empty()) {
+        return false;
+    }
+
+    divisionBuffer.clear();
     for (auto voice = activeVoices.begin(); voice != activeVoices.end();) {
         voice->process(voiceBuffer);
 
@@ -196,9 +200,8 @@ bool Division::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &
         } else {
             ++voice;
         }
-        hasVoices = true;
     }
-    return hasVoices;
+    return true;
 }
 
 void Division::modulate(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<PROCESS_FRAMES_SIZE, 1>& tremulantBuffer) {

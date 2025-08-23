@@ -25,13 +25,13 @@
 
 #include <thread_pool/thread_pool.h>
 
-EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::EqualTemp))), _tuningFrequency(TUNING_FREQUENCY_DEFAULT) {
+EngineGlobal::EngineGlobal() {
     irs = IOManager::loadIRs();
     loadRankwaves();
     generateWavetables();
     organ = new Organ(std::bind(&EngineGlobal::getStopByName, this, std::placeholders::_1));
     organInterface = static_cast<OrganInterface *>(organ);
-    _reverbTailCounter = _convolver.setIR(irs.irs[0]);
+    reverbTailCounter = convolver.setIR(irs.irs[0]);
 #if DEBUG
     std::cout << "Setting debug stop/note on" << std::endl;
     organ->setDivisionStopOn(0,0);
@@ -55,6 +55,6 @@ void EngineGlobal::generateWavetables() const {
 void EngineGlobal::loadRankwaves() {
     for (int i = 0; i <  model.getStopsCount(); ++i) {
         // TODO: Fix this mapping in JSON.
-        _rankwavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *_scale, _tuningFrequency));
+        _rankwavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale, tuningFrequency));
     }
 }

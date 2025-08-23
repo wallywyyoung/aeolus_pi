@@ -73,17 +73,15 @@ void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out
     const auto gain = state.outputGain;
     if (state.envelopeState == PipeWave::Over) {
         framesUntilRelease -= std::min(static_cast<int>(framesUntilRelease), PROCESS_FRAMES_SIZE);
-        for (float & i : buffer) {
+        for (float &sample : buffer) {
             delayLine.write(0.0f);
-            i = delayLine.readNearest(chiffDelaySampleCount) * gain;
+            sample = delayLine.readNearest(chiffDelaySampleCount) * gain;
         }
     } else {
-        const auto pipeWave = state.pipeWave;
-        pipeWave->play(state, buffer);
-        // TODO: Delay line is broken?
-        for (float &i : buffer) {
-            delayLine.write(i);
-            i = delayLine.readNearest(chiffDelaySampleCount) * gain;
+        state.pipeWave->play(state, buffer);
+        for (float &sample : buffer) {
+            delayLine.write(sample);
+            sample = delayLine.readNearest(chiffDelaySampleCount) * gain;
         }
     }
     chiff.process(buffer);

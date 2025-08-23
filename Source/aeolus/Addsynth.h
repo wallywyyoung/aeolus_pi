@@ -79,17 +79,15 @@ private:
     N_func  _n_vol{-20.0f};
     N_func  _n_off{0.0f};
     N_func  _n_ran{0.0f};
-    N_func  _n_ins{0.0f};
-
-    N_func  _n_att{0.01f}; // Attack time.
-    N_func  _n_atd{0.0f}; // Attack detune.
-    N_func  _n_dct{0.01f}; // Release time.
-    N_func  _n_dcd{0.0f}; // Release detune.
-
-    HN_func _h_lev{-100.0f}; // Harmonic level
-    HN_func _h_ran{0.0f}; // Harmonic level randomization.
-    HN_func _h_att{0.05f}; // Harmonic attack time
-    HN_func _h_atp{0.0f}; // Harmonic attack profile.
+    N_func  _n_ins{0.0f};    ///< Note instability
+    N_func  _n_att{0.01f};   ///< Attack time.
+    N_func  _n_atd{0.0f};    ///< Attack detune.
+    N_func  _n_dct{0.01f};   ///< Release time.
+    N_func  _n_dcd{0.0f};    ///< Release detune.
+    HN_func _h_lev{-100.0f}; ///< Harmonic level
+    HN_func _h_ran{0.0f};    ///< Harmonic level randomization.
+    HN_func _h_att{0.05f};   ///< Harmonic attack time
+    HN_func _h_atp{0.0f};    ///< Harmonic attack profile.
 
     friend class IOManager;
 };

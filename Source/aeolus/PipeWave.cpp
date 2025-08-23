@@ -90,7 +90,7 @@ void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
                     ++releasePosition;
                 } else if (releaseInterpolation < 0.0f) {
                     ++releaseInterpolation;
-                    --releasePosition -= 1;
+                    --releasePosition;
                 }
                 *playHead += releaseGain * (releasePosition[0] + releaseInterpolation * (releasePosition[1] - releasePosition[0]));
                 ++playHead;
@@ -159,19 +159,19 @@ void PipeWave::generateWavetable() {
     }
 
     thread_local std::random_device rnd;
-    std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(-1.0f, 1.0f);
+    thread_local std::mt19937 gen(rnd());
+    thread_local std::uniform_real_distribution dist(-1.0f, 1.0f);
 
     float noteAttack = _model->getNoteAttack(_note);
-
     for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
         if (const auto harmonicAttack = _model->getHarmonicAttack(harmonic, _note); harmonicAttack > noteAttack) {
             noteAttack = harmonicAttack;
         }
     }
 
-    // Attack length aligned to the processing sub-frames
+    // Attack length aligned to the processing subframes
     _attackLength = static_cast<int>(std::lround(SAMPLE_RATE_F * noteAttack + 0.5f));
+    static_assert(isPowerOfTwo(PROCESS_FRAMES_SIZE));
     _attackLength = (_attackLength + PROCESS_FRAMES_SIZE - 1) & ~(PROCESS_FRAMES_SIZE - 1);
 
     // Target frequency
@@ -181,9 +181,9 @@ void PipeWave::generateWavetable() {
     const float attackFrequency = targetFrequency * math::exp2ap(_model->getNoteAttackDetune(_note) / CENTS_IN_OCTAVE);
 
     float f = 0.0f;
-    for (int harmonic = HN_func::N_HARM - 1; harmonic >= 0; --harmonic) {
-        f = (harmonic + 1) * targetFrequency;
-        if (f < 0.45f && _model->getHarmonicLevel(harmonic, _note) >= -40.0f) {
+    for (auto harmonic = HN_func::N_HARM - 1; harmonic >= 0; --harmonic) {
+        f = static_cast<float>(harmonic + 1) * targetFrequency;
+        if (f < NYQUIST_WITH_MARGIN && _model->getHarmonicLevel(harmonic, _note) >= AUDIBLE_THRESHOLD) {
             break;
         }
     }
@@ -213,7 +213,7 @@ void PipeWave::generateWavetable() {
     const int wavetableLength = _attackLength + _loopLength + _sampleStep * (PROCESS_FRAMES_SIZE + 4);
     _wavetable.resize(wavetableLength);
     std::vector<float> arg(wavetableLength);
-    std::vector<float> att(wavetableLength);
+    std::vector<float> att{};
 
     attackWaveformStart = _wavetable.data();
     loopWaveformStart = attackWaveformStart + _attackLength;
@@ -248,35 +248,33 @@ void PipeWave::generateWavetable() {
     const float baseNoteAmplitude = math::exp2ap(0.1661f * _model->getNoteVolume(_note));
 
     for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
-        if (static_cast<float>(harmonic + 1) * targetFrequency > 0.45f) {
+        if (static_cast<float>(harmonic + 1) * targetFrequency > NYQUIST_WITH_MARGIN) {
             break;
         }
 
-        float harmonicAmplitude = _model->getHarmonicLevel(harmonic, _note);
-
-        if (harmonicAmplitude < -80.0f) {
+        float harmonicLevel = _model->getHarmonicLevel(harmonic, _note);
+        if (harmonicLevel < HARMONIC_SKIP_THRESHOLD) {
             continue;
         }
+        harmonicLevel = baseNoteAmplitude * math::exp2ap(0.1661f * (harmonicLevel + _model->getHarmonicRandomisation(harmonic, _note) * dist(gen)));
 
-        harmonicAmplitude = baseNoteAmplitude * math::exp2ap(0.1661f * (harmonicAmplitude + _model->getHarmonicRandomisation(harmonic, _note) * dist(gen)));
-        attackSampleCount = static_cast<int>(SAMPLE_RATE_F * _model->getHarmonicAttack(harmonic, _note) + 0.5f);
-
-        if (attackSampleCount > att.size()) {
-            att.resize(attackSampleCount);
+        auto harmonicAttackSampleCount = static_cast<int>(SAMPLE_RATE_F * _model->getHarmonicAttack(harmonic, _note) + 0.5f);
+        if (harmonicAttackSampleCount > att.size()) {
+            att.resize(harmonicAttackSampleCount);
         }
 
-        attgain(att.data(), attackSampleCount, _model->getHarmonicAttackProfile(harmonic, _note));
+        attgain(att.data(), harmonicAttackSampleCount, _model->getHarmonicAttackProfile(harmonic, _note));
 
         for (int i = 0; i < _attackLength + _loopLength; ++i) {
             float t = arg[i] * static_cast<float>(harmonic + 1);
             t -= floorf(t);
-            noteAttack = harmonicAmplitude * sinf(std::numbers::pi_v<float> * 2.0f * t);
+            auto harmonicSample = harmonicLevel * sinf(std::numbers::pi_v<float> * 2.0f * t);
 
-            if (i < attackSampleCount) {
-                noteAttack *= att[i];
+            if (i < harmonicAttackSampleCount) {
+                harmonicSample *= att[i];
             }
 
-            attackWaveformStart[i] += noteAttack;
+            attackWaveformStart[i] += harmonicSample;
         }
     }
 

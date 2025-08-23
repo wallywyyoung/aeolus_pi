@@ -33,46 +33,25 @@
  * This class in a singleton which is shared among all the plugin instances.
  */
 
-class EngineGlobal final  : public MidiManager {
+class EngineGlobal final : public MidiManager {
 public:
-    EngineGlobal();
+    explicit EngineGlobal();
     ~EngineGlobal() = default;
 
     [[nodiscard]] std::shared_ptr<RankWave> getStopByName(const std::string &name) const { return _rankwavesByName.at(name); }
     void pushMidi(const MidiData& midiData) { push(midiData); }
 
     void process(float (&out)[PROCESS_SAMPLES_SIZE]) {
-        // for (int i = 0; i < PROCESS_SAMPLES_SIZE; ++i) {
-        //     auto time = static_cast<float>(i) * SAMPLE_RATE_R;
-        //     auto val = sinf(2.0f * std::numbers::pi_v<float> * 110.0f * time);;
-        //     out[i * 2 + 1] = val;
-        //     out[i * 2 + 0] = val;
-        // }
-        // return;
         // Midi / Configuration Block
         ProcessMidiBuffer();
         // Organ Block
         bool wasAudioGenerated = organ->process(out);
         // Reverb Block
         // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
-        _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - PROCESS_FRAMES_SIZE);
-        if (_reverbTailCounter > 0 && _convolver.isAudible()) {
-            _convolver.process(out, PROCESS_FRAMES_SIZE);
+        reverbTailCounter = wasAudioGenerated ? convolver.length() : std::max(0, reverbTailCounter - PROCESS_FRAMES_SIZE);
+        if (reverbTailCounter > 0 && convolver.isAudible()) {
+            convolver.process(out, PROCESS_FRAMES_SIZE);
         }
-        // Volume Block
-        // if (_volume.isSmoothing()) {
-        //     for (int i = 0; i < OUT_PER_CHANNEL_SIZE; ++i) {
-        //         const float g = _volume.nextValue();
-        //         out[i*2] *= g;
-        //         out[i*2+1] *= g;
-        //     }
-        // } else {
-        //     const float g = _volume.target();
-        //     for (int i = 0; i < OUT_PER_CHANNEL_SIZE; ++i) {
-        //         out[i*2] *= g;
-        //         out[i*2+1] *= g;
-        //     }
-        // }
     }
 
 private:
@@ -85,11 +64,10 @@ private:
     Organ *organ;
     std::unordered_map<std::string, std::shared_ptr<RankWave>> _rankwavesByName{};
     IRs irs;
-    std::shared_ptr<Scale> _scale;
-    int _longestIRLength{};   ///< Longest IR length in samples
-    float _tuningFrequency;
+    std::shared_ptr<Scale> scale { std::make_shared<Scale>(Scale::EqualTemp)};
+    int longestIrLength{};                              ///< Longest IR length in samples
+    float tuningFrequency { TUNING_FREQUENCY_DEFAULT }; ///< Middle A tuning frequency.
 
-    // AudioParameter _volume;
-    dsp::Convolver _convolver;
-    int _reverbTailCounter{0};
+    dsp::Convolver convolver;
+    int reverbTailCounter{0};
 };
