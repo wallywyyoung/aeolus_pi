@@ -32,14 +32,11 @@ EngineGlobal::EngineGlobal() : _scale(std::make_shared<Scale>(Scale(Scale::Equal
     organ = new Organ(std::bind(&EngineGlobal::getStopByName, this, std::placeholders::_1));
     organInterface = static_cast<OrganInterface *>(organ);
     _reverbTailCounter = _convolver.setIR(irs.irs[0]);
-    // _volume.setValue(0.005f, true);
-    std::cout << "Setting all stops on" << std::endl;
-    organ->setGlobalAllStopsOn();
-    std::cout << "Setting notes on" << std::endl;
+#if DEBUG
+    std::cout << "Setting debug stop/note on" << std::endl;
+    organ->setDivisionStopOn(0,0);
     organ->setDivisionNoteOn(0, 50);
-    organ->setDivisionNoteOn(1, 50);
-    organ->setDivisionNoteOn(2, 50);
-    organ->setDivisionNoteOn(3, 24);
+#endif
 }
 
 void EngineGlobal::generateWavetables() const {

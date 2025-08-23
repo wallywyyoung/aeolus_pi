@@ -20,6 +20,7 @@
 #include "aeolus/utilities/SimdUtilities.h"
 
 #include <algorithm>
+#include <stdint.h>
 #include <arm_neon.h>
 #include <cassert>
 #include <cmath>
@@ -38,13 +39,13 @@ void SimdUtilities::disableFlushToZero() {
     asm volatile("msr fpcr, %0" : : "ri"(fpsr & ~ftz));
 }
 
-void SimdUtilities::ConvertF32toS16(float (&in)[NUMBER_SAMPLES], std::int16_t* out) {
+void SimdUtilities::ConvertF32toS16(float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::int16_t* out) {
     const float32x4_t min = vdupq_n_f32(-1.0f);
     const float32x4_t max = vdupq_n_f32(1.0f);
     const float32x4_t scale = vdupq_n_f32(32767.0f);
 
     int i = 0;
-    for (; i + 4 <= NUMBER_SAMPLES; i += 4) {
+    for (; i + 4 <= ALSA_BUFFER_SAMPLES_SIZE; i += 4) {
         float32x4_t in0 = vld1q_f32(in + i);
         float32x4_t clamped0 = vmaxq_f32(min, vminq_f32(max, in0));
         float32x4_t scaled0 = vmulq_f32(clamped0, scale);
@@ -54,47 +55,56 @@ void SimdUtilities::ConvertF32toS16(float (&in)[NUMBER_SAMPLES], std::int16_t* o
         int16x4_t attenuated = vrshr_n_s16(s16, 3);
         vst1_s16(out + i, attenuated);
     }
-    for (; i < NUMBER_SAMPLES; ++i) {
+    for (; i < ALSA_BUFFER_SAMPLES_SIZE; ++i) {
         out[i] = std::round(32767.0f * std::clamp(in[i], -1.0f, 1.0f));
     }
 }
 
-void SimdUtilities::ConvertF32toS24(float(&in)[NUMBER_SAMPLES], std::uint8_t* out) {
+void SimdUtilities::ConvertF32toS24(float(&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]) {
     const float32x4_t min = vdupq_n_f32(-1.0f);
     const float32x4_t max = vdupq_n_f32(1.0f);
     const float32x4_t scale = vdupq_n_f32(8388607.0f);
 
     int i = 0;
-    for (; i + 4 <= NUMBER_SAMPLES; i += 4) {
-        float32x4_t in0 = vld1q_f32(in + i);
-        float32x4_t clamped0 = vmaxq_f32(min, vminq_f32(max, in0));
-        float32x4_t scaled0 = vmulq_f32(clamped0, scale);
-        float32x4_t rounded0 = vrndaq_f32(scaled0);
-        int32x4_t s32 = vcvtq_s32_f32(rounded0);
-        int32x4_t attenuated = vrshrq_n_s32(s32, 3);
+    for (; i + 4 <= ALSA_BUFFER_SAMPLES_SIZE; i += 8) {
+        float32x4_t in0 = vld1q_f32(in + i);                                 // Input
+        float32x4_t clamped0 = vmaxq_f32(min, vminq_f32(max, in0));  // Clamp
+        float32x4_t scaled0 = vmulq_f32(clamped0, scale);                 // Scale
+        float32x4_t rounded0 = vrndaq_f32(scaled0);                            // Round
+        int32x4_t attenuated0 = vcvtq_s32_f32(rounded0);                               // Cast
+        // int32x4_t  = vrshrq_n_s32(s320, 3);                        // Attenuate
+        float32x4_t in1 = vld1q_f32(in + i + 4);                                 // Input
+        float32x4_t clamped1 = vmaxq_f32(min, vminq_f32(max, in1));  // Clamp
+        float32x4_t scaled1 = vmulq_f32(clamped1, scale);                 // Scale
+        float32x4_t rounded1 = vrndaq_f32(scaled1);                            // Round
+        int32x4_t attenuated1 = vcvtq_s32_f32(rounded1);                               // Cast
+        // int32x4_t attenuated1 = vrshrq_n_s32(s321, 3);                        // Attenuate
 
-        // Bit packing.
-        uint32_t value = vgetq_lane_s32(attenuated, 0);
-        out[i * 3 + 0] = value & 0xFF;
-        out[i * 3 + 1] = value >> 8 & 0xFF;
-        out[i * 3 + 2] = value >> 16 & 0xFF;
-        value = vgetq_lane_s32(attenuated, 1);
-        out[i * 3 + 3] = value & 0xFF;
-        out[i * 3 + 4] = value >> 8 & 0xFF;
-        out[i * 3 + 5] = value >> 16 & 0xFF;
-        value = vgetq_lane_s32(attenuated, 2);
-        out[i * 3 + 6] = value & 0xFF;
-        out[i * 3 + 7] = value >> 8 & 0xFF;
-        out[i * 3 + 8] = value >> 16 & 0xFF;
-        value = vgetq_lane_s32(attenuated, 3);
-        out[i * 3 + 9] = value & 0xFF;
-        out[i * 3 + 10] = value >> 8 & 0xFF;
-        out[i * 3 + 11] = value >> 16 & 0xFF;
-    }
-    for (; i < NUMBER_SAMPLES; ++i) {
-        const auto val = static_cast<int32_t>(std::round(8388607.0f * std::clamp(in[i], -1.0f, 1.0f)));
-        out[i * 3 + 0] = val & 0xFF;
-        out[i * 3 + 1] = val >> 8 & 0xFF;
-        out[i * 3 + 2] = val >> 16 & 0xFF;
+        // Cast the int32x4_t vectors to uint32x4_t for bit packing intrinsics
+        uint32x4_t u32_attenuated0 = vreinterpretq_u32_s32(attenuated0);
+        uint32x4_t u32_attenuated1 = vreinterpretq_u32_s32(attenuated1);
+
+        // Extract the lower 8 bits
+        uint16x4_t s16_0_low = vmovn_u32(u32_attenuated0);
+        uint16x4_t s16_1_low = vmovn_u32(u32_attenuated1);
+        uint8x8_t low_bytes = vmovn_u16(vcombine_u16(s16_0_low, s16_1_low));
+
+        // Extract the middle 8 bits by shifting and narrowing
+        uint8x8_t mid_bytes = vmovn_u16(vcombine_u16(
+            vmovn_u32(vrshrq_n_u32(u32_attenuated0, 8)),
+            vmovn_u32(vrshrq_n_u32(u32_attenuated1, 8))
+        ));
+
+        // Extract the high 8 bits by shifting and narrowing
+        uint8x8_t high_bytes = vmovn_u16(vcombine_u16(
+            vmovn_u32(vrshrq_n_u32(u32_attenuated0, 16)),
+            vmovn_u32(vrshrq_n_u32(u32_attenuated1, 16))
+        ));
+
+        // Interleave the data for efficient storing
+        uint8x8x3_t packed_bytes = {low_bytes, mid_bytes, high_bytes};
+
+        // Store the interleaved data all at once
+        vst3_u8(out + i * 3, packed_bytes);
     }
 }

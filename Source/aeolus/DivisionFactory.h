@@ -27,10 +27,7 @@
 
 class DivisionFactory {
 public:
-    static void initFromJson(std::shared_ptr<VoicePool> voicePool, std::vector<std::shared_ptr<Division>> &divisions,
-                             std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName);
+    static void initFromJson(std::vector<std::shared_ptr<Division>> &divisions, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName);
 private:
-    static std::shared_ptr<Division>
-    initFromJson(nlohmann::json &json, std::shared_ptr<VoicePool> voicePool,
-                 std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName);
+    static std::shared_ptr<Division> initFromJson(nlohmann::json &json, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName);
 };

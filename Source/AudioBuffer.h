@@ -25,11 +25,14 @@
 class AudioBuffer {
 protected:
     int channels;
+
     std::size_t bufferSize{};
+
     alignas (CACHE_LINE_SIZE) std::vector<float> audioBuffer{};
 
 public:
     explicit AudioBuffer() = delete;
+
     AudioBuffer(const int channels, const int bufferSize) : channels(channels), bufferSize(bufferSize), audioBuffer(channels * bufferSize, 0.0f) { }
 
     void setBuffer(const std::vector<float> &newBuffer){ audioBuffer = newBuffer; }

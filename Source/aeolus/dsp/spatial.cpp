@@ -40,8 +40,7 @@ namespace dsp {
         BiquadFilter::resetState(_filterSpec[1], _filterState[1]);
     }
 
-    void SpatialSource::process(const std::array<float, AUDIO_SUB_FRAME_LENGTH> &in,
-                                StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &out) {
+    void SpatialSource::process(const std::array<float, PROCESS_FRAMES_SIZE> &in, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
         auto l = out.getWritePointer(0);
         auto r = out.getWritePointer(1);
         for (int i = 0; i < in.size(); ++i) {

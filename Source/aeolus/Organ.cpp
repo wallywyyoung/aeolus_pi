@@ -23,8 +23,8 @@
 
 #include <memory>
 
-Organ::Organ(const std::function<std::shared_ptr<RankWave>(const std::string&)> &getStopByName) : voicePool(std::make_shared<VoicePool>()) {
-    DivisionFactory::initFromJson(voicePool, divisions, getStopByName);
+Organ::Organ(const std::function<std::shared_ptr<RankWave>(const std::string&)> &getStopByName) {
+    DivisionFactory::initFromJson(divisions, getStopByName);
 }
 
 void Organ::setDivisionNoteOn(const int &division, const int &note) {
@@ -137,7 +137,7 @@ GlobalPiston Organ::captureStateAsPiston() const {
 // TODO: Index, batch, vectorize
 void Organ::generateTremulant() {
     float* buf = tremulantFrameBuffer.getWritePointer(0);
-    for (int i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
+    for (int i = 0; i < PROCESS_FRAMES_SIZE; ++i) {
         const float s = sinf(tremulantPhase);
         buf[i] = s * TREMULANT_LEVEL;
         tremulantPhase += TREMULANT_PHASE_INCREMENT;

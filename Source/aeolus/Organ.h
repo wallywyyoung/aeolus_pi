@@ -20,10 +20,12 @@
 
 #pragma once
 
+#include <chrono>
+
+
 #include "StaticAudioBuffer.h"
 #include "aeolus/Division.h"
 #include "aeolus/MidiManager.h"
-#include "aeolus/VoicePool.h"
 #include "aeolus/dsp/convolver.h"
 #include "aeolus/globals.h"
 
@@ -42,14 +44,13 @@ class Organ final : public MidiManager::OrganInterface {
 
     void generateTremulant(); // Generate tremulant osc waveform for a subframe.
 
-    std::shared_ptr<VoicePool> voicePool{};
     std::vector<std::shared_ptr<Division>> divisions{};
     std::vector<GlobalPiston> pistons{};
 
-    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> summingFrameBuffer;
-    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> divisionFrameBuffer;
-    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> voiceFrameBuffer;
-    StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1> tremulantFrameBuffer;
+    StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> summingFrameBuffer;
+    StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> divisionFrameBuffer;
+    StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> voiceFrameBuffer;
+    StaticAudioBuffer<PROCESS_FRAMES_SIZE, 1> tremulantFrameBuffer;
 
     float tremulantPhase{0.0f};
 
@@ -87,30 +88,28 @@ public:
 
     [[nodiscard]] GlobalPiston captureStateAsPiston() const;
 
-    template<auto OUT_BUFFER_SIZE> // Generate audio. Audio thread only.
-    bool process(float (&out)[OUT_BUFFER_SIZE]) {
+    bool process(float (&out)[PROCESS_SAMPLES_SIZE]) {
         auto wasAudioGenerated = false;
-        memset(out, 0.0f, sizeof(float) * OUT_BUFFER_SIZE);
-
-        constexpr auto STEREO_SUB_FRAME_LENGTH = AUDIO_SUB_FRAME_LENGTH * 2;
-        for (int i = 0; i < OUT_BUFFER_SIZE; i += STEREO_SUB_FRAME_LENGTH) {
+        const static auto LEFT_BUFFER = divisionFrameBuffer.getReadPointer(0);
+        const static auto RIGHT_BUFFER = divisionFrameBuffer.getReadPointer(1);
             generateTremulant();
             for (const auto &division : divisions) {
-                divisionFrameBuffer.clear();
-                // TODO: Consider per var array in struct for locality and SIMD parallelization.
-                const bool hasVoices = division->process(divisionFrameBuffer, voiceFrameBuffer);
-                wasAudioGenerated |= hasVoices;
-                if (hasVoices) {
-                    division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
-                    const auto leftBuffer = divisionFrameBuffer.getReadPointer(0);
-                    const auto rightBuffer = divisionFrameBuffer.getReadPointer(1);
-                    for (auto j = 0; j < AUDIO_SUB_FRAME_LENGTH; ++j) {
-                        out[j * 2 + i] += leftBuffer[j];
-                        out[j * 2 + 1 + i] += rightBuffer[j];
+                if (!division->process(divisionFrameBuffer, voiceFrameBuffer)) {
+                    continue;
+                }
+                // TODO: MODULATE IS BROKEN
+                // division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
+                for (auto j = 0; j < PROCESS_FRAMES_SIZE; ++j) {
+                    if (wasAudioGenerated) {
+                        out[j * 2] += LEFT_BUFFER[j];
+                        out[j * 2 + 1] += RIGHT_BUFFER[j];
+                    } else {
+                        out[j * 2] = LEFT_BUFFER[j];
+                        out[j * 2 + 1] = RIGHT_BUFFER[j];
                     }
                 }
+                wasAudioGenerated = true;
             }
-        }
         return wasAudioGenerated;
     }
 };

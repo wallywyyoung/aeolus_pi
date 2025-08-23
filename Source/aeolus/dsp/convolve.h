@@ -268,7 +268,7 @@ template <class ...Parts>
 struct CascadeConvolver : Conv<0, Parts...>
 {
     using Parent = Conv<0, Parts...>;
-    constexpr static size_t Lenght = Parent::Length;
+    constexpr static size_t Length = Parent::Length;
 
     float* irBuffer;
     size_t irIndex;

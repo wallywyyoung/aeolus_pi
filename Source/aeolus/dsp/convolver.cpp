@@ -20,6 +20,8 @@
 #include "aeolus/AudioParameter.h"
 #include "aeolus/dsp/convolve.h"
 #include "aeolus/dsp/convolver.h"
+
+#include "StaticAudioBuffer.h"
 #include "aeolus/IR.h"
 
 namespace dsp {
@@ -54,14 +56,14 @@ struct Convolver::Impl {
     std::vector<FFT<BlockSize>> blocksR{};
 
     // For zero-delay convolution
-    AudioBuffer input;
-    AudioBuffer ir;
+    StaticAudioBuffer<ConvHead::Length, 2> input;
+    AudioBuffer ir { 2, ConvHead::Length };
     size_t irSamplesRead;
 
     size_t inputSize;
     size_t framesProcessed;
 
-    Impl () : params{NUM_PARAMS} , length{0} , state{Idle} , zeroDelay{true} , input(2, ConvHead::Lenght) , ir(2, ConvHead::Lenght) , irSamplesRead{0} , inputSize{0} , framesProcessed{0} {
+    Impl () : params{NUM_PARAMS} , length{0} , state{Idle} , zeroDelay{true} , irSamplesRead{0} , inputSize{0} , framesProcessed{0} {
         params[DRY].setName("dry");
         params[DRY].setValue(DefaultDry, true);
 

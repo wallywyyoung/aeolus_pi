@@ -41,24 +41,23 @@ public:
     [[nodiscard]] std::shared_ptr<RankWave> getStopByName(const std::string &name) const { return _rankwavesByName.at(name); }
     void pushMidi(const MidiData& midiData) { push(midiData); }
 
-    template<auto OUT_BUFFER_SIZE>
-    void process(float (&out)[OUT_BUFFER_SIZE]) {
-        // for (int i = 0; i < NUMBER_FRAMES; ++i) {
+    void process(float (&out)[PROCESS_SAMPLES_SIZE]) {
+        // for (int i = 0; i < PROCESS_SAMPLES_SIZE; ++i) {
         //     auto time = static_cast<float>(i) * SAMPLE_RATE_R;
         //     auto val = sinf(2.0f * std::numbers::pi_v<float> * 110.0f * time);;
         //     out[i * 2 + 1] = val;
         //     out[i * 2 + 0] = val;
         // }
+        // return;
         // Midi / Configuration Block
         ProcessMidiBuffer();
         // Organ Block
-        bool wasAudioGenerated = organ->process<OUT_BUFFER_SIZE>(out);
+        bool wasAudioGenerated = organ->process(out);
         // Reverb Block
-        constexpr auto OUT_PER_CHANNEL_SIZE = OUT_BUFFER_SIZE / OUTPUT_CHANNELS;
         // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
-        _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - OUT_PER_CHANNEL_SIZE);
+        _reverbTailCounter = wasAudioGenerated ? _convolver.length() : std::max(0, _reverbTailCounter - PROCESS_FRAMES_SIZE);
         if (_reverbTailCounter > 0 && _convolver.isAudible()) {
-            _convolver.process(out, OUT_PER_CHANNEL_SIZE);
+            _convolver.process(out, PROCESS_FRAMES_SIZE);
         }
         // Volume Block
         // if (_volume.isSmoothing()) {

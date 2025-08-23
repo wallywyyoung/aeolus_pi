@@ -35,10 +35,10 @@ float PipeWave::getPipeFrequency() const noexcept {
     return _freq * static_cast<float>(_model->getFn()) / static_cast<float>(_model->getFd());
 }
 
-void PipeWave::play(State &state, std::array<float, AUDIO_SUB_FRAME_LENGTH> &out) {
+void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
     static std::random_device rnd;
-    std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(-0.5f, 0.5f);
+    static std::mt19937 gen(rnd());
+    static std::uniform_real_distribution dist(-0.5f, 0.5f);
 
     float* playbackPosition = state.playbackPosition;
     float* releasePosition = state.releasePosition;
@@ -62,12 +62,12 @@ void PipeWave::play(State &state, std::array<float, AUDIO_SUB_FRAME_LENGTH> &out
     }
 
     if (releasePosition) {
-        int period = AUDIO_SUB_FRAME_LENGTH;
+        int period = PROCESS_FRAMES_SIZE;
         auto playHead = out.begin();
         float releaseGain = state.releaseGain;
         const int remainingReleaseFrames = state.remainingReleaseFrames - 1;
 
-        float gainDecayPerSample = releaseGain / static_cast<float>(AUDIO_SUB_FRAME_LENGTH);
+        float gainDecayPerSample = releaseGain / static_cast<float>(PROCESS_FRAMES_SIZE);
 
         if (remainingReleaseFrames > 0) {
             gainDecayPerSample *= releaseDecayRate;
@@ -112,7 +112,7 @@ void PipeWave::play(State &state, std::array<float, AUDIO_SUB_FRAME_LENGTH> &out
     }
 
     if (playbackPosition) {
-        int period = AUDIO_SUB_FRAME_LENGTH;
+        int period = PROCESS_FRAMES_SIZE;
         auto playHead = out.begin();
 
         if (playbackPosition < loopWaveformStart) {
@@ -135,6 +135,7 @@ void PipeWave::play(State &state, std::array<float, AUDIO_SUB_FRAME_LENGTH> &out
                     ++playInterpolation;
                     --playbackPosition;
                 }
+                // TODO: THIS IS WHERE THIS IS BROKEN
                 *playHead += playbackPosition[0] + playInterpolation * (playbackPosition[1] - playbackPosition[0]);
                 ++playHead;
                 playbackPosition += _sampleStep;
@@ -171,7 +172,7 @@ void PipeWave::generateWavetable() {
 
     // Attack length aligned to the processing sub-frames
     _attackLength = static_cast<int>(std::lround(SAMPLE_RATE_F * noteAttack + 0.5f));
-    _attackLength = (_attackLength + AUDIO_SUB_FRAME_LENGTH - 1) & ~(AUDIO_SUB_FRAME_LENGTH - 1);
+    _attackLength = (_attackLength + PROCESS_FRAMES_SIZE - 1) & ~(PROCESS_FRAMES_SIZE - 1);
 
     // Target frequency
     const float targetFrequency = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * dist(gen)) * SAMPLE_RATE_R;
@@ -203,13 +204,13 @@ void PipeWave::generateWavetable() {
     assert(_loopLength > 0);
     assert(numberCyclesOfFundamental > 0);
 
-    if (_loopLength < _sampleStep * AUDIO_SUB_FRAME_LENGTH) {
-        const int k = (_sampleStep * AUDIO_SUB_FRAME_LENGTH - 1) / _loopLength + 1;
+    if (_loopLength < _sampleStep * PROCESS_FRAMES_SIZE) {
+        const int k = (_sampleStep * PROCESS_FRAMES_SIZE - 1) / _loopLength + 1;
         _loopLength *= k;
         numberCyclesOfFundamental *= k;
     }
 
-    const int wavetableLength = _attackLength + _loopLength + _sampleStep * (AUDIO_SUB_FRAME_LENGTH + 4);
+    const int wavetableLength = _attackLength + _loopLength + _sampleStep * (PROCESS_FRAMES_SIZE + 4);
     _wavetable.resize(wavetableLength);
     std::vector<float> arg(wavetableLength);
     std::vector<float> att(wavetableLength);
@@ -219,7 +220,7 @@ void PipeWave::generateWavetable() {
     _loopEndPtr = loopWaveformStart + _loopLength;
     memset(attackWaveformStart, 0, sizeof(float) * _wavetable.size());
 
-    releaseSampleCount = static_cast<int>(ceilf(_model->getNoteRelease(_note) * SAMPLE_RATE_F / AUDIO_SUB_FRAME_LENGTH) + 1);
+    releaseSampleCount = static_cast<int>(ceilf(_model->getNoteRelease(_note) * SAMPLE_RATE_F / PROCESS_FRAMES_SIZE) + 1);
     releaseDecayRate = 1.0f - powf(0.1f, 1.0f / static_cast<float>(releaseSampleCount));
     _releaseDetune = static_cast<float>(_sampleStep) * (math::exp2ap(_model->getNoteReleaseDetune(_note) / CENTS_IN_OCTAVE) - 1.0f);
     _instability = _model->getNoteInstability(_note);
@@ -279,7 +280,7 @@ void PipeWave::generateWavetable() {
         }
     }
 
-    for (int i = 0; i < _sampleStep * (AUDIO_SUB_FRAME_LENGTH + 4); ++i) {
+    for (int i = 0; i < _sampleStep * (PROCESS_FRAMES_SIZE + 4); ++i) {
         attackWaveformStart[i + _attackLength + _loopLength] = attackWaveformStart[i + _attackLength];
     }
 }

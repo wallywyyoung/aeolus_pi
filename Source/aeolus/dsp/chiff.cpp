@@ -92,7 +92,7 @@ bool Chiff::isActive() const noexcept
     return _envelope.state() != Envelope::Off;
 }
 
-void Chiff::process(std::array<float, AUDIO_SUB_FRAME_LENGTH> &out)
+void Chiff::process(std::array<float, PROCESS_FRAMES_SIZE> &out)
 {
     static std::random_device rnd;
     std::mt19937 gen(rnd());

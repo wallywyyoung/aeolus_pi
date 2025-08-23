@@ -60,8 +60,7 @@ namespace dsp {
 
         void reset();
 
-        void process(const std::array<float, AUDIO_SUB_FRAME_LENGTH> &in,
-                     StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &out);
+        void process(const std::array<float, PROCESS_FRAMES_SIZE> &in, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out);
         void setSourcePosition(const float x, const float y) noexcept { _sourcePosition = {x, y}; }
         void setListenerPosition(const float x, const float y) noexcept { _listenerPosition = {x, y}; }
 

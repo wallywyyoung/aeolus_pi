@@ -47,14 +47,13 @@ void RankWave::generateWavetables() {
 
 PipeWave::State RankWave::trigger(const int note) {
     if (note < noteMin || note > noteMax) {
-        return {};
+        return PipeWave::State(nullptr);
     }
 
     const int index = note - noteMin;
     assertIsPositiveAndBelow(index, pipeWaves.size());
 
-    auto state = PipeWave::State(pipeWaves[index],PipeWave::Attack);
-    return state;
+    return PipeWave::State(pipeWaves[index]);
 }
 
 

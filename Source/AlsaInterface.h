@@ -51,7 +51,7 @@ class AlsaInterface {
 
     //    Audio
     struct AudioThreadObjects {
-        std::function<void(float (&out)[NUMBER_SAMPLES])> processAudio;
+        std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio;
         bool runningAudio = false;
         snd_pcm_t* playback{};
     };
@@ -76,6 +76,6 @@ class AlsaInterface {
     void endPlayback();
 
 public:
-    explicit AlsaInterface(std::function<void(float (&out)[NUMBER_SAMPLES])> processAudio, std::function<void(const MidiData&)> submitMidi);
+    explicit AlsaInterface(std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio, std::function<void(const MidiData&)> submitMidi);
     ~AlsaInterface();
 };

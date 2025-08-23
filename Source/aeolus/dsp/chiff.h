@@ -48,7 +48,7 @@ public:
     void release();
     bool isActive() const noexcept;
 
-    void process(std::array<float, AUDIO_SUB_FRAME_LENGTH> &out);
+    void process(std::array<float, PROCESS_FRAMES_SIZE> &out);
 
 private:
 

@@ -31,23 +31,20 @@
  * @brief Single voice associated with a single pipe.
  */
 class Voice {
-    PipeWave::State state{}; ///< Pipe state associated with this voice.
+    PipeWave::State state; ///< Pipe state associated with this voice.
     int stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
-    std::array<float, AUDIO_SUB_FRAME_LENGTH> buffer{ 0.0f };
+    std::array<float, PROCESS_FRAMES_SIZE> buffer{ 0.0f };
     dsp::DelayLineStatic<SAMPLE_RATE> delayLine{}; /// Delay after chiff.
     int chiffDelaySampleCount{};
     dsp::Chiff chiff{}; /// Attack chiff.
     dsp::SpatialSource spatialSource{}; /// Stereo spatial modeller.
     size_t framesUntilRelease{0}; /// Counter to account for the delayed sound before recycling the voice.
 public:
-    Voice() = default;
+    explicit Voice(const PipeWave::State &newState, const int& newStopIndex);
 
-    Voice& operator=(const Voice& other) = delete;
-
-    void trigger(const PipeWave::State &newState);
     void release();
     void reset();
-    void process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &out);
+    void process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out);
     void setStopIndex(const int idx) noexcept { stopIndex = idx; }
 
     [[nodiscard]] bool isOver() const noexcept;

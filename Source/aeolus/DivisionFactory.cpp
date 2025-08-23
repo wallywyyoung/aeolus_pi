@@ -22,7 +22,7 @@
 #include "aeolus/StopFactory.h"
 #include "aeolus/Organ.h"
 
-void DivisionFactory::initFromJson(const std::shared_ptr<VoicePool> voicePool, std::vector<std::shared_ptr<Division>> &divisions, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName) {
+void DivisionFactory::initFromJson(std::vector<std::shared_ptr<Division>> &divisions, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName) {
     const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
     if (!exists(configFile)) {
         return;
@@ -34,7 +34,7 @@ void DivisionFactory::initFromJson(const std::shared_ptr<VoicePool> voicePool, s
     }
     divisions.reserve(json.count("divisions"));
     for (auto divisionDef : json["divisions"]) {
-        auto division = initFromJson(divisionDef, voicePool, getStopByName);
+        auto division = initFromJson(divisionDef, getStopByName);
         divisions.push_back(std::move(division));
     }
     for (auto& division : divisions) {
@@ -49,7 +49,7 @@ void DivisionFactory::initFromJson(const std::shared_ptr<VoicePool> voicePool, s
     }
 }
 
-std::shared_ptr<Division> DivisionFactory::initFromJson(nlohmann::json &json, std::shared_ptr<VoicePool> voicePool, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName) {
+std::shared_ptr<Division> DivisionFactory::initFromJson(nlohmann::json &json, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName) {
     auto division = std::make_shared<Division>();
 
     division->name = json["name"];
@@ -62,8 +62,6 @@ std::shared_ptr<Division> DivisionFactory::initFromJson(nlohmann::json &json, st
                 division->linkedDivisionNames.push_back(item);
         }
     }
-
-    division->voicePool = voicePool;
 
     division->hasSwell = json.contains("swell") && json["swell"];
     division->hasTremulant = json.contains("tremulant") && json["tremulant"];

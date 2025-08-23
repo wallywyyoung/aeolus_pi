@@ -1,5 +1,4 @@
 {
   "midiClientName" : "WIDI Master",
-  "playbackDeviceName" : "sysdefault:CARD=A"
-//  "iec958:CARD=A,DEV=0"
+  "playbackDeviceName" : "iec958:CARD=A,DEV=0"
 }

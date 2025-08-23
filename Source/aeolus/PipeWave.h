@@ -54,6 +54,8 @@ public:
         float outputGain = 1.0f;
         float chiffGain = 0.0f;
 
+        explicit State(std::shared_ptr<PipeWave> pipeWave) : pipeWave(pipeWave), envelopeState(Attack) {}
+
         void release() { envelopeState = Release; }
         [[nodiscard]] bool isTriggered() const noexcept { return pipeWave != nullptr && envelopeState == Attack; }
         [[nodiscard]] bool isIdle() const noexcept { return envelopeState == Idle; }
@@ -77,7 +79,7 @@ public:
 
     void generateWavetable();
 
-    void play(State &state, std::array<float, AUDIO_SUB_FRAME_LENGTH> &out);
+    void play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out);
 
 private:
     static constexpr auto CENTS_IN_OCTAVE = 1200.0f;

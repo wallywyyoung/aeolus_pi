@@ -20,7 +20,7 @@ project(aeolus_pi)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a -mcpu=cortex-a72")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=cortex-a72 -march=armv8-a+simd")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
 
 include_directories(Source)
@@ -92,5 +92,6 @@ find_package(AudioFile CONFIG REQUIRED)
 find_package(thread-pool CONFIG REQUIRED)
 find_package(ALSA REQUIRED)
 target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool ALSA::ALSA)
+target_compile_definitions(aeolus_pi PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 
 file(COPY Resources DESTINATION ${CMAKE_BINARY_DIR})

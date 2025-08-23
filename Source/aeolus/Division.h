@@ -24,7 +24,6 @@
 #include "aeolus/AudioParameter.h"
 #include "aeolus/Stop.h"
 #include "aeolus/Voice.h"
-#include "aeolus/VoicePool.h"
 #include "aeolus/dsp/filter.h"
 
 #include <bitset>
@@ -75,8 +74,9 @@ public:
     void recallPiston(const DivisionPiston& piston);
     DivisionPiston captureStateAsPiston() const;
 
-    bool process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& voiceBuffer);
-    void modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1>& tremulantBuffer);
+    bool process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &divisionBuffer,
+                 StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &voiceBuffer);
+    void modulate(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<PROCESS_FRAMES_SIZE, 1>& tremulantBuffer);
 
     void releaseVoicesOfDisabledStops();
     void triggerVoicesOfEnabledStops();
@@ -120,8 +120,7 @@ private:
     dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> tremulantDelayR;
 
     std::vector<Stop> stops{};            ///< All the stops this division has.
-    std::shared_ptr<VoicePool> voicePool; ///< Shared pool of Idle voices to request into active voices.
-    std::vector<Voice*> activeVoices;     ///< Active voices on this division.
+    std::vector<Voice> activeVoices;     ///< Active voices on this division.
 
     std::bitset<TOTAL_NOTES> keysState;           ///< Key state for this division.
     std::bitset<TOTAL_NOTES> aggregatedKeysState; ///< Key state aggregated from coupled divisions.

@@ -23,9 +23,8 @@
 
 #include <cstring>
 
-void Voice::trigger(const PipeWave::State &newState) {
-    assert(state.isIdle());
-    state = newState;
+
+Voice::Voice(const PipeWave::State &newState, const int& newStopIndex) : state(newState), stopIndex(newStopIndex) {
     // Chiff
     const auto freq = state.pipeWave->getPipeFrequency();
     const auto dt = 1.0f / freq;
@@ -50,6 +49,7 @@ void Voice::trigger(const PipeWave::State &newState) {
     spatialSource.setSourcePosition(x, 5.0f);
     spatialSource.recalculate();
     framesUntilRelease = spatialSource.getPostFxSamplesCount() + 2 * chiffDelaySampleCount + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
+    state.envelopeState = PipeWave::Attack;
 }
 
 void Voice::release() {
@@ -69,11 +69,10 @@ void Voice::reset() {
     spatialSource.reset();
 }
 
-void Voice::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &out) {
-    buffer.fill(0.0f);
+void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
     const auto gain = state.outputGain;
     if (state.envelopeState == PipeWave::Over) {
-        framesUntilRelease -= std::min(static_cast<int>(framesUntilRelease), AUDIO_SUB_FRAME_LENGTH);
+        framesUntilRelease -= std::min(static_cast<int>(framesUntilRelease), PROCESS_FRAMES_SIZE);
         for (float & i : buffer) {
             delayLine.write(0.0f);
             i = delayLine.readNearest(chiffDelaySampleCount) * gain;
@@ -88,9 +87,9 @@ void Voice::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS> &
     }
     chiff.process(buffer);
     // spatialSource.process(buffer, out);
-    auto l=out.getWritePointer(0);
-    auto r=out.getWritePointer(1);
-    for (auto i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
+    auto l= out.getWritePointer(0);
+    auto r= out.getWritePointer(1);
+    for (auto i = 0; i < PROCESS_FRAMES_SIZE; ++i) {
         l[i] = buffer[i];
         r[i] = buffer[i];
     }

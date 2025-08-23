@@ -178,7 +178,7 @@ void Division::recallPiston(const DivisionPiston& piston) {
     }
 }
 
-bool Division::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& voiceBuffer) {
+bool Division::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &divisionBuffer, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &voiceBuffer) {
     aggregatedKeysState.reset();
     auto traversed = std::vector<Division*>();
     recursiveKeyState(aggregatedKeysState, traversed);
@@ -186,29 +186,29 @@ bool Division::process(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS
     triggerVoicesOfEnabledStops();
 
     auto hasVoices = false;
-    for (auto i = activeVoices.begin(); i != activeVoices.end();) {
-        voiceBuffer.clear();
-        (*i)->process(voiceBuffer);
-        targetBuffer.addFrom(voiceBuffer);
-        if ((*i)->isOver()) {
-            (*i)->reset();
-            i = activeVoices.erase(i);
+    for (auto voice = activeVoices.begin(); voice != activeVoices.end();) {
+        voice->process(voiceBuffer);
+
+        divisionBuffer.addFrom(voiceBuffer);
+        if (voice->isOver()) {
+            // i->reset();
+            voice = activeVoices.erase(voice);
         } else {
-            ++i;
+            ++voice;
         }
         hasVoices = true;
     }
     return hasVoices;
 }
 
-void Division::modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, 1>& tremulantBuffer) {
+void Division::modulate(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<PROCESS_FRAMES_SIZE, 1>& tremulantBuffer) {
     float* outL = targetBuffer.getWritePointer(0);
     float* outR = targetBuffer.getWritePointer(1);
 
     if (tremulantEnabled) {
         const float* tremulantGain = tremulantBuffer.getReadPointer(0);
         const float thisTremulantLevel = tremulantLevel.nextValue();
-        for (auto i = 0; i < AUDIO_SUB_FRAME_LENGTH; ++i) {
+        for (auto i = 0; i < PROCESS_FRAMES_SIZE; ++i) {
             tremulantDelayL.write(outL[i]);
             tremulantDelayR.write(outR[i]);
             const float g = (1.0f + tremulantGain[i] * thisTremulantLevel) * gain.nextValue();
@@ -226,23 +226,26 @@ void Division::modulate(StaticAudioBuffer<AUDIO_SUB_FRAME_LENGTH, OUTPUT_CHANNEL
         const float k = powf(limitRange(0.0f, 1.0f, gain.target()), 1.3f);
         swellFilterSpec.freq = 400.0f + k * (18000.0f - 400.0f);
         dsp::BiquadFilter::updateSpec(swellFilterSpec);
-        dsp::BiquadFilter::process(swellFilterSpec, swellFilterStateL, outL, outL, AUDIO_SUB_FRAME_LENGTH);
-        dsp::BiquadFilter::process(swellFilterSpec, swellFilterStateR, outR, outR, AUDIO_SUB_FRAME_LENGTH);
+        dsp::BiquadFilter::process(swellFilterSpec, swellFilterStateL, outL, outL, PROCESS_FRAMES_SIZE);
+        dsp::BiquadFilter::process(swellFilterSpec, swellFilterStateR, outR, outR, PROCESS_FRAMES_SIZE);
     }
 }
 
 void Division::releaseVoicesOfDisabledStops() {
-    for (const auto& voice : activeVoices) {
-        if (!voice->isActive()) {
+    for (auto& voice : activeVoices) {
+        if (!voice.isActive()) {
             continue;
         }
-        if (!aggregatedKeysState[voice->getNote()]) {
-            voice->release();
+        if (!aggregatedKeysState[voice.getNote()]) {
+            std::cout << voice.getNote() << " released" << std::endl;
+            voice.release();
             continue;
         }
         for (auto stopIndex = 0; stopIndex < stops.size(); ++stopIndex) {
-            if (voice->getStopIndex() == stopIndex && !stops[stopIndex].isEnabled()) {
-                voice->release();
+            if (voice.getStopIndex() == stopIndex && !stops[stopIndex].isEnabled()) {
+                std::cout << voice.getNote() << " released" << std::endl;
+                voice.release();
+                break;
             }
         }
     }
@@ -286,22 +289,19 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
 
     if (!stop.isEnabled()) { return false; }
     if (isAlreadyVoiced(stopIndex, note)) { return true; }
-
     auto voiceTriggered = false;
 
     for (const auto& zone : stop.getZones()) {
-        if (zone.isForKey(note)) {
+        if (!zone.isForKey(note)) {
             continue;
         }
         for (const auto rankWave : zone.rankWaves) {
             if (auto state = rankWave->trigger(note); state.isTriggered()) {
                 state.outputGain = stop.getGain();
                 state.chiffGain = stop.getChiffGain();
-                if (const auto voice = voicePool->trigger(state)) {
-                    voice->setStopIndex(stopIndex);
-                    activeVoices.emplace_back(voice);
-                    voiceTriggered = true;
-                }
+                auto voice = Voice(state, stopIndex);
+                activeVoices.emplace_back(voice);
+                voiceTriggered = true;
             }
         }
     }
@@ -310,5 +310,5 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
 }
 
 bool Division::isAlreadyVoiced(const int stopIndex, const int note) {
-    return std::ranges::any_of(activeVoices, [&](const auto& voice) { return voice->isActive() && voice->getStopIndex() == stopIndex && voice->isForNote(note); });
+    return std::ranges::any_of(activeVoices, [&](const auto& voice) { return voice.isActive() && voice.getStopIndex() == stopIndex && voice.isForNote(note); });
 }

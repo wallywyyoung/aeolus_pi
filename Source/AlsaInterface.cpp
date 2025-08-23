@@ -30,7 +30,8 @@
 
 using namespace std::literals::chrono_literals;
 
-AlsaInterface::AlsaInterface(std::function<void(float (&out)[NUMBER_SAMPLES])> processAudio, std::function<void(const MidiData&)> submitMidi) : midiThreadObjects{ submitMidi }, audioThreadObjects{ processAudio } {
+AlsaInterface::AlsaInterface(
+    std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio, std::function<void(const MidiData&)> submitMidi) : midiThreadObjects{ submitMidi }, audioThreadObjects{ processAudio } {
     std::ifstream stream(CONFIG_FILE);
     auto config = nlohmann::json::parse(stream);
     auto midiClientName = static_cast<std::string>(config["midiClientName"]);
@@ -126,10 +127,12 @@ void AlsaInterface::initAudio(const std::string &deviceName) {
     AlsaErrorChecker(snd_pcm_hw_params_malloc(&hwParams), "snd_pcm_hw_params_malloc");
     AlsaErrorChecker(snd_pcm_hw_params_any(audioThreadObjects.playback, hwParams), "snd_pcm_hw_params_any");
 
+#if DEBUG
     snd_output_t *output;
     AlsaErrorChecker(snd_output_stdio_attach(&output, stdout, 0), "snd_output_stdio_attach");
     snd_pcm_hw_params_dump(hwParams, output);
     snd_output_close(output);
+#endif
 
     AlsaErrorChecker(snd_pcm_hw_params_set_access(audioThreadObjects.playback, hwParams, SND_PCM_ACCESS_RW_INTERLEAVED), "snd_pcm_hw_params_set_access");
     AlsaErrorChecker(snd_pcm_hw_params_set_format(audioThreadObjects.playback, hwParams, static_cast<snd_pcm_format_t>(SAMPLE_FORMAT)), "snd_pcm_hw_params_set_format");
@@ -137,28 +140,28 @@ void AlsaInterface::initAudio(const std::string &deviceName) {
     AlsaErrorChecker(snd_pcm_hw_params_set_rate_near(audioThreadObjects.playback, hwParams, &sampleRate, nullptr), "snd_pcm_hw_params_set_rate_near");
     assert(sampleRate == SAMPLE_RATE);
     AlsaErrorChecker(snd_pcm_hw_params_set_channels(audioThreadObjects.playback, hwParams, OUTPUT_CHANNELS), "snd_pcm_hw_params_set_channels");
-    snd_pcm_uframes_t period = PERIOD_SIZE;
+    snd_pcm_uframes_t period = ALSA_PERIOD_SIZE;
     auto periodDirection = 0;
     AlsaErrorChecker(snd_pcm_hw_params_set_period_size_near(audioThreadObjects.playback, hwParams, &period, &periodDirection), "snd_pcm_hw_params_set_period_size_near");
-    assert(period == PERIOD_SIZE);
-    AlsaErrorChecker(snd_pcm_hw_params_set_buffer_size(audioThreadObjects.playback, hwParams, NUMBER_FRAMES), "snd_pcm_hw_params_set_buffer_size");
+    assert(period == ALSA_PERIOD_SIZE);
+    AlsaErrorChecker(snd_pcm_hw_params_set_buffer_size(audioThreadObjects.playback, hwParams, ALSA_BUFFER_FRAMES_SIZE), "snd_pcm_hw_params_set_buffer_size");
     AlsaErrorChecker(snd_pcm_hw_params(audioThreadObjects.playback, hwParams), "snd_pcm_hw_params");
     snd_pcm_hw_params_free(hwParams);
 
     snd_pcm_sw_params_t* swParams{};
     AlsaErrorChecker(snd_pcm_sw_params_malloc(&swParams), "snd_pcm_sw_params_malloc");
     AlsaErrorChecker(snd_pcm_sw_params_current(audioThreadObjects.playback, swParams), "snd_pcm_sw_params_current");
-    AlsaErrorChecker(snd_pcm_sw_params_set_start_threshold(audioThreadObjects.playback, swParams, PERIOD_SIZE), "snd_pcm_sw_params_set_start_threshold");
-    AlsaErrorChecker(snd_pcm_sw_params_set_avail_min(audioThreadObjects.playback, swParams, PERIOD_SIZE), "snd_pcm_sw_params_set_avail_min");
+    AlsaErrorChecker(snd_pcm_sw_params_set_start_threshold(audioThreadObjects.playback, swParams, ALSA_THRESHOLD), "snd_pcm_sw_params_set_start_threshold");
+    AlsaErrorChecker(snd_pcm_sw_params_set_avail_min(audioThreadObjects.playback, swParams, ALSA_MINIMUM_FRAMES), "snd_pcm_sw_params_set_avail_min");
     AlsaErrorChecker(snd_pcm_sw_params(audioThreadObjects.playback, swParams), "snd_pcm_sw_params");
     snd_pcm_sw_params_free(swParams);
 
     AlsaErrorChecker(snd_pcm_nonblock(audioThreadObjects.playback, 1), "snd_pcm_nonblock");
     AlsaErrorChecker(snd_pcm_prepare(audioThreadObjects.playback), "snd_pcm_prepare");
 
-    std::array<uint8_t, PERIOD_SIZE * 3 * OUTPUT_CHANNELS> buffer;
+    std::array<uint8_t, ALSA_PERIOD_SIZE * 3 * OUTPUT_CHANNELS> buffer;
     buffer.fill(0);
-    snd_pcm_writei(audioThreadObjects.playback, &buffer[0], PERIOD_SIZE);
+    snd_pcm_writei(audioThreadObjects.playback, &buffer[0], ALSA_PERIOD_SIZE);
 }
 
 void AlsaInterface::beginPlayback() {
@@ -169,8 +172,8 @@ void AlsaInterface::beginPlayback() {
 void AlsaInterface::audioHandler(AudioThreadObjects* a) {
     SimdUtilities::enableFlushToZero();
     snd_pcm_sframes_t available, written;
-    alignas(CACHE_LINE_SIZE) static float fBuffer[NUMBER_SAMPLES];
-    alignas(CACHE_LINE_SIZE) static uint8_t oBuffer[NUMBER_SAMPLES * 3];
+    alignas(CACHE_LINE_SIZE) static float fBuffer[PROCESS_SAMPLES_SIZE];
+    alignas(CACHE_LINE_SIZE) static uint8_t oBuffer[PROCESS_SAMPLES_SIZE * 3];
     do {
         available = snd_pcm_avail_update(a->playback);
         if (available < 0) {
@@ -178,14 +181,14 @@ void AlsaInterface::audioHandler(AudioThreadObjects* a) {
             AlsaErrorChecker(snd_pcm_recover(a->playback, available, 1), "snd_pcm_recover");
             continue;
         }
-        if (available < AUDIO_SUB_FRAME_LENGTH) {
+        if (available < PROCESS_FRAMES_SIZE) {
             std::this_thread::sleep_for(100us);
             continue;
         }
 
         a->processAudio(fBuffer);
         SimdUtilities::ConvertF32toS24(fBuffer, oBuffer);
-        written  = snd_pcm_writei(a->playback, oBuffer, AUDIO_SUB_FRAME_LENGTH);
+        written = snd_pcm_writei(a->playback, oBuffer, PROCESS_FRAMES_SIZE);
 
         if (written < 0) {
             std::cerr << "snd_pcm_writei failed: " << snd_strerror(written) << std::endl;
@@ -193,7 +196,7 @@ void AlsaInterface::audioHandler(AudioThreadObjects* a) {
             continue;
         }
 
-        if (written != NUMBER_FRAMES) {
+        if (written != PROCESS_FRAMES_SIZE) {
             std::cerr << "Partial number of frames written." << std::endl;
         }
     } while (a->runningAudio);
