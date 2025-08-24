@@ -34,7 +34,6 @@ class Chiff {
 public:
     Chiff(const float& frequency, const float& invertedFrequency, const float& chiffGain);
 
-    void reset();
     void release();
 
     [[nodiscard]] bool isActive() const noexcept;

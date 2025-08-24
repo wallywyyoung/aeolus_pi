@@ -45,15 +45,15 @@ void RankWave::generateWavetables() {
     }
 }
 
-PipeWave::State RankWave::trigger(const int note) {
+PipeWave::State RankWave::trigger(const int &note, const float &outputGain, const float &chiffGain) {
     if (note < noteMin || note > noteMax) {
-        return PipeWave::State(nullptr);
+        return PipeWave::State(nullptr, 0.0f, 0.0f);
     }
 
     const int index = note - noteMin;
     assertIsPositiveAndBelow(index, pipeWaves.size());
 
-    return PipeWave::State(pipeWaves[index]);
+    return PipeWave::State(pipeWaves[index], outputGain, chiffGain);
 }
 
 

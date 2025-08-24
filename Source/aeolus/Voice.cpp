@@ -38,20 +38,12 @@ Voice::Voice(PipeWave::State newState, const int& newStopIndex) :
     framesUntilRelease{spatialSource.getPostFxSamplesCount() + 2 * chiffDelaySampleCount + static_cast<int>(Division::TREMULANT_DELAY_LENGTH)} {}
 
 void Voice::release() {
-    if (state.envelopeState == PipeWave::Over) {
+    if (state.envelopeState != PipeWave::Over) {
         std::cerr << "Release was called before the voice was over!" << std::endl;
         return;
     }
     state.release();
     chiff.release();
-}
-
-void Voice::reset() {
-    state.reset();
-    stopIndex = -1;
-    delayLine.reset();
-    chiff.reset();
-    spatialSource.reset();
 }
 
 void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
@@ -81,9 +73,9 @@ bool Voice::isActive() const noexcept {
     return state.envelopeState == PipeWave::Attack;
 }
 
-bool Voice::isForNote(const int note) const noexcept {
+bool Voice::isActiveForStopNote(const int &stopIndex, const int &note) const noexcept {
     if (state.pipeWave != nullptr) {
-        return state.pipeWave->getNote() == note;
+        return isActive() && stopIndex == this->stopIndex && state.pipeWave->getNote() == note;
     }
     return false;
 }

@@ -48,14 +48,13 @@ public:
     explicit Voice(PipeWave::State newState, const int& newStopIndex);
 
     void release();
-    void reset();
     void process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out);
     void setStopIndex(const int idx) noexcept { stopIndex = idx; }
 
     [[nodiscard]] bool isOver() const noexcept;
     [[nodiscard]] bool isIdle() const noexcept { return state.envelopeState == PipeWave::Idle; }
     [[nodiscard]] bool isActive() const noexcept;
-    [[nodiscard]] bool isForNote(int note) const noexcept;
+    [[nodiscard]] bool isActiveForStopNote(const int& stopIndex, const int& note) const noexcept;
     [[nodiscard]] int getNote() const;
     [[nodiscard]] int getStopIndex() const noexcept { return stopIndex; }
 };

@@ -36,11 +36,6 @@ Chiff::Chiff(const float& frequency, const float& invertedFrequency, const float
     BiquadFilter::resetState(lpState);
 }
 
-void Chiff::reset() {
-    pipeResonator.reset();
-    BiquadFilter::resetState(lpState);
-}
-
 void Chiff::release() {
     noiseEnvelope.release();
     envelope.release();

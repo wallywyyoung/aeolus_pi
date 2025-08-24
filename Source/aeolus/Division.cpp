@@ -195,7 +195,6 @@ bool Division::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &
 
         divisionBuffer.addFrom(voiceBuffer);
         if (voice->isOver()) {
-            // i->reset();
             voice = activeVoices.erase(voice);
         } else {
             ++voice;
@@ -240,13 +239,11 @@ void Division::releaseVoicesOfDisabledStops() {
             continue;
         }
         if (!aggregatedKeysState[voice.getNote()]) {
-            std::cout << voice.getNote() << " released" << std::endl;
             voice.release();
             continue;
         }
         for (auto stopIndex = 0; stopIndex < stops.size(); ++stopIndex) {
             if (voice.getStopIndex() == stopIndex && !stops[stopIndex].isEnabled()) {
-                std::cout << voice.getNote() << " released" << std::endl;
                 voice.release();
                 break;
             }
@@ -299,9 +296,7 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
             continue;
         }
         for (const auto rankWave : zone.rankWaves) {
-            if (auto state = rankWave->trigger(note); state.isTriggered()) {
-                state.outputGain = stop.getGain();
-                state.chiffGain = stop.getChiffGain();
+            if (auto state = rankWave->trigger(note, stop.getGain(), stop.getChiffGain()); state.isTriggered()) {
                 auto voice = Voice(state, stopIndex);
                 activeVoices.emplace_back(voice);
                 voiceTriggered = true;
@@ -313,5 +308,5 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
 }
 
 bool Division::isAlreadyVoiced(const int stopIndex, const int note) {
-    return std::ranges::any_of(activeVoices, [&](const auto& voice) { return voice.isActive() && voice.getStopIndex() == stopIndex && voice.isForNote(note); });
+    return std::ranges::any_of(activeVoices, [&](const auto& voice) { return voice.isActiveForStopNote(stopIndex, note); });
 }

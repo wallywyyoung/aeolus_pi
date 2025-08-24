@@ -40,29 +40,26 @@ public:
 
     /// Playback state.
     struct State {
-        std::shared_ptr<PipeWave> pipeWave = nullptr;
-        EnvelopeState envelopeState = Idle;
-        float* playbackPosition = nullptr;           // _p_p
-        float playInterpolationPhase = 0.0;          // _y_p
-        float playInterpolationSpeed = 0.0f;         // _z_p
+        std::shared_ptr<PipeWave> pipeWave{nullptr};
+        EnvelopeState envelopeState{Idle};
+        float* playbackPosition{nullptr};      // _p_p
+        float playInterpolationPhase{0.0f};    // _y_p
+        float playInterpolationSpeed{0.0f};    // _z_p
 
-        float* releasePosition = nullptr;            // _p_r
-        float releaseInterpolationPhase = 0.0f;      // _y_r
-        float releaseGain = 0.0f;                    // _g_r
-        int remainingReleaseFrames = 0;              // _i_r
+        float* releasePosition{nullptr};       // _p_r
+        float releaseInterpolationPhase{0.0f}; // _y_r
+        float releaseGain{0.0f};               // _g_r
+        int remainingReleaseFrames{0};         // _i_r
 
-        float outputGain = 1.0f;
-        float chiffGain = 0.0f;
+        float outputGain;
+        float chiffGain;
 
-        explicit State(std::shared_ptr<PipeWave> pipeWave) : pipeWave(pipeWave), envelopeState(Attack) {}
+        explicit State(std::shared_ptr<PipeWave> pipeWave, const float& outputGain, const float& chiffGain) : pipeWave(pipeWave), envelopeState(Attack), outputGain(outputGain), chiffGain(chiffGain) {}
 
         void release() { envelopeState = Release; }
         [[nodiscard]] bool isTriggered() const noexcept { return pipeWave != nullptr && envelopeState == Attack; }
         [[nodiscard]] bool isIdle() const noexcept { return envelopeState == Idle; }
         [[nodiscard]] bool isOver() const noexcept { return envelopeState == Over; }
-        void reset() {
-            pipeWave = nullptr; envelopeState = Idle;
-        }
     };
 
     PipeWave() = delete;
@@ -95,8 +92,8 @@ private:
     int _attackLength;          // _l0
     int _loopLength;            // _l1
     int _sampleStep;            // _k_s
-    int releaseSampleCount;         // _k_r
-    float releaseDecayRate;   // _m_r
+    int releaseSampleCount;     // _k_r
+    float releaseDecayRate;     // _m_r
     float _releaseDetune;       // _d_r
     float _instability;         // _d_p
 
@@ -104,6 +101,6 @@ private:
 
     float* attackWaveformStart; // _p0
     float* loopWaveformStart;   // _p1
-    float* _loopEndPtr;     // _p2
+    float* _loopEndPtr;         // _p2
 };
 
