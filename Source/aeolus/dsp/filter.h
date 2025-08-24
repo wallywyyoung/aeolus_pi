@@ -58,7 +58,7 @@ struct BiquadFilter
     };
 
     static void updateSpec(Spec& spec);
-    static void resetState(const Spec& spec, State& state);
+    static void resetState(State &state);
     static float tick(const Spec& spec, State& state, float in);
     static void process(const Spec& spec, State& state, const float* in, float* out, size_t size);
 };

@@ -57,6 +57,7 @@ constexpr static int ALSA_BUFFER_FRAMES_SIZE = ALSA_PERIOD_SIZE * 4;            
 constexpr static int ALSA_BUFFER_SAMPLES_SIZE = ALSA_BUFFER_FRAMES_SIZE * OUTPUT_CHANNELS;  ///< Number of samples in output buffer.
 static constexpr unsigned short CACHE_LINE_SIZE = 64;                   ///< Cache alignment for Raspberry Pi 4B
 
+static constexpr auto NYQUIST_WITH_MARGIN = 5.0f - 0.05f;
 template <typename T>
 constexpr bool isPowerOfTwo(T n) {
     return (n > 0) && ((n & (n - 1)) == 0);

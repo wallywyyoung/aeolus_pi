@@ -82,7 +82,6 @@ public:
     void play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out);
 
 private:
-    static constexpr auto NYQUIST_WITH_MARGIN = 5.0f - 0.05f;
     static constexpr auto CENTS_IN_OCTAVE = 1200.0f;
     static constexpr auto AUDIBLE_THRESHOLD = -40.0f;
     static constexpr auto HARMONIC_SKIP_THRESHOLD = -80.0f;

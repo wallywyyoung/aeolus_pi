@@ -141,7 +141,7 @@ void BiquadFilter::updateSpec(Spec& spec)
     spec.b[2] /= spec.a[0];
 }
 
-void BiquadFilter::resetState(const Spec&, State& state)
+void BiquadFilter::resetState(State &state)
 {
     memset(&state, 0, sizeof(state));
 }

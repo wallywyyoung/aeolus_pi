@@ -22,35 +22,20 @@
 #include "aeolus/Organ.h"
 
 #include <cstring>
+#include <utility>
 
 
-Voice::Voice(const PipeWave::State &newState, const int& newStopIndex) : state(newState), stopIndex(newStopIndex) {
-    // Chiff
-    const auto freq = state.pipeWave->getPipeFrequency();
-    const auto dt = 1.0f / freq;
-    // Delay pipe harmonic signal so that chiff noise builds up first
-    chiffDelaySampleCount = static_cast<int>(std::min<float>(static_cast<float>(delayLine.size()), 0.5f * dt * SAMPLE_RATE_F));
-    chiff.setAttack(5.0f * dt);
-    chiff.setDecay(100.0f * dt);
-    chiff.setSustain(0.01f);
-    chiff.setRelease(100.0f * dt);
-    // Frequency-dependant chiff attenuation
-    const float att = 1.0f - expf(-freq / 3000.0f);
-    chiff.setGain(std::min<float>(1.0f, 0.02f * state.chiffGain * att));
-    chiff.setFrequency(freq);
-    chiff.trigger();
-    // Spatialization
-    const int note = state.pipeWave->getNote();
-    const float k = note % 2 != 0 ? 1.0f : -1.0f;
-    // Wider spread for low-pitched pipes
-    const auto& model = state.pipeWave->getModel();
-    const float width = 0.15f * static_cast<float>(model->getFd()) / static_cast<float>(model->getFn());
-    const float x = width * k * static_cast<float>(abs(note - 65));
-    spatialSource.setSourcePosition(x, 5.0f);
-    spatialSource.recalculate();
-    framesUntilRelease = spatialSource.getPostFxSamplesCount() + 2 * chiffDelaySampleCount + static_cast<int>(Division::TREMULANT_DELAY_LENGTH);
-    state.envelopeState = PipeWave::Attack;
-}
+Voice::Voice(PipeWave::State newState, const int& newStopIndex) :
+    state(std::move(newState)),
+    stopIndex(newStopIndex),
+    chiffDelaySampleCount{static_cast<int>(std::min<float>(static_cast<float>(delayLine.size()),0.5f / state.pipeWave->getPipeFrequency() * SAMPLE_RATE_F))},
+    chiff([&]() {
+        const auto freq = state.pipeWave->getPipeFrequency();
+        const float att = 1.0f - expf(-freq * FREQUENCY_ROLLOFF);
+        return dsp::Chiff(freq, 1.0f / freq, std::min<float>(1.0f, BASE_CHIFF_INTENSITY * state.chiffGain * att));
+    }()),
+    spatialSource(state.pipeWave->getNote(), static_cast<float>(state.pipeWave->getModel()->getFd()), static_cast<float>(state.pipeWave->getModel()->getFd())),
+    framesUntilRelease{spatialSource.getPostFxSamplesCount() + 2 * chiffDelaySampleCount + static_cast<int>(Division::TREMULANT_DELAY_LENGTH)} {}
 
 void Voice::release() {
     if (state.envelopeState == PipeWave::Over) {

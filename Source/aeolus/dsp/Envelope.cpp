@@ -29,12 +29,7 @@ namespace dsp {
 // Ported from
 // https://www.earlevel.com/main/2013/06/03/envelope-generators-adsr-code/
 
-Envelope::Envelope() : currentState{Off}, currentLevel{0.0f}, attackRate{0.0f}, attackCoef{0.0f}, attackBase{0.0f},
-    decayRate{0.0f}, decayCoef{0.0f}, decayBase{0.0f}, releaseRate{0.0f}, releaseCoef{0.0f}, releaseBase{0.0f},
-    sustainLevel{0.0f} { }
-
-void Envelope::trigger(const Trigger& trigger)
-{
+Envelope::Envelope(const Trigger& trigger) {
     sustainLevel = trigger.sustain;
 
     attackRate = trigger.attack * SAMPLE_RATE_F;
@@ -48,19 +43,15 @@ void Envelope::trigger(const Trigger& trigger)
     releaseRate = trigger.release * SAMPLE_RATE_F;
     releaseCoef = calculate(releaseRate, DecayReleaseTargetRatio);
     releaseBase = -DecayReleaseTargetRatio * (1.0f - releaseCoef);
-
-    currentState = Attack;
-    currentLevel = 0.0f;
 }
 
-void Envelope::release()
-{
-    if (currentState != Off)
+void Envelope::release() {
+    if (currentState != Off) {
         currentState = Release;
+    }
 }
 
-void Envelope::release(const float t)
-{
+void Envelope::release(const float t) {
     releaseRate = t * SAMPLE_RATE_F;
     releaseCoef = calculate(releaseRate, DecayReleaseTargetRatio);
     releaseBase = -DecayReleaseTargetRatio * (1.0f - releaseCoef);
@@ -68,8 +59,7 @@ void Envelope::release(const float t)
     currentState = Release;
 }
 
-float Envelope::next()
-{
+float Envelope::next() {
     switch (currentState)
     {
     case Off:
@@ -107,8 +97,7 @@ float Envelope::next()
     return currentLevel;
 }
 
-float Envelope::calculate(const float rate, const float targetRatio)
-{
+float Envelope::calculate(const float rate, const float targetRatio) {
     return rate <= 0 ? 0.0f : std::exp(-std::log((1.0f + targetRatio) / targetRatio) / rate);
 }
 

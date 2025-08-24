@@ -71,7 +71,7 @@ add_executable(aeolus_pi
         Source/aeolus/Worker.cpp
         Source/aeolus/Worker.h
         Source/aeolus/utilities/Range.cpp
-        Source/aeolus/dsp/adsrenv.cpp
+        Source/aeolus/dsp/Envelope.cpp
         Source/aeolus/dsp/chiff.cpp
         Source/aeolus/dsp/convolve.h
         Source/aeolus/dsp/convolver.cpp
@@ -84,6 +84,8 @@ add_executable(aeolus_pi
         Source/aeolus/StopFactory.cpp
         Source/aeolus/utilities/SimdUtilities.cpp
         Source/aeolus/utilities/SimdUtilities.h
+        Source/aeolus/dsp/Envelope.h
+        Source/aeolus/dsp/Envelope.h
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)

@@ -31,16 +31,21 @@
  * @brief Single voice associated with a single pipe.
  */
 class Voice {
+    constexpr static auto FREQUENCY_ROLLOFF = 1.0f / 3000.0f;
+    constexpr static auto MIDDLE_C = 65;
+    constexpr static auto BASE_CHIFF_INTENSITY = 0.02f;
+    constexpr static auto STARTING_STEREO_WIDTH = 0.15f;
+
     PipeWave::State state; ///< Pipe state associated with this voice.
     int stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
     std::array<float, PROCESS_FRAMES_SIZE> buffer{ 0.0f };
     dsp::DelayLineStatic<SAMPLE_RATE> delayLine{}; /// Delay after chiff.
     int chiffDelaySampleCount{};
-    dsp::Chiff chiff{}; /// Attack chiff.
-    dsp::SpatialSource spatialSource{}; /// Stereo spatial modeller.
+    dsp::Chiff chiff; /// Attack chiff.
+    dsp::SpatialSource spatialSource; /// Stereo spatial modeller.
     size_t framesUntilRelease{0}; /// Counter to account for the delayed sound before recycling the voice.
 public:
-    explicit Voice(const PipeWave::State &newState, const int& newStopIndex);
+    explicit Voice(PipeWave::State newState, const int& newStopIndex);
 
     void release();
     void reset();

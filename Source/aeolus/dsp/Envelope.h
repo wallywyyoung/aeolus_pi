@@ -24,49 +24,29 @@ namespace dsp {
 /**
  * @brief ADSR-style envelope with exponential slopes.
  */
-class Envelope
-{
+class Envelope {
 public:
-
-    enum State
-    {
-        Off = 0,
-        Attack,
-        Decay,
-        Sustain,
-        Release,
-        NumStates
-    };
-
+    enum State { Off = 0, Attack, Decay, Sustain, Release, NumStates };
     constexpr static float AttackTargetRatio = 0.3f;
     constexpr static float DecayReleaseTargetRatio = 0.0001f;
+    struct Trigger { float attack = 0.0f; float decay = 0.0f; float sustain = 1.0f; float release = 1.0f; };
 
-    struct Trigger
-    {
-        float attack      = 0.0f;
-        float decay       = 0.0f;
-        float sustain     = 1.0f;
-        float release     = 1.0f;
-    };
+    explicit Envelope(const Trigger& trigger);
 
-    Envelope();
-
-    State state() const noexcept { return currentState; }
-
-    void trigger(const Trigger& trigger);
+    [[nodiscard]] State state() const noexcept { return currentState; }
     void release();
     void release(float t);
 
     float next();
 
-    float level() const noexcept { return currentLevel; }
+    [[nodiscard]] float level() const noexcept { return currentLevel; }
 
 private:
 
     static float calculate(float rate, float targetRatio);
 
-    State currentState;
-    float currentLevel;
+    State currentState{ Attack };
+    float currentLevel{ 0.0f };
 
     float attackRate;
     float attackCoef;

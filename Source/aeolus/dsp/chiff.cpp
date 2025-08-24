@@ -20,117 +20,77 @@
 #include "aeolus/dsp/chiff.h"
 
 #include <array>
+#include <cmath>
 #include <random>
 
 
 
 namespace dsp {
 
-Chiff::Chiff() : _envelopeTrigger{0.01f, 0.1f, 0.1f, 0.05f}, _pipeDelay{0.0f}, _lpSpec{}, _lpState{}, _gain{1.0f} {
-    _lpSpec.type = BiquadFilter::LowPass;
-    _lpSpec.dbGain = 0.0f;
-    _lpSpec.q = 0.7071f;
+Chiff::Chiff(const float& frequency, const float& invertedFrequency, const float& chiffGain) :
+    envelope{{5.0f * invertedFrequency, 100.0f * invertedFrequency, 0.01f, 100.0f * invertedFrequency}},
+    pipeDelay{SAMPLE_RATE_F * invertedFrequency},
+    lpSpec{BiquadFilter::LowPass, std::fmin(NYQUIST_WITH_MARGIN * SAMPLE_RATE_F, frequency * 4.0f), BUTTERWORTH_Q, 0.0f},
+    lpState{}, gain{chiffGain} {
+    BiquadFilter::updateSpec(lpSpec);
+    BiquadFilter::resetState(lpState);
 }
 
-void Chiff::setAttack(const float v)
-{
-    _envelopeTrigger.attack = v;
+void Chiff::reset() {
+    pipeResonator.reset();
+    BiquadFilter::resetState(lpState);
 }
 
-void Chiff::setRelease(const float v)
-{
-    _envelopeTrigger.release = v;
+void Chiff::release() {
+    noiseEnvelope.release();
+    envelope.release();
 }
 
-void Chiff::setDecay(const float v)
-{
-    _envelopeTrigger.decay = v;
-}
-
-void Chiff::setSustain(const float v)
-{
-    _envelopeTrigger.sustain = v;
-}
-
-void Chiff::setGain(const float v)
-{
-    _gain = v;
-}
-
-void Chiff::setFrequency(const float f)
-{
-    _pipeDelay = SAMPLE_RATE_F / f;
-    _lpSpec.freq = fmin(0.45f * SAMPLE_RATE_F, f * 4.0f);
-}
-
-void Chiff::reset()
-{
-    _pipeResonator.reset();
-    BiquadFilter::resetState(_lpSpec, _lpState);
-}
-
-void Chiff::trigger()
-{
-    _noiseEnvelope.trigger({0.01f, 0.0f, 1.0f, 0.02f});
-
-    _envelope.trigger(_envelopeTrigger);
-
-    _pipeResonator.reset();
-    BiquadFilter::updateSpec(_lpSpec);
-    BiquadFilter::resetState(_lpSpec, _lpState);
-}
-
-void Chiff::release()
-{
-    _noiseEnvelope.release();
-    _envelope.release();
-}
-
-bool Chiff::isActive() const noexcept
-{
+bool Chiff::isActive() const noexcept {
     // Don't care about the noise envelope here
-    return _envelope.state() != Envelope::Off;
+    return envelope.state() != Envelope::Off;
 }
 
-void Chiff::process(std::array<float, PROCESS_FRAMES_SIZE> &out)
-{
+void Chiff::process(std::array<float, PROCESS_FRAMES_SIZE> &out) {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
     std::uniform_real_distribution dist(0.0f, 1.0f);
 
-    if (!isActive())
+    if (!isActive()) {
         return;
+    }
 
-    if (_noiseEnvelope.state() == Envelope::Sustain && _envelope.state() == Envelope::Sustain) {
-        const float noiseLevel{ _noiseEnvelope.level() };
-        const float envelopeLevel{ _envelope.level() * _gain };
+    if (noiseEnvelope.state() == Envelope::Sustain && envelope.state() == Envelope::Sustain) {
+        const float noiseLevel{ noiseEnvelope.level() };
+        const float envelopeLevel{ envelope.level() * gain };
 
-        if (envelopeLevel < 1e-4f)
+        if (envelopeLevel < 1e-4f) {
             return; // Noise is too quiet
+        }
 
-        for (int i = 0; i < out.size(); ++i) {
+        for (float &outSample : out) {
             const float x0{ 2.0f * dist(gen) - 1.0f };
             const float x{ x0 * noiseLevel };
-            float y{ _pipeResonator.read(_pipeDelay) };
-            y = BiquadFilter::tick(_lpSpec, _lpState, y);
+            float y{ pipeResonator.read(pipeDelay) };
+            y = BiquadFilter::tick(lpSpec, lpState, y);
             y += x;
-            _pipeResonator.write(y);
+            pipeResonator.write(y);
 
-            out[i] += y * envelopeLevel;
+            outSample += y * envelopeLevel;
         }
 
         return;
     }
 
-    for (int i = 0; i < out.size(); ++i) {
+    for (float &outSample : out) {
         const float x0 = 2.0f * dist(gen) - 1.0f;
-        const float x = x0 * _noiseEnvelope.next();
-        float y = _pipeResonator.read(_pipeDelay);
-        y = BiquadFilter::tick(_lpSpec, _lpState, y);
+        const float x = x0 * noiseEnvelope.next();
+        float y = pipeResonator.read(pipeDelay);
+        y = BiquadFilter::tick(lpSpec, lpState, y);
         y += x;
-        _pipeResonator.write(y);
+        pipeResonator.write(y);
 
-        out[i] += y * _gain * _envelope.next();
+        outSample += y * gain * envelope.next();
     }
 }
 

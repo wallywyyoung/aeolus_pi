@@ -19,8 +19,9 @@
 
 #pragma once
 
+#include "Envelope.h"
 #include "MemoryConstants.h"
-#include "aeolus/dsp/adsrenv.h"
+#include "aeolus/dsp/Envelope.h"
 #include "aeolus/dsp/delay.h"
 #include "aeolus/dsp/filter.h"
 
@@ -29,42 +30,31 @@ namespace dsp {
 /**
  * @brief Pipe wind attack chiff model.
  */
-class Chiff
-{
+class Chiff {
 public:
-
-    Chiff();
-
-    void setAttack(float v);
-    void setDecay(float v);
-    void setSustain(float v);
-    void setRelease(float v);
-    void setGain(float v);
-    void setFrequency(float f);
+    Chiff(const float& frequency, const float& invertedFrequency, const float& chiffGain);
 
     void reset();
-
-    void trigger();
     void release();
-    bool isActive() const noexcept;
+
+    [[nodiscard]] bool isActive() const noexcept;
 
     void process(std::array<float, PROCESS_FRAMES_SIZE> &out);
 
 private:
+    constexpr static float BUTTERWORTH_Q = 0.7071f;
+    Envelope noiseEnvelope{Envelope::Trigger(0.01f, 0.0f, 1.0f, 0.02f)};
+    Envelope envelope; ///< Noise envelope
+    Envelope::Trigger envelopeTrigger;
 
-    Envelope _noiseEnvelope;
-
-    Envelope _envelope; ///< Noise envelope
-    Envelope::Trigger _envelopeTrigger;
-
-    DelayLineStatic<SAMPLE_RATE> _pipeResonator;
-    float _pipeDelay;
+    DelayLineStatic<SAMPLE_RATE> pipeResonator;
+    float pipeDelay;
 
     // Feedback low-pass filter;
-    BiquadFilter::Spec _lpSpec;
-    BiquadFilter::State _lpState;
+    BiquadFilter::Spec lpSpec;
+    BiquadFilter::State lpState;
 
-    float _gain;
+    float gain;
 };
 
 } // namespace dsp

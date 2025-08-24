@@ -28,8 +28,8 @@ Division::Division(const std::string& name) : name{name}, mnemonic{name},
                                               swellFilterSpec{dsp::BiquadFilter::LowPass, 0.4f * SAMPLE_RATE_F, 0.7071f, 0.0f},
                                               swellFilterStateL{}, swellFilterStateR{} {
     dsp::BiquadFilter::updateSpec(swellFilterSpec);
-    dsp::BiquadFilter::resetState(swellFilterSpec, swellFilterStateL);
-    dsp::BiquadFilter::resetState(swellFilterSpec, swellFilterStateR);
+    dsp::BiquadFilter::resetState(swellFilterStateL);
+    dsp::BiquadFilter::resetState(swellFilterStateR);
 }
 
 void Division::setAllCouplersOff() {

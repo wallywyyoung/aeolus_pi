@@ -56,7 +56,7 @@ namespace dsp {
             float angleTo(const Position &other) const noexcept { return atan2f(other.y, other.x) - atan2f(y, x); }
         };
 
-        SpatialSource();
+        explicit SpatialSource(int note, float fd, float fn);
 
         void reset();
 
@@ -69,20 +69,24 @@ namespace dsp {
         size_t getPostFxSamplesCount() const { return _delayLine.size(); }
 
     private:
+        constexpr static auto STARTING_STEREO_WIDTH = 0.15f;
+        constexpr static auto MIDDLE_C = 65;
+        constexpr static auto PIPE_HEIGHT = 5.0f;
+
         Position _sourcePosition;
-        Position _listenerPosition;
-        float _listenerOrientation;
-        float _listenerLeftRightDistance;
+        Position _listenerPosition{0.0f, 0.0f};
+        float _listenerOrientation{0.0f};
+        float _listenerLeftRightDistance{0.3f};
 
         DelayLine _delayLine;
-        int _leftDelay;
-        int _rightDelay;
+        int _leftDelay{};
+        int _rightDelay{};
         float _leftAttenuation{};
         float _rightAttenuation{};
 
         // Attenuation filters
-        BiquadFilter::Spec _filterSpec[2];
-        BiquadFilter::State _filterState[2];
+        BiquadFilter::Spec _filterSpec[2]{};
+        BiquadFilter::State _filterState[2]{};
     };
 
 } // namespace dsp

@@ -27,17 +27,16 @@
 
 namespace dsp {
 
-    SpatialSource::SpatialSource() :
-        _sourcePosition{0.0f, 0.0f}, _listenerPosition{0.0f, 0.0f}, _listenerOrientation{0.0f},
-        _listenerLeftRightDistance{0.3f}, _leftDelay{}, _rightDelay{}, _filterSpec{}, _filterState{} {
+    SpatialSource::SpatialSource(int note, float fd, float fn) :
+        _sourcePosition{STARTING_STEREO_WIDTH * fd / fn * (note % 2 != 0 ? 1.0f : -1.0f) * static_cast<float>(abs(note - MIDDLE_C)), PIPE_HEIGHT} {
         recalculate();
     }
 
     void SpatialSource::reset() {
         _delayLine.reset();
 
-        BiquadFilter::resetState(_filterSpec[0], _filterState[0]);
-        BiquadFilter::resetState(_filterSpec[1], _filterState[1]);
+        BiquadFilter::resetState(_filterState[0]);
+        BiquadFilter::resetState(_filterState[1]);
     }
 
     void SpatialSource::process(const std::array<float, PROCESS_FRAMES_SIZE> &in, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
