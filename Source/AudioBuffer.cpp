@@ -24,7 +24,7 @@
 void AudioBuffer::clear() { audioBuffer.assign(audioBuffer.size(), 0.0f); }
 
 void AudioBuffer::applyGain(const float& gain) {
-    std::ranges::transform(audioBuffer, audioBuffer.begin(), [&](float element) { return element * gain; });
+    std::ranges::transform(audioBuffer, audioBuffer.begin(), [&](const float& element) { return element * gain; });
 }
 
 void AudioBuffer::addFrom(const int toChannel, const int toStartOffset, const AudioBuffer &from, const int fromChannel, const int fromStartOffset, const int sampleCount) {

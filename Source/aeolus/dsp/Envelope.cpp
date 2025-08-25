@@ -17,7 +17,7 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/dsp/adsrenv.h"
+#include "aeolus/dsp/Envelope.h"
 
 #include <cmath>
 

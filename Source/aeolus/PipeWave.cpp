@@ -225,7 +225,7 @@ void PipeWave::generateWavetable() {
     _releaseDetune = static_cast<float>(_sampleStep) * (math::exp2ap(_model->getNoteReleaseDetune(_note) / CENTS_IN_OCTAVE) - 1.0f);
     _instability = _model->getNoteInstability(_note);
 
-    auto attackSampleCount = static_cast<int>(SAMPLE_RATE_F * _model->getNoteAttack(_note) + 0.5);
+    const auto attackSampleCount = static_cast<int>(SAMPLE_RATE_F * _model->getNoteAttack(_note) + 0.5);
 
     // arg[i] will contain phase steps along the generated wavetable
 
@@ -258,7 +258,7 @@ void PipeWave::generateWavetable() {
         }
         harmonicLevel = baseNoteAmplitude * math::exp2ap(0.1661f * (harmonicLevel + _model->getHarmonicRandomisation(harmonic, _note) * dist(gen)));
 
-        auto harmonicAttackSampleCount = static_cast<int>(SAMPLE_RATE_F * _model->getHarmonicAttack(harmonic, _note) + 0.5f);
+        const auto harmonicAttackSampleCount = static_cast<int>(SAMPLE_RATE_F * _model->getHarmonicAttack(harmonic, _note) + 0.5f);
         if (harmonicAttackSampleCount > att.size()) {
             att.resize(harmonicAttackSampleCount);
         }

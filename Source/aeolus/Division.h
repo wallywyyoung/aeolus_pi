@@ -92,7 +92,7 @@ private:
 
     void recursiveKeyState(std::bitset<TOTAL_NOTES> &aggregated, std::vector<Division *> &traversed);
     bool triggerVoicesForStop(int stopIndex, int note);
-    bool isAlreadyVoiced(int stopIndex, int node);
+    bool isAlreadyVoiced(int stopIndex, int note);
 
     std::string name;     ///< The division name.
     std::string mnemonic; ///< Short mnemonic name.

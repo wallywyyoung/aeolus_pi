@@ -218,8 +218,8 @@ struct Convolver::Impl {
     {
         if (zeroDelay) {
             for (size_t i = 0; i < framesPerChannel; ++i) {
-                const float l = convL.tick(inOut[i*2]) + headL.tick(inOut[i*2]);
-                const float r = convR.tick(inOut[i*2+1]) + headR.tick(inOut[i*2+1]);
+                const float l = convL.tick(inOut[i * 2]) + headL.tick(inOut[i * 2]);
+                const float r = convR.tick(inOut[i * 2 + 1]) + headR.tick(inOut[i * 2 + 1]);
 
                 const float dry = params[DRY].nextValue();
                 const float wet = params[WET].nextValue();
@@ -229,8 +229,8 @@ struct Convolver::Impl {
             }
         } else {
             for (size_t i = 0; i < framesPerChannel; ++i) {
-                const float l = convL.tick(inOut[i*2]);
-                const float r = convR.tick(inOut[i*2+1]);
+                const float l = convL.tick(inOut[i * 2]);
+                const float r = convR.tick(inOut[i * 2 + 1]);
 
                 const float dry = params[DRY].nextValue();
                 const float wet = params[WET].nextValue();

@@ -39,7 +39,7 @@ void SimdUtilities::disableFlushToZero() {
     asm volatile("msr fpcr, %0" : : "ri"(fpsr & ~ftz));
 }
 
-void SimdUtilities::ConvertF32toS16(float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::int16_t* out) {
+void SimdUtilities::ConvertF32toS16(const float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::int16_t* out) {
     const float32x4_t min = vdupq_n_f32(-1.0f);
     const float32x4_t max = vdupq_n_f32(1.0f);
     const float32x4_t scale = vdupq_n_f32(32767.0f);
@@ -60,7 +60,7 @@ void SimdUtilities::ConvertF32toS16(float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::
     }
 }
 
-void SimdUtilities::ConvertF32toS24(float(&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]) {
+void SimdUtilities::ConvertF32toS24(const float (&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]) {
     const float32x4_t min = vdupq_n_f32(-1.0f);
     const float32x4_t max = vdupq_n_f32(1.0f);
     const float32x4_t scale = vdupq_n_f32(8388607.0f);

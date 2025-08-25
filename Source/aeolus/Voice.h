@@ -21,9 +21,9 @@
 #pragma once
 
 #include "aeolus/RankWave.h"
-#include "aeolus/dsp/chiff.h"
-#include "aeolus/dsp/delay.h"
-#include "aeolus/dsp/spatial.h"
+#include "aeolus/dsp/Chiff.h"
+#include "aeolus/dsp/DelayLine.h"
+#include "aeolus/dsp/SpatialSource.h"
 
 #include <functional>
 

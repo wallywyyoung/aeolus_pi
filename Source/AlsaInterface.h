@@ -58,21 +58,17 @@ class AlsaInterface {
     alignas(CACHE_LINE_SIZE) AudioThreadObjects audioThreadObjects{};
     std::thread audioThread;
 
-    //    General
-    void init();
-    static void createThread(pthread_t& tid, void* func, void* arg);
-
     //    Midi
     void initMidi(const std::string &clientName);
     void beginPollMidi();
-    static void* midiHandler(MidiThreadObjects *midiThreadObjects);
+    static void* midiHandler(const MidiThreadObjects *midiThreadObjects);
     void endPollMidi();
     [[nodiscard]] int getMidiClientId(const std::string &clientName);
 
     //    Audio
     void initAudio(const std::string &deviceName);
     void beginPlayback();
-    static void audioHandler(AudioThreadObjects* a);
+    static void audioHandler(const AudioThreadObjects * a);
     void endPlayback();
 
 public:

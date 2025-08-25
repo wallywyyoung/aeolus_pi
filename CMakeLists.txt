@@ -80,7 +80,7 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/filter.cpp
         Source/aeolus/dsp/interpolator.cpp
         Source/aeolus/dsp/interpolator.h
-        Source/aeolus/dsp/spatial.cpp
+        Source/aeolus/dsp/SpatialSource.cpp
         Source/aeolus/StopFactory.cpp
         Source/aeolus/utilities/SimdUtilities.cpp
         Source/aeolus/utilities/SimdUtilities.h

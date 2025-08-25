@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -17,17 +18,15 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/dsp/spatial.h"
-
-#include <array>
-
+#include "aeolus/dsp/SpatialSource.h"
 #include "MemoryConstants.h"
 #include "StaticAudioBuffer.h"
 
+#include <array>
 
 namespace dsp {
 
-    SpatialSource::SpatialSource(int note, float fd, float fn) :
+    SpatialSource::SpatialSource(const int note, const float fd, const float fn) :
         _sourcePosition{STARTING_STEREO_WIDTH * fd / fn * (note % 2 != 0 ? 1.0f : -1.0f) * static_cast<float>(abs(note - MIDDLE_C)), PIPE_HEIGHT} {
         recalculate();
     }
@@ -40,9 +39,9 @@ namespace dsp {
     }
 
     void SpatialSource::process(const std::array<float, PROCESS_FRAMES_SIZE> &in, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
-        auto l = out.getWritePointer(0);
-        auto r = out.getWritePointer(1);
-        for (int i = 0; i < in.size(); ++i) {
+        const auto l = out.getWritePointer(0);
+        const auto r = out.getWritePointer(1);
+        for (auto i = 0; i < in.size(); ++i) {
             _delayLine.write(in[i]);
             l[i] = BiquadFilter::tick(_filterSpec[0], _filterState[0],
                                       _delayLine.readNearest(_leftDelay) * _leftAttenuation);

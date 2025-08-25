@@ -35,7 +35,7 @@ public:
     void setBuffer(const std::array<float, SIZE> &newBuffer){ audioBuffer = newBuffer; }
 
     void applyGain(const float& gain)  {
-        std::ranges::transform(audioBuffer, audioBuffer.begin(), [&](float element) { return element * gain; });
+        std::ranges::transform(audioBuffer, audioBuffer.begin(), [&](const float& element) { return element * gain; });
     }
 
     float* getWritePointer(const int channel) { return &audioBuffer[channel * SIZE]; }

@@ -30,7 +30,7 @@ public:
     static void enableFlushToZero();
     static void disableFlushToZero();
     // Ensure your in and out buffers are aligned to 16 to be NEON compliant.
-    static void ConvertF32toS16(float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::int16_t* out);
+    static void ConvertF32toS16(const float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::int16_t* out);
     // Ensure your in and out buffers are aligned to 16 to be NEON compliant.
-    static void ConvertF32toS24(float (&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]);
+    static void ConvertF32toS24(const float (&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]);
 };

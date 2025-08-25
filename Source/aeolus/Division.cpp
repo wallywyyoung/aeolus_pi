@@ -228,8 +228,8 @@ void Division::modulate(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS>&
         const float k = powf(limitRange(0.0f, 1.0f, gain.target()), 1.3f);
         swellFilterSpec.freq = 400.0f + k * (18000.0f - 400.0f);
         dsp::BiquadFilter::updateSpec(swellFilterSpec);
-        dsp::BiquadFilter::process(swellFilterSpec, swellFilterStateL, outL, outL, PROCESS_FRAMES_SIZE);
-        dsp::BiquadFilter::process(swellFilterSpec, swellFilterStateR, outR, outR, PROCESS_FRAMES_SIZE);
+        dsp::BiquadFilter::process(swellFilterSpec, PROCESS_FRAMES_SIZE, outL, outL, swellFilterStateL);
+        dsp::BiquadFilter::process(swellFilterSpec, PROCESS_FRAMES_SIZE, outR, outR, swellFilterStateR);
     }
 }
 

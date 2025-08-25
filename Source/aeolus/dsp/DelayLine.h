@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -50,7 +51,7 @@ namespace dsp {
             buffer[writeIndex] = x;
         }
 
-        [[nodiscard]] float read(float delay) const {
+        [[nodiscard]] float read(const float &delay) const {
             assert(delay >= 0.0f);
             const auto integral = std::floor(delay);
             const auto fraction = delay - integral;
@@ -63,7 +64,7 @@ namespace dsp {
             return math::lerp(a, b, fraction);
         }
 
-        [[nodiscard]] float readNearest(int delay) const {
+        [[nodiscard]] float readNearest(const int &delay) const {
             assert(delay >= 0 && (delay + writeIndex) % buffer.size() < buffer.size());
             return buffer[(delay + writeIndex) % buffer.size()];
         }

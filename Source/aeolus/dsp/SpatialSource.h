@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -21,7 +22,7 @@
 
 #include "MemoryConstants.h"
 #include "StaticAudioBuffer.h"
-#include "aeolus/dsp/delay.h"
+#include "aeolus/dsp/DelayLine.h"
 #include "aeolus/dsp/filter.h"
 #include "aeolus/globals.h"
 

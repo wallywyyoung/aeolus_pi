@@ -161,7 +161,7 @@ float BiquadFilter::tick(const Spec& spec, State& state, const float in)
 }
 
 
-void BiquadFilter::process(const Spec& spec, State& state, const float* in, float* out, size_t size)
+void BiquadFilter::process(const Spec &spec, const size_t &size, const float *in, float *out, State &state)
 {
     for (size_t i = 0; i < size; ++i) {
         const float x = in[i];

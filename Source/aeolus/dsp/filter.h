@@ -60,7 +60,7 @@ struct BiquadFilter
     static void updateSpec(Spec& spec);
     static void resetState(State &state);
     static float tick(const Spec& spec, State& state, float in);
-    static void process(const Spec& spec, State& state, const float* in, float* out, size_t size);
+    static void process(const Spec &spec, const size_t &size, const float *in, float *out, State &state);
 };
 
 } // namespace dsp

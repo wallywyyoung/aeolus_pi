@@ -297,7 +297,7 @@ struct CascadeConvolver : Conv<0, Parts...>
         Parent::reset();
     }
 
-    inline float tick(float x)
+    inline float tick(const float &x)
     {
         inputIndex = (inputIndex - 1) % inputSize;
         inputBuffer[inputIndex] = x;
@@ -321,7 +321,7 @@ public:
 
     using FftImpl = GFFT<Length2>;
 
-    EquallyPartitionedConvolver (size_t n = 0)
+    explicit EquallyPartitionedConvolver (size_t n = 0)
         : inputIndex{0}
         , inputSpectrumBuffer{nullptr}
         , inputSpectrumBufferSize{Length4 * n}
@@ -412,7 +412,7 @@ public:
         }
     }
 
-    float tick(float x)
+    float tick(const float &x)
     {
         float y = 0.0f;
 

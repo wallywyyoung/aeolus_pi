@@ -82,7 +82,7 @@ namespace no_simd {
 
     // https://github.com/ARM-software/EndpointAI/blob/master/Kernels/Migrating_to_Helium_from_Neon_Companion_SW/vmath.c
     float32x4_t vsinq_neon_f32(float32x4_t val) {
-        auto pi = std::numbers::pi_v<float>;
+        constexpr auto pi = std::numbers::pi_v<float>;
         constexpr float te_sin_coeff2 = 0.166666666666f;    // 1/(2*3)
         constexpr float te_sin_coeff3 = 0.05f;              // 1/(4*5)
         constexpr float te_sin_coeff4 = 0.023809523810f;    // 1/(6*7)

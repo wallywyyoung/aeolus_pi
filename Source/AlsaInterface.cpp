@@ -92,7 +92,7 @@ void AlsaInterface::beginPollMidi() {
     midiThread = std::thread(&midiHandler, &midiThreadObjects);
 }
 
-void* AlsaInterface::midiHandler(MidiThreadObjects *m) {
+void* AlsaInterface::midiHandler(const MidiThreadObjects *m) {
     do {
         snd_seq_event_t *event;
         if (const int err = snd_seq_event_input(m->sequencer, &event); err < 0 || !event) {
@@ -169,7 +169,7 @@ void AlsaInterface::beginPlayback() {
     audioThread = std::thread(&audioHandler, &audioThreadObjects);
 }
 
-void AlsaInterface::audioHandler(AudioThreadObjects* a) {
+void AlsaInterface::audioHandler(const AudioThreadObjects * a) {
     SimdUtilities::enableFlushToZero();
     snd_pcm_sframes_t available, written;
     alignas(CACHE_LINE_SIZE) static float fBuffer[PROCESS_SAMPLES_SIZE];

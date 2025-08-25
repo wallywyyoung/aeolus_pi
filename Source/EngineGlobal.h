@@ -45,7 +45,7 @@ public:
         // Midi / Configuration Block
         ProcessMidiBuffer();
         // Organ Block
-        bool wasAudioGenerated = organ->process(out);
+        const bool wasAudioGenerated = organ->process(out);
         // Reverb Block
         // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
         reverbTailCounter = wasAudioGenerated ? convolver.length() : std::max(0, reverbTailCounter - PROCESS_FRAMES_SIZE);

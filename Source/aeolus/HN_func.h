@@ -34,7 +34,7 @@
         /// Number of harmonics used.
         constexpr static int N_HARM = 64;
         HN_func() = delete;
-        HN_func(const float& v);
+        explicit HN_func(const float& v);
         void setValue(int idx, float v);            // setv(i, v)
         void setValue(int harm, int idx, float v);  // setv(h, i, v)
         void clearValue(int idx);                   // clrv(i)

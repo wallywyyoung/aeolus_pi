@@ -36,7 +36,7 @@ public:
     /// Number of notes used in parameters look-up table.
     constexpr static int N_NOTES = 11;
 
-    N_func(const float& v);
+    explicit N_func(const float& v);
     N_func() = default;
 
     void setValue(int idx, float v);    // setv(i, v)
