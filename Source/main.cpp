@@ -17,10 +17,13 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "AlsaInterface.h"
-#include "EngineGlobal.h"
 #include <csignal>
 #include <functional>
+#include <thread>
+#include "AlsaInterface.h"
+#include "EngineGlobal.h"
+
+#include "MiniAudioInterface.h"
 
 bool running = true;
 
@@ -33,13 +36,17 @@ void signalHandler(const int signal) {
 int main (int, char*[]) {
     std::signal(SIGINT | SIGTERM | SIGSEGV | SIGABRT | SIGFPE | SIGILL | SIGBUS, signalHandler);
     const auto* engineGlobal = new EngineGlobal();
-    const auto* alsaInterface = new AlsaInterface(
+#ifdef LINUX
+    const auto* audioInterface = new AlsaInterface(
         std::bind(&EngineGlobal::process, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1),
         std::bind(&EngineGlobal::pushMidi, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1));
+#elifdef MACOS
+    const auto* audioInterface = new MiniAudioInterface(std::bind(&EngineGlobal::process, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1));
+#endif
     std::cout << "Aeolus is Ready" << std::endl;
     do {
-        sleep(1);
+        std::this_thread::yield();
     } while(running);
     std::cout << "Aeolus is Closing" << std::endl;
-    delete alsaInterface;
+    delete audioInterface;
 }

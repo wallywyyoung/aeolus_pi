@@ -27,7 +27,10 @@
 
 EngineGlobal::EngineGlobal() {
     irs = IOManager::loadIRs();
-    loadRankwaves();
+    for (int i = 0; i <  model.getStopsCount(); ++i) {
+        // TODO: Fix this mapping in JSON.
+        _rankwavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale, tuningFrequency));
+    }
     generateWavetables();
     organ = new Organ(std::bind(&EngineGlobal::getStopByName, this, std::placeholders::_1));
     organInterface = static_cast<OrganInterface *>(organ);
@@ -35,7 +38,10 @@ EngineGlobal::EngineGlobal() {
 #if DEBUG
     std::cout << "Setting debug stop/note on" << std::endl;
     organ->setDivisionStopOn(0,0);
-    organ->setDivisionNoteOn(0, 50);
+    organ->setDivisionStopOn(1,0);
+    organ->setDivisionStopOn(2,0);
+    organ->setDivisionStopOn(3,0);
+    // organ->setDivisionNoteOn(0, 50);
 #endif
 }
 
@@ -50,11 +56,4 @@ void EngineGlobal::generateWavetables() const {
         });
     }
     pool.wait_for_tasks();
-}
-
-void EngineGlobal::loadRankwaves() {
-    for (int i = 0; i <  model.getStopsCount(); ++i) {
-        // TODO: Fix this mapping in JSON.
-        _rankwavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale, tuningFrequency));
-    }
 }

@@ -56,8 +56,6 @@ public:
 
 private:
     constexpr static float TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
-
-    void loadRankwaves();
     void generateWavetables() const;
 
     Model model;

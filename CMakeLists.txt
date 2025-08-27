@@ -15,7 +15,8 @@
 ##  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 cmake_minimum_required(VERSION 3.25)
-project(aeolus_pi)
+
+project(aeolus_pi LANGUAGES C CXX OBJC OBJCXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -34,8 +35,6 @@ add_executable(aeolus_pi
         Source/MidiData.h
         Source/ObjectBuffer.h
         Source/StaticAudioBuffer.h
-        Source/AlsaInterface.cpp
-        Source/AlsaInterface.h
         Source/AudioBuffer.cpp
         Source/AudioBuffer.h
         Source/IOManager.cpp
@@ -85,14 +84,37 @@ add_executable(aeolus_pi
         Source/aeolus/utilities/SimdUtilities.cpp
         Source/aeolus/utilities/SimdUtilities.h
         Source/aeolus/dsp/Envelope.h
-        Source/aeolus/dsp/Envelope.h
+        Source/MiniAudioImpl.c
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(AudioFile CONFIG REQUIRED)
 find_package(thread-pool CONFIG REQUIRED)
-find_package(ALSA REQUIRED)
-target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool ALSA::ALSA)
+find_package(AudioFile CONFIG REQUIRED)
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    target_sources(aeolus_pi PRIVATE
+            Source/MiniAudioInterface.h
+            Source/MiniAudioInterface.cpp)
+    set_source_files_properties(Source/MiniAudioImpl.c PROPERTIES LANGUAGE OBJC)
+    find_path(MINIAUDIO_INCLUDE_DIRS "miniaudio.h")
+    target_include_directories(aeolus_pi PRIVATE ${MINIAUDIO_INCLUDE_DIRS})
+    find_package(rtmidi CONFIG REQUIRED)
+    target_link_libraries(aeolus_pi PRIVATE RtMidi::rtmidi)
+    target_compile_definitions(aeolus_pi PRIVATE MACOS)
+    target_link_libraries(aeolus_pi PRIVATE
+            "-framework CoreAudio"
+            "-framework CoreFoundation"
+            "-framework AudioToolbox"
+    )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_sources(aeolus_pi PRIVATE
+            Source/AlsaInterface.cpp
+            Source/AlsaInterface.h)
+    find_package(ALSA REQUIRED)
+    target_link_libraries(aeolus_pi PRIVATE ALSA::ALSA)
+    target_compile_definitions(aeolus_pi PRIVATE LINUX)
+endif()
+
+target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool)
 target_compile_definitions(aeolus_pi PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 
 file(COPY Resources DESTINATION ${CMAKE_BINARY_DIR})

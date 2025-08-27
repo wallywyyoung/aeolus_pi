@@ -17,22 +17,29 @@
 //
 // ----------------------------------------------------------------------------
 
+
+
 #pragma once
 
+#ifdef LINUX
 #include <alsa/asoundlib.h>
+#endif
 
 struct MidiData {
     enum EventType : unsigned char {
-        NOTE_ON = 0, NOTE_OFF = 1, CC = 2, PC = 3
+        NOTE_ON = 0, NOTE_OFF = 1, CC = 2, PC = 3, INVALID = 4
     };
 
-    EventType eventType : 2;
+    EventType eventType : 4;
     unsigned char channel : 7, param : 7, value : 7;
 
     MidiData() = default;
+
+#ifdef LINUX
     explicit MidiData(const snd_seq_event_t &event);
 
     MidiData &operator=(const snd_seq_event_t &event);
+#endif
 
     bool valid() const;
 };

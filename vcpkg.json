@@ -5,6 +5,14 @@
     "version>=" : "1.2.14",
     "platform" : "linux"
   }, {
+    "name" : "miniaudio",
+    "version>=" : "0.11.22",
+    "platform": "arm64 & osx"
+  }, {
+    "name" : "rtmidi",
+    "version>=" : "6.0.0",
+    "platform": "arm64 & osx"
+  }, {
     "name" : "nlohmann-json",
     "version>=" : "3.12.0"
   }, {

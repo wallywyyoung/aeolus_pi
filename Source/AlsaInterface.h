@@ -17,6 +17,8 @@
 //
 // ----------------------------------------------------------------------------
 
+#ifdef LINUX
+
 #pragma once
 
 #include <functional>
@@ -75,3 +77,5 @@ public:
     explicit AlsaInterface(std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio, std::function<void(const MidiData&)> submitMidi);
     ~AlsaInterface();
 };
+
+#endif

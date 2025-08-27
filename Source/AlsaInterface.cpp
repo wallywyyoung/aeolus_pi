@@ -17,6 +17,8 @@
 //
 // ----------------------------------------------------------------------------
 
+#ifdef LINUX
+
 #include "AlsaInterface.h"
 #include "EngineGlobal.h"
 #include "MemoryConstants.h"
@@ -211,3 +213,5 @@ void AlsaInterface::endPlayback() {
     snd_pcm_drain(audioThreadObjects.playback);
     snd_pcm_close(audioThreadObjects.playback);
 }
+
+#endif

@@ -63,6 +63,7 @@ public:
         std::vector<MidiData> midiBuffer{};
         this->pop(midiBuffer);
         for (const MidiData& event : midiBuffer) {
+            std::cout << event.channel << " " << event.eventType << std::endl;
             ProcessMidiEvent(event);
         }
     }

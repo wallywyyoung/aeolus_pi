@@ -38,8 +38,8 @@ Voice::Voice(PipeWave::State newState, const int& newStopIndex) :
     framesUntilRelease{spatialSource.getPostFxSamplesCount() + 2 * chiffDelaySampleCount + static_cast<int>(Division::TREMULANT_DELAY_LENGTH)} {}
 
 void Voice::release() {
-    if (state.envelopeState != PipeWave::Over) {
-        std::cerr << "Release was called before the voice was over!" << std::endl;
+    if (state.envelopeState == PipeWave::Over) {
+        std::cerr << "Release was called after the voice was over!" << std::endl;
         return;
     }
     state.release();
@@ -56,13 +56,19 @@ void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out
         }
     } else {
         state.pipeWave->play(state, buffer);
-        for (float &sample : buffer) {
-            delayLine.write(sample);
-            sample = delayLine.readNearest(chiffDelaySampleCount) * gain;
-        }
+        // for (float &sample : buffer) {
+        //     delayLine.write(sample);
+        //     sample = delayLine.readNearest(chiffDelaySampleCount) * gain;
+        // }
     }
-    chiff.process(buffer);
-    spatialSource.process(buffer, out);
+    // chiff.process(buffer);
+    // spatialSource.process(buffer, out);
+    auto l = out.getWritePointer(0);
+    auto r = out.getWritePointer(1);
+    for (int i = 0; i < PROCESS_FRAMES_SIZE; ++i) {
+        l[i] = buffer[i];
+        r[i] = buffer[i];
+    }
 }
 
 bool Voice::isOver() const noexcept {
