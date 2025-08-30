@@ -126,8 +126,8 @@ void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, 
     std::ifstream stream(entry.path(), std::ios::in);
     auto v = nlohmann::json::parse(stream);
 
-    //TODO: Fix this hack.
-    auto tempPath = entry.path().filename().stem().string();
+    // TODO: Fix this hack.
+    const auto tempPath = entry.path().filename().stem().string();
     addsynth._fileName = tempPath.substr(0, tempPath.length() - 4);
 
     const int version = v["version"];

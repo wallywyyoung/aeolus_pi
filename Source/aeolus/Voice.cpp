@@ -79,9 +79,9 @@ bool Voice::isActive() const noexcept {
     return state.envelopeState == PipeWave::Attack;
 }
 
-bool Voice::isActiveForStopNote(const int &stopIndex, const int &note) const noexcept {
+bool Voice::isActiveForStopNote(const int &thisStopIndex, const int &note) const noexcept {
     if (state.pipeWave != nullptr) {
-        return isActive() && stopIndex == this->stopIndex && state.pipeWave->getNote() == note;
+        return isActive() && thisStopIndex == stopIndex && state.pipeWave->getNote() == note;
     }
     return false;
 }

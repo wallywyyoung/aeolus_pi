@@ -54,7 +54,7 @@ public:
     [[nodiscard]] bool isOver() const noexcept;
     [[nodiscard]] bool isIdle() const noexcept { return state.envelopeState == PipeWave::Idle; }
     [[nodiscard]] bool isActive() const noexcept;
-    [[nodiscard]] bool isActiveForStopNote(const int& stopIndex, const int& note) const noexcept;
+    [[nodiscard]] bool isActiveForStopNote(const int &thisStopIndex, const int &note) const noexcept;
     [[nodiscard]] int getNote() const;
     [[nodiscard]] int getStopIndex() const noexcept { return stopIndex; }
 };

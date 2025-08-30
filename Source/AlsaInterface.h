@@ -17,9 +17,9 @@
 //
 // ----------------------------------------------------------------------------
 
-#ifdef LINUX
-
 #pragma once
+
+#ifdef LINUX
 
 #include <functional>
 #include <memory>

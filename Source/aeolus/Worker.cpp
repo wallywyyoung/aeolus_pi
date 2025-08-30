@@ -25,7 +25,6 @@
 #include <atomic>
 #include <cassert>
 #include <thread>
-#include <thread_pool/thread_safe_queue.h>
 
 #include "utilities/SimdUtilities.h"
 

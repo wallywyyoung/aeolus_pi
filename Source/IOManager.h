@@ -24,6 +24,7 @@
 #include "aeolus/Addsynth.h"
 #include "aeolus/IR.h"
 
+#include <filesystem>
 #include <nlohmann/json.hpp>
 
 class IOManager {

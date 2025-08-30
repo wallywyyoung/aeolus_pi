@@ -20,10 +20,15 @@
 #include <csignal>
 #include <functional>
 #include <thread>
-#include "AlsaInterface.h"
 #include "EngineGlobal.h"
 
-#include "MiniAudioInterface.h"
+#ifdef LINUX
+#include "AlsaInterface.h"
+#endif
+
+#ifdef MACOS
+#include "RtAudioInterface.h"
+#endif
 
 bool running = true;
 
@@ -41,7 +46,7 @@ int main (int, char*[]) {
         std::bind(&EngineGlobal::process, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1),
         std::bind(&EngineGlobal::pushMidi, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1));
 #elifdef MACOS
-    const auto* audioInterface = new MiniAudioInterface(std::bind(&EngineGlobal::process, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1));
+    const auto* audioInterface = new RtAudioInterface(std::bind(&EngineGlobal::process, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1));
 #endif
     std::cout << "Aeolus is Ready" << std::endl;
     do {

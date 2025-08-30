@@ -53,7 +53,7 @@ Stop::Type StopFactory::getTypeFromString(const std::string& n) {
 
     // TODO: This is ugly, make cleaner.
     auto nameToFind = n;
-    std::ranges::transform(nameToFind, nameToFind.begin(), ::tolower);
+    std::ranges::transform(nameToFind, nameToFind.begin(), tolower);
 
     if (const auto it = nameToType.find(nameToFind); it != nameToType.end()) {
         type = it->second;

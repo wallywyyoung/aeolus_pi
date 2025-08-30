@@ -22,8 +22,7 @@
 #include "IOManager.h"
 #include "aeolus/Organ.h"
 #include "aeolus/utilities/SimdUtilities.h"
-
-#include <thread_pool/thread_pool.h>
+#include <thread>
 
 EngineGlobal::EngineGlobal() {
     irs = IOManager::loadIRs();
@@ -38,6 +37,7 @@ EngineGlobal::EngineGlobal() {
 #if DEBUG
     std::cout << "Setting debug stop/note on" << std::endl;
     organ->setDivisionStopOn(0,0);
+    organ->setDivisionNoteOn(1,50);
     organ->setDivisionStopOn(1,0);
     organ->setDivisionStopOn(2,0);
     organ->setDivisionStopOn(3,0);
@@ -46,14 +46,16 @@ EngineGlobal::EngineGlobal() {
 }
 
 void EngineGlobal::generateWavetables() const {
-    dp::thread_pool pool(_rankwavesByName.size());
+    auto threads = std::vector<std::thread>();
     for (const auto &val: _rankwavesByName | std::views::values) {
         auto rwp = val.get();
-        pool.enqueue_detach([rwp] {
+        threads.emplace_back([rwp] {
             SimdUtilities::enableFlushToZero();
             rwp->generateWavetables();
             SimdUtilities::disableFlushToZero();
         });
     }
-    pool.wait_for_tasks();
+    for (auto &t : threads) {
+        t.join();
+    }
 }

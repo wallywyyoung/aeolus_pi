@@ -16,7 +16,7 @@
 
 cmake_minimum_required(VERSION 3.25)
 
-project(aeolus_pi LANGUAGES C CXX OBJC OBJCXX)
+project(aeolus_pi)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -84,27 +84,18 @@ add_executable(aeolus_pi
         Source/aeolus/utilities/SimdUtilities.cpp
         Source/aeolus/utilities/SimdUtilities.h
         Source/aeolus/dsp/Envelope.h
-        Source/MiniAudioImpl.c
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(thread-pool CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     target_sources(aeolus_pi PRIVATE
-            Source/MiniAudioInterface.h
-            Source/MiniAudioInterface.cpp)
-    set_source_files_properties(Source/MiniAudioImpl.c PROPERTIES LANGUAGE OBJC)
-    find_path(MINIAUDIO_INCLUDE_DIRS "miniaudio.h")
-    target_include_directories(aeolus_pi PRIVATE ${MINIAUDIO_INCLUDE_DIRS})
+            Source/RtAudioInterface.h
+            Source/RtAudioInterface.cpp)
     find_package(rtmidi CONFIG REQUIRED)
-    target_link_libraries(aeolus_pi PRIVATE RtMidi::rtmidi)
+    find_package(RtAudio CONFIG REQUIRED)
+    target_link_libraries(aeolus_pi PRIVATE RtAudio::rtaudio RtMidi::rtmidi)
     target_compile_definitions(aeolus_pi PRIVATE MACOS)
-    target_link_libraries(aeolus_pi PRIVATE
-            "-framework CoreAudio"
-            "-framework CoreFoundation"
-            "-framework AudioToolbox"
-    )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_sources(aeolus_pi PRIVATE
             Source/AlsaInterface.cpp
@@ -114,7 +105,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_compile_definitions(aeolus_pi PRIVATE LINUX)
 endif()
 
-target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile dp::thread-pool)
+target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile)
 target_compile_definitions(aeolus_pi PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 
 file(COPY Resources DESTINATION ${CMAKE_BINARY_DIR})
