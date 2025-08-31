@@ -86,8 +86,8 @@ namespace dsp {
         constexpr float att = 0.7f; // [0..1]
 
         // Angular attenuation
-        _leftAttenuation = 0.5f * att * (cosf(leftAngle) + 1.0f) + 1.0f - att;
-        _rightAttenuation = 0.5f * att * (cosf(rightAngle) + 1.0f) + 1.0f - att;
+        _leftAttenuation = 0.5f * att * (std::cosf(leftAngle) + 1.0f) + 1.0f - att;
+        _rightAttenuation = 0.5f * att * (std::cosf(rightAngle) + 1.0f) + 1.0f - att;
 
         _filterSpec[0].type = BiquadFilter::LowPass;
         _filterSpec[0].dbGain = 0.0f;

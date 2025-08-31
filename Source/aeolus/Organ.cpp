@@ -138,7 +138,7 @@ GlobalPiston Organ::captureStateAsPiston() const {
 void Organ::generateTremulant() {
     float* buf = tremulantFrameBuffer.getWritePointer(0);
     for (int i = 0; i < PROCESS_FRAMES_SIZE; ++i) {
-        const float s = sinf(tremulantPhase);
+        const float s = std::sinf(tremulantPhase);
         buf[i] = s * TREMULANT_LEVEL;
         tremulantPhase += TREMULANT_PHASE_INCREMENT;
         if (tremulantPhase >= std::numbers::pi_v<float> * 2) {

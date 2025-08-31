@@ -82,7 +82,11 @@ private:
     static constexpr auto CENTS_IN_OCTAVE = 1200.0f;
     static constexpr auto AUDIBLE_THRESHOLD = -40.0f;
     static constexpr auto HARMONIC_SKIP_THRESHOLD = -80.0f;
-    static void looplen(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength, int &cycleCount);
+    static constexpr auto DECIBEL_TO_LINEAR_APPROX = 0.1661f;
+    static constexpr auto NOISE_SCALING = 0.05f;
+    static constexpr auto PLAY_INTERPOLATION_SPEED_SCALING = 0.0005f;
+    static void looplen(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength,
+                        int &cycleCount);
     static void attgain(float* att, int n, float p);
 
     std::shared_ptr<Addsynth> _model;
@@ -92,7 +96,7 @@ private:
     int _attackLength;          // _l0
     int _loopLength;            // _l1
     int _sampleStep;            // _k_s
-    int releaseSampleCount;     // _k_r
+    int releaseFrameCount;     // _k_r
     float releaseDecayRate;     // _m_r
     float _releaseDetune;       // _d_r
     float _instability;         // _d_p

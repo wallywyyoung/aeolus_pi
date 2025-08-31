@@ -42,8 +42,8 @@ namespace dsp {
             float y;
 
             void rotate(const float a) {
-                const float c = cosf(a);
-                const float s = sinf(a);
+                const float c = std::cosf(a);
+                const float s = std::sinf(a);
                 const float x2 = c * x - s * y;
                 const float y2 = s * x + s * y;
                 x = x2;
