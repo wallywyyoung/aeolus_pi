@@ -28,25 +28,6 @@
 
 namespace dsp {
 
-Chiff::Chiff(const float& frequency, const float& invertedFrequency, const float& chiffGain) :
-    envelope{{5.0f * invertedFrequency, 100.0f * invertedFrequency, 0.01f, 100.0f * invertedFrequency}},
-    pipeDelay{SAMPLE_RATE_F * invertedFrequency},
-    lpSpec{BiquadFilter::LowPass, std::fmin(NYQUIST_WITH_MARGIN * SAMPLE_RATE_F, frequency * 4.0f), BUTTERWORTH_Q, 0.0f},
-    gain{chiffGain} {
-    BiquadFilter::updateSpec(lpSpec);
-    BiquadFilter::resetState(lpState);
-}
-
-void Chiff::release() {
-    noiseEnvelope.release();
-    envelope.release();
-}
-
-bool Chiff::isActive() const noexcept {
-    // Don't care about the noise envelope here
-    return envelope.state() != Envelope::Off;
-}
-
 void Chiff::process(std::array<float, PROCESS_FRAMES_SIZE> &out) {
     static std::random_device rnd;
     std::mt19937 gen(rnd());

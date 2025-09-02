@@ -19,23 +19,20 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/Voice.h"
-#include "aeolus/Organ.h"
-
-#include <cstring>
 #include <utility>
+#include "aeolus/Organ.h"
 
 
 Voice::Voice(PipeWave::State newState, const int& newStopIndex) :
     state(std::move(newState)),
     stopIndex(newStopIndex),
-    chiffDelaySampleCount{static_cast<int>(std::min<float>(static_cast<float>(delayLine.size()),0.5f / state.pipeWave->getPipeFrequency() * SAMPLE_RATE_F))},
     chiff([&]() {
         const auto freq = state.pipeWave->getPipeFrequency();
         const float att = 1.0f - expf(-freq * FREQUENCY_ROLLOFF);
         return dsp::Chiff(freq, 1.0f / freq, std::min<float>(1.0f, BASE_CHIFF_INTENSITY * state.chiffGain * att));
     }()),
     spatialSource(state.pipeWave->getNote(), static_cast<float>(state.pipeWave->getModel()->getFd()), static_cast<float>(state.pipeWave->getModel()->getFd())),
-    framesUntilRelease{spatialSource.getPostFxSamplesCount() + 2 * chiffDelaySampleCount + static_cast<int>(Division::TREMULANT_DELAY_LENGTH)} {}
+    framesUntilRelease{spatialSource.getPostFxSamplesCount() + 2 * chiff.getDelaySampleCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH)} {}
 
 void Voice::release() {
     if (state.envelopeState == PipeWave::Over) {
@@ -47,31 +44,13 @@ void Voice::release() {
 }
 
 void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
-    // state.pipeWave->play(state, buffer);
-    // auto l = out.getWritePointer(0);
-    // auto r = out.getWritePointer(1);
-    // for (auto j = 0; j < PROCESS_FRAMES_SIZE; ++j) {
-    //     l[j] = buffer[j];
-    //     r[j] = buffer[j];
-    // }
-    // return;
-
     buffer.fill(0.0f);
-    const auto gain = state.outputGain;
     if (state.envelopeState == PipeWave::Over) {
         framesUntilRelease -= std::min(static_cast<int>(framesUntilRelease), PROCESS_FRAMES_SIZE);
-        for (float &sample : buffer) {
-            delayLine.write(0.0f);
-            sample = delayLine.readNearest(chiffDelaySampleCount) * gain;
-        }
     } else {
         state.pipeWave->play(state, buffer);
-        for (float &sample : buffer) {
-            delayLine.write(sample);
-            sample = delayLine.readNearest(chiffDelaySampleCount) * gain;
-        }
     }
-    chiff.process(buffer);
+    chiff.process(buffer, state.outputGain);
     spatialSource.process(buffer, out);
 }
 

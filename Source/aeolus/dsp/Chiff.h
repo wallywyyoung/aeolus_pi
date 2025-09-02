@@ -32,13 +32,37 @@ namespace dsp {
  */
 class Chiff {
 public:
-    Chiff(const float& frequency, const float& invertedFrequency, const float& chiffGain);
+    Chiff(const float& frequency, const float& invertedFrequency, const float& chiffGain) :
+    envelope{{5.0f * invertedFrequency, 100.0f * invertedFrequency, 0.01f, 100.0f * invertedFrequency}},
+    pipeDelay{SAMPLE_RATE_F * invertedFrequency},
+    lpSpec{BiquadFilter::LowPass, std::fmin(NYQUIST_WITH_MARGIN * SAMPLE_RATE_F, frequency * 4.0f), BUTTERWORTH_Q, 0.0f},
+    gain{chiffGain},
+    chiffDelaySampleCount{static_cast<int>(std::min<float>(static_cast<float>(delayLine.size()),0.5f * invertedFrequency * SAMPLE_RATE_F))}{
+        BiquadFilter::updateSpec(lpSpec);
+        BiquadFilter::resetState(lpState);
+    }
 
-    void release();
+    void process(std::array<float, PROCESS_FRAMES_SIZE>& out, const float& outGain) {
+        for (float &sample : out) {
+            delayLine.write(sample);
+            sample = delayLine.readNearest(chiffDelaySampleCount) * outGain;
+        }
+        process(out);
+    }
 
-    [[nodiscard]] bool isActive() const noexcept;
+    void release() {
+        noiseEnvelope.release();
+        envelope.release();
+    }
 
-    void process(std::array<float, PROCESS_FRAMES_SIZE> &out);
+    size_t getDelaySampleCount() const {
+        return chiffDelaySampleCount;
+    }
+
+    [[nodiscard]] bool isActive() const noexcept {
+        // Don't care about the noise envelope here
+        return envelope.state() != Envelope::Off;
+    }
 
 private:
     constexpr static float BUTTERWORTH_Q = 0.7071f;
@@ -52,7 +76,12 @@ private:
     BiquadFilter::Spec lpSpec;
     BiquadFilter::State lpState {};
 
+    DelayLineStatic<SAMPLE_RATE> delayLine{};
+    int chiffDelaySampleCount;
+
     float gain;
+
+    void process(std::array<float, PROCESS_FRAMES_SIZE> &out);
 };
 
 } // namespace dsp
