@@ -31,7 +31,6 @@ namespace dsp {
  * @brief Pipe wind attack chiff model.
  */
 class Chiff {
-    //TODO : SEE IF CHIFF IS BROKEN. DELAY LINE RELIES ON CHIFF
 public:
     Chiff(const float& frequency, const float& invertedFrequency, const float& chiffGain);
 

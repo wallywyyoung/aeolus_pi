@@ -25,8 +25,6 @@
 #include "aeolus/dsp/DelayLine.h"
 #include "aeolus/dsp/SpatialSource.h"
 
-#include <functional>
-
 /**
  * @brief Single voice associated with a single pipe.
  */

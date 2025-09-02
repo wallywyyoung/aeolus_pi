@@ -53,6 +53,7 @@ public:
         //     out[j * 2] = l[j];
         //     out[j * 2 + 1] = r[j];
         // }
+        // return;
 
         // Midi / Configuration Block
         ProcessMidiBuffer();
