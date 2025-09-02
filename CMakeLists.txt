@@ -84,6 +84,7 @@ add_executable(aeolus_pi
         Source/aeolus/utilities/SimdUtilities.cpp
         Source/aeolus/utilities/SimdUtilities.h
         Source/aeolus/dsp/Envelope.h
+        Source/aeolus/dsp/DelayLineStatic.h
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)

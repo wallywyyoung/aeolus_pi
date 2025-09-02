@@ -28,6 +28,7 @@ EngineGlobal::EngineGlobal() {
     irs = IOManager::loadIRs();
     for (int i = 0; i <  model.getStopsCount(); ++i) {
         // TODO: Fix this mapping in JSON.
+        std::cout << "Loading " << model[i].getFileName() << std::endl;
         _rankwavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale, tuningFrequency));
     }
     generateWavetables();
@@ -37,11 +38,7 @@ EngineGlobal::EngineGlobal() {
 #if DEBUG
     std::cout << "Setting debug stop/note on" << std::endl;
     organ->setDivisionStopOn(0,0);
-    organ->setDivisionNoteOn(1,50);
-    organ->setDivisionStopOn(1,0);
-    organ->setDivisionStopOn(2,0);
-    organ->setDivisionStopOn(3,0);
-    // organ->setDivisionNoteOn(0, 50);
+    organ->setDivisionNoteOn(0,50);
 #endif
 }
 

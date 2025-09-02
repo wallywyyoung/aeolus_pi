@@ -32,7 +32,7 @@ Chiff::Chiff(const float& frequency, const float& invertedFrequency, const float
     envelope{{5.0f * invertedFrequency, 100.0f * invertedFrequency, 0.01f, 100.0f * invertedFrequency}},
     pipeDelay{SAMPLE_RATE_F * invertedFrequency},
     lpSpec{BiquadFilter::LowPass, std::fmin(NYQUIST_WITH_MARGIN * SAMPLE_RATE_F, frequency * 4.0f), BUTTERWORTH_Q, 0.0f},
-    lpState{}, gain{chiffGain} {
+    gain{chiffGain} {
     BiquadFilter::updateSpec(lpSpec);
     BiquadFilter::resetState(lpState);
 }
@@ -50,7 +50,7 @@ bool Chiff::isActive() const noexcept {
 void Chiff::process(std::array<float, PROCESS_FRAMES_SIZE> &out) {
     static std::random_device rnd;
     std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(0.0f, 1.0f);
+    std::uniform_real_distribution dist(-1.0f, 1.0f);
 
     if (!isActive()) {
         return;
@@ -65,7 +65,7 @@ void Chiff::process(std::array<float, PROCESS_FRAMES_SIZE> &out) {
         }
 
         for (float &outSample : out) {
-            const float x0{ 2.0f * dist(gen) - 1.0f };
+            const float x0{ dist(gen) };
             const float x{ x0 * noiseLevel };
             float y{ pipeResonator.read(pipeDelay) };
             y = BiquadFilter::tick(lpSpec, lpState, y);
@@ -79,7 +79,7 @@ void Chiff::process(std::array<float, PROCESS_FRAMES_SIZE> &out) {
     }
 
     for (float &outSample : out) {
-        const float x0 = 2.0f * dist(gen) - 1.0f;
+        const float x0 = dist(gen);
         const float x = x0 * noiseEnvelope.next();
         float y = pipeResonator.read(pipeDelay);
         y = BiquadFilter::tick(lpSpec, lpState, y);

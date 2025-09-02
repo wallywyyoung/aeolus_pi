@@ -20,9 +20,9 @@
 
 #pragma once
 
-#include "Envelope.h"
 #include "MemoryConstants.h"
-#include "aeolus/dsp/DelayLine.h"
+#include "aeolus/dsp/DelayLineStatic.h"
+#include "aeolus/dsp/Envelope.h"
 #include "aeolus/dsp/filter.h"
 
 namespace dsp {
@@ -31,6 +31,7 @@ namespace dsp {
  * @brief Pipe wind attack chiff model.
  */
 class Chiff {
+    //TODO : SEE IF CHIFF IS BROKEN. DELAY LINE RELIES ON CHIFF
 public:
     Chiff(const float& frequency, const float& invertedFrequency, const float& chiffGain);
 
@@ -42,16 +43,15 @@ public:
 
 private:
     constexpr static float BUTTERWORTH_Q = 0.7071f;
-    Envelope noiseEnvelope{Envelope::Trigger(0.01f, 0.0f, 1.0f, 0.02f)};
-    Envelope envelope; ///< Noise envelope
-    Envelope::Trigger envelopeTrigger;
+    Envelope noiseEnvelope{{0.01f, 0.0f, 1.0f, 0.02f}};
+    Envelope envelope;
 
     DelayLineStatic<SAMPLE_RATE> pipeResonator;
     float pipeDelay;
 
     // Feedback low-pass filter;
     BiquadFilter::Spec lpSpec;
-    BiquadFilter::State lpState;
+    BiquadFilter::State lpState {};
 
     float gain;
 };

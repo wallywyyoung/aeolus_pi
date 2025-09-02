@@ -47,6 +47,16 @@ void Voice::release() {
 }
 
 void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
+    // state.pipeWave->play(state, buffer);
+    // auto l = out.getWritePointer(0);
+    // auto r = out.getWritePointer(1);
+    // for (auto j = 0; j < PROCESS_FRAMES_SIZE; ++j) {
+    //     l[j] = buffer[j];
+    //     r[j] = buffer[j];
+    // }
+    // return;
+
+    buffer.fill(0.0f);
     const auto gain = state.outputGain;
     if (state.envelopeState == PipeWave::Over) {
         framesUntilRelease -= std::min(static_cast<int>(framesUntilRelease), PROCESS_FRAMES_SIZE);
@@ -56,19 +66,13 @@ void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out
         }
     } else {
         state.pipeWave->play(state, buffer);
-        // for (float &sample : buffer) {
-        //     delayLine.write(sample);
-        //     sample = delayLine.readNearest(chiffDelaySampleCount) * gain;
-        // }
+        for (float &sample : buffer) {
+            delayLine.write(sample);
+            sample = delayLine.readNearest(chiffDelaySampleCount) * gain;
+        }
     }
-    // chiff.process(buffer);
-    // spatialSource.process(buffer, out);
-    auto l = out.getWritePointer(0);
-    auto r = out.getWritePointer(1);
-    for (int i = 0; i < PROCESS_FRAMES_SIZE; ++i) {
-        l[i] = buffer[i];
-        r[i] = buffer[i];
-    }
+    chiff.process(buffer);
+    spatialSource.process(buffer, out);
 }
 
 bool Voice::isOver() const noexcept {

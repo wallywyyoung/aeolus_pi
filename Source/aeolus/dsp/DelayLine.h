@@ -74,45 +74,4 @@ namespace dsp {
         std::vector<float> buffer;
         size_t writeIndex{ 0 };
     };
-
-    template <size_t BUFFER_SIZE = 1024>
-    class DelayLineStatic {
-    public:
-        explicit DelayLineStatic() {
-            buffer.fill(0);
-        }
-
-        void reset() noexcept {
-            writeIndex = 0;
-            buffer.fill(0);
-        }
-
-        void write (const float x) noexcept {
-            buffer[writeIndex] = x;
-            writeIndex = writeIndex == 0 ? BUFFER_SIZE - 1 : --writeIndex;
-        }
-
-        [[nodiscard]] float read(const float delay) const {
-            assert(delay >= 0.0f);
-            const auto integral = std::floor(delay);
-            const auto fraction = delay - integral;
-
-            auto index = (static_cast<size_t>(integral) + writeIndex) % BUFFER_SIZE;
-            assert(index < BUFFER_SIZE);
-            const auto a = buffer[index];
-            const auto b = index < BUFFER_SIZE - 1 ? buffer[index + 1] : buffer[0];
-
-            return math::lerp(a, b, fraction);
-        }
-
-        [[nodiscard]] float readNearest(const int delay) const noexcept{
-            assert(delay >= 0 && (delay + writeIndex) % BUFFER_SIZE < BUFFER_SIZE);
-            return buffer[(delay + writeIndex) % BUFFER_SIZE];
-        }
-
-        [[nodiscard]] size_t size() const noexcept { return buffer.size(); }
-    private:
-        std::array<float, BUFFER_SIZE> buffer{};
-        size_t writeIndex{0};
-    };
 } // namespace dsp

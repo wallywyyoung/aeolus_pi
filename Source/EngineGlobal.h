@@ -42,6 +42,18 @@ public:
     void pushMidi(const MidiData& midiData) { push(midiData); }
 
     void process(float (&out)[PROCESS_SAMPLES_SIZE]) {
+        // static auto pipe = _rankwavesByName["III_principal_8"]->trigger(50,1.0f,1.0f);
+        // static auto voice = new Voice(pipe, 0);
+        // static StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> voiceFrameBuffer;
+        // voiceFrameBuffer.clear();
+        // voice->process(voiceFrameBuffer);
+        // auto l = voiceFrameBuffer.getReadPointer(0);
+        // auto r = voiceFrameBuffer.getReadPointer(1);
+        // for (auto j = 0; j < PROCESS_FRAMES_SIZE; ++j) {
+        //     out[j * 2] = l[j];
+        //     out[j * 2 + 1] = r[j];
+        // }
+
         // Midi / Configuration Block
         ProcessMidiBuffer();
         // Organ Block

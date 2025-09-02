@@ -97,8 +97,7 @@ public:
                 if (!division->process(divisionFrameBuffer, voiceFrameBuffer)) {
                     continue;
                 }
-                // TODO: MODULATE IS BROKEN
-                // division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
+                division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
                 for (auto j = 0; j < PROCESS_FRAMES_SIZE; ++j) {
                     if (wasAudioGenerated) {
                         out[j * 2] += LEFT_BUFFER[j];

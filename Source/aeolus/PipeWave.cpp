@@ -162,9 +162,9 @@ void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
 }
 
 void PipeWave::generateWavetable() {
-    std::random_device rnd;
-    std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(-1.0f, 1.0f);
+    static thread_local std::random_device rnd;
+    static thread_local std::mt19937 gen(rnd());
+    static thread_local std::uniform_real_distribution dist(-1.0f, 1.0f);
 
     float noteAttack = _model->getNoteAttack(_note);
 
@@ -179,25 +179,34 @@ void PipeWave::generateWavetable() {
     static_assert(isPowerOfTwo(PROCESS_FRAMES_SIZE));
     _attackLength = (_attackLength + PROCESS_FRAMES_SIZE - 1) & ~(PROCESS_FRAMES_SIZE - 1);
 
-    // Target frequency
-    const float targetFrequency = (_freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * dist(gen)) * SAMPLE_RATE_R;
+    // Target frequency in Hz - keep in Hz throughout most calculations
+    const float targetFrequencyHz = _freq + _model->getNoteOffset(_note) + _model->getNoteRandomisation(_note) * dist(gen);
 
-    // Attack frequency (detuned)
-    const float attackFrequency = targetFrequency * math::exp2ap(_model->getNoteAttackDetune(_note) / CENTS_IN_OCTAVE);
+    // Convert to normalized frequency (cycles per sample) only when needed for phase calculations
+    const float targetFrequency = targetFrequencyHz * SAMPLE_RATE_R;
 
-    auto currentFrequency = 0.0f;
+    // Attack frequency (detuned) in Hz
+    const float attackFrequencyHz = targetFrequencyHz * math::exp2ap(_model->getNoteAttackDetune(_note) / CENTS_IN_OCTAVE);
+    const float attackFrequency = attackFrequencyHz * SAMPLE_RATE_R;
 
-    for (auto harmonic = HN_func::N_HARM - 1; harmonic >= 0; --harmonic) {
-        currentFrequency = static_cast<float>(harmonic + 1) * targetFrequency;
-
-        if (currentFrequency < NYQUIST_WITH_MARGIN && _model->getHarmonicLevel(harmonic, _note) >= AUDIBLE_THRESHOLD) {
+    // Find the highest significant harmonic frequency in Hz to determine anti-aliasing
+    float highestHarmonicFreqHz = 0.0f;
+    for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
+        const float harmonicFreqHz = static_cast<float>(harmonic + 1) * targetFrequencyHz;
+        if (harmonicFreqHz > SAMPLE_RATE_F * 0.45f) { // Stop before Nyquist with margin
             break;
+        }
+        if (_model->getHarmonicLevel(harmonic, _note) >= AUDIBLE_THRESHOLD) {
+            highestHarmonicFreqHz = harmonicFreqHz;
         }
     }
 
-    if (currentFrequency > 0.25f) {
+    // Improved anti-aliasing: oversample based on highest harmonic frequency
+    if (highestHarmonicFreqHz > SAMPLE_RATE_F * 0.35f) {
+        _sampleStep = 4;  // Heavy oversampling for very high frequencies
+    } else if (highestHarmonicFreqHz > SAMPLE_RATE_F * 0.25f) {
         _sampleStep = 3;
-    } else if (currentFrequency > 0.125f) {
+    } else if (highestHarmonicFreqHz > SAMPLE_RATE_F * 0.15f) {
         _sampleStep = 2;
     } else {
         _sampleStep = 1;
@@ -205,7 +214,8 @@ void PipeWave::generateWavetable() {
 
     auto numberCyclesOfFundamental = 0;
 
-    looplen(targetFrequency * SAMPLE_RATE_F, SAMPLE_RATE_F / static_cast<float>(_sampleStep), static_cast<int>(SAMPLE_RATE_F / 6.0f), _loopLength,numberCyclesOfFundamental);
+    // Pass frequency in Hz to looplen function
+    looplen(targetFrequencyHz, SAMPLE_RATE_F / static_cast<float>(_sampleStep), (int) (SAMPLE_RATE_F / 6.0f), _loopLength, numberCyclesOfFundamental);
     assert(_loopLength > 0);
     assert(numberCyclesOfFundamental > 0);
 
@@ -232,29 +242,34 @@ void PipeWave::generateWavetable() {
     _releaseDetune = static_cast<float>(_sampleStep) * (math::exp2ap(_model->getNoteReleaseDetune(_note) / CENTS_IN_OCTAVE) - 1.0f);
     _instability = _model->getNoteInstability(_note);
 
+    // Use the maximum attack time for all harmonics
     const auto attackSampleCount = static_cast<int>(std::lround(SAMPLE_RATE_F * noteAttack));
 
     // phaseSteps[i] will contain phase steps along the generated wavetable
 
     {
         auto t = 0.0f;
-        // Interpolate from frequency attack frequency to target frequency during the attack
+        // Interpolate from attack frequency to target frequency during the attack
         for (auto i = 0; i <= _attackLength; ++i) {
-            phaseSteps [i] = t - floorf(t + 0.5f);
+            phaseSteps[i] = t - floorf(t + 0.5f);
             t += (i < attackSampleCount) ? ((static_cast<float>(attackSampleCount - i) * attackFrequency + static_cast<float>(i) * targetFrequency) / static_cast<float>(attackSampleCount)) : targetFrequency;
         }
     }
 
-    // Generate phase steps of the sustained loop
+    // Generate phase steps of the sustained loop - improved precision
+    const float phaseIncrement = static_cast<float>(numberCyclesOfFundamental) / static_cast<float>(_loopLength);
     for (auto i = 1; i < _loopLength; ++i) {
-        const float t = phaseSteps[_attackLength] + static_cast<float>(i) * static_cast<float>(numberCyclesOfFundamental) / static_cast<float>(_loopLength);
+        const float t = phaseSteps[_attackLength] + static_cast<float>(i) * phaseIncrement;
         phaseSteps[i + _attackLength] = t - floorf(t + 0.5f);
     }
 
     const float baseNoteAmplitude = math::exp2ap(DECIBEL_TO_LINEAR_APPROX * _model->getNoteVolume(_note));
 
     for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
-        if (static_cast<float>(harmonic + 1) * targetFrequency > NYQUIST_WITH_MARGIN) {
+        const float harmonicFreqHz = static_cast<float>(harmonic + 1) * targetFrequencyHz;
+
+        // Strict anti-aliasing: skip harmonics that would alias
+        if (harmonicFreqHz > SAMPLE_RATE_F * 0.45f) {
             break;
         }
 
@@ -265,6 +280,7 @@ void PipeWave::generateWavetable() {
         }
         harmonicLevel = baseNoteAmplitude * math::exp2ap(DECIBEL_TO_LINEAR_APPROX * (harmonicLevel + _model->getHarmonicRandomisation(harmonic, _note) * dist(gen)));
 
+        // Use unified attack sample count for all harmonics
         const auto harmonicAttackSampleCount = attackSampleCount;
         if (harmonicAttackSampleCount > att.size()) {
             att.resize(harmonicAttackSampleCount);
@@ -272,10 +288,12 @@ void PipeWave::generateWavetable() {
 
         attgain(att.data(), harmonicAttackSampleCount, _model->getHarmonicAttackProfile(harmonic, _note));
 
+        // Generate harmonic with improved phase precision
         for (auto i = 0; i < _attackLength + _loopLength; ++i) {
-            float t = phaseSteps[i] * static_cast<float>(harmonic + 1);
-            t -= floorf(t);
-            auto harmonicSample = harmonicLevel * std::sinf(std::numbers::pi_v<float> * 2.0f * t);
+            // Use double precision for phase calculation to avoid accumulation errors
+            double t = static_cast<double>(phaseSteps[i]) * static_cast<double>(harmonic + 1);
+            t -= std::floor(t);
+            auto harmonicSample = harmonicLevel * std::sinf(std::numbers::pi_v<float> * 2.0f * static_cast<float>(t));
 
             if (i < harmonicAttackSampleCount) {
                 harmonicSample *= att[i];
