@@ -72,10 +72,9 @@ public:
     void setPiston(const int& piston);
     void recallPiston(const int& piston);
     void recallPiston(const DivisionPiston& piston);
-    DivisionPiston captureStateAsPiston() const;
+    [[nodiscard]] DivisionPiston captureStateAsPiston() const;
 
-    bool process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &divisionBuffer,
-                 StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &voiceBuffer);
+    bool process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &divisionBuffer, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &voiceBuffer);
     void modulate(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS>& targetBuffer, const StaticAudioBuffer<PROCESS_FRAMES_SIZE, 1>& tremulantBuffer);
 
     void releaseVoicesOfDisabledStops();
