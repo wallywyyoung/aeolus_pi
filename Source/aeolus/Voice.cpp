@@ -24,15 +24,15 @@
 
 
 Voice::Voice(PipeWave::State newState, const int& newStopIndex) :
-    state(std::move(newState)),
-    stopIndex(newStopIndex),
+    state(std::move(newState)), stopIndex(newStopIndex),
+    spatialSource(state.pipeWave->getNote(), static_cast<float>(state.pipeWave->getModel()->getFd()), static_cast<float>(state.pipeWave->getModel()->getFd())),
     chiff([&]() {
         const auto freq = state.pipeWave->getPipeFrequency();
         const float att = 1.0f - expf(-freq * FREQUENCY_ROLLOFF);
-        return dsp::Chiff(freq, 1.0f / freq, std::min<float>(1.0f, BASE_CHIFF_INTENSITY * state.chiffGain * att));
-    }()),
-    spatialSource(state.pipeWave->getNote(), static_cast<float>(state.pipeWave->getModel()->getFd()), static_cast<float>(state.pipeWave->getModel()->getFd())),
-    framesUntilRelease{spatialSource.getPostFxSamplesCount() + 2 * chiff.getDelaySampleCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH)} {}
+        return dsp::Chiff(freq, 1.0f / freq,
+            std::min<float>(1.0f, BASE_CHIFF_INTENSITY * state.chiffGain * att),
+            spatialSource.getPostFxSamplesCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH));
+    }()) {}
 
 void Voice::release() {
     if (state.envelopeState == PipeWave::Over) {
@@ -45,17 +45,13 @@ void Voice::release() {
 
 void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
     buffer.fill(0.0f);
-    if (state.envelopeState == PipeWave::Over) {
-        framesUntilRelease -= std::min(static_cast<int>(framesUntilRelease), PROCESS_FRAMES_SIZE);
-    } else {
-        state.pipeWave->play(state, buffer);
-    }
-    chiff.process(buffer, state.outputGain);
+    state.pipeWave->play(state, buffer);
+    chiff.process(buffer, state);
     spatialSource.process(buffer, out);
 }
 
 bool Voice::isOver() const noexcept {
-    return (state.envelopeState == PipeWave::Over) && framesUntilRelease == 0;
+    return state.isOver() && chiff.isOver();
 }
 
 bool Voice::isActive() const noexcept {

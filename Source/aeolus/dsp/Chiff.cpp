@@ -29,9 +29,9 @@
 namespace dsp {
 
 void Chiff::process(std::array<float, PROCESS_FRAMES_SIZE> &out) {
-    static std::random_device rnd;
-    std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(-1.0f, 1.0f);
+    thread_local std::random_device rnd;
+    thread_local std::mt19937 gen(rnd());
+    thread_local std::uniform_real_distribution dist(-1.0f, 1.0f);
 
     if (!isActive()) {
         return;

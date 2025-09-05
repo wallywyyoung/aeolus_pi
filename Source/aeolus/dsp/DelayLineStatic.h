@@ -35,35 +35,34 @@ class DelayLineStatic {
     public:
         explicit DelayLineStatic() = default;
 
-        constexpr size_t size() noexcept { return BUFFER_SIZE; }
+        static constexpr size_t size() noexcept { return BUFFER_SIZE; }
 
         void write (const float x) noexcept {
-            if (_writeIndex == 0)
-                _writeIndex = _buffer.size() - 1;
-            else
-                --_writeIndex;
-
-            _buffer[_writeIndex] = x;
+            if (writeIndex == 0) {
+                writeIndex = buffer.size() - 1;
+            } else {
+                --writeIndex;
+            }
+            buffer[writeIndex] = x;
         }
 
         [[nodiscard]] float read(const float delay) const {
-            int index = (int)std::floor(delay);
-            float frac = delay - (float)index;
-
-            index = (index + _writeIndex) % (int) _buffer.size();
-            const auto a = _buffer[index];
-            const auto b = index < _buffer.size() - 1 ? _buffer[index + 1] : _buffer[0];
+            auto index = static_cast<int>(std::floor(delay));
+            auto frac = delay - static_cast<float>(index);
+            index = (index + writeIndex) % static_cast<int>(buffer.size());
+            const auto a = buffer[index];
+            const auto b = index < buffer.size() - 1 ? buffer[index + 1] : buffer[0];
 
             return math::lerp(a, b, frac);
         }
 
-        [[nodiscard]] float readNearest(const int delay) const noexcept{
-            const int index{ int ((delay + _writeIndex) % _buffer.size()) };
-            return _buffer[index];
+        [[nodiscard]] float readNearest(const size_t delay) const noexcept {
+            const auto index{ (delay + writeIndex) % buffer.size() };
+            return buffer[index];
         }
 
     private:
-        std::array<float, BUFFER_SIZE> _buffer{ 0.0f };
-        size_t _writeIndex{ 0 };
+        std::array<float, BUFFER_SIZE> buffer{ 0.0f };
+        size_t writeIndex{ 0 };
     };
 } // namespace dsp

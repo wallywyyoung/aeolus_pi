@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include "aeolus/RankWave.h"
 #include "aeolus/dsp/Chiff.h"
 #include "aeolus/dsp/DelayLine.h"
 #include "aeolus/dsp/SpatialSource.h"
@@ -37,9 +36,8 @@ class Voice {
     PipeWave::State state; ///< Pipe state associated with this voice.
     int stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
     std::array<float, PROCESS_FRAMES_SIZE> buffer{ 0.0f };
-    dsp::Chiff chiff; /// Attack chiff.
     dsp::SpatialSource spatialSource; /// Stereo spatial modeller.
-    size_t framesUntilRelease{0}; /// Counter to account for the delayed sound before recycling the voice.
+    dsp::Chiff chiff; /// Attack chiff.
 public:
     explicit Voice(PipeWave::State newState, const int& newStopIndex);
 

@@ -71,7 +71,9 @@ add_executable(aeolus_pi
         Source/aeolus/Worker.h
         Source/aeolus/utilities/Range.cpp
         Source/aeolus/dsp/Envelope.cpp
-        Source/aeolus/dsp/chiff.cpp
+        Source/aeolus/dsp/Envelope.h
+        Source/aeolus/dsp/Chiff.cpp
+        Source/aeolus/dsp/Chiff.h
         Source/aeolus/dsp/convolve.h
         Source/aeolus/dsp/convolver.cpp
         Source/aeolus/dsp/fft.cpp
@@ -83,7 +85,6 @@ add_executable(aeolus_pi
         Source/aeolus/StopFactory.cpp
         Source/aeolus/utilities/SimdUtilities.cpp
         Source/aeolus/utilities/SimdUtilities.h
-        Source/aeolus/dsp/Envelope.h
         Source/aeolus/dsp/DelayLineStatic.h
 )
 

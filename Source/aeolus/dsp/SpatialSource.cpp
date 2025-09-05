@@ -56,7 +56,7 @@ namespace dsp {
 }
 
     void SpatialSource::recalculate() {
-        constexpr float speedOfSound = 330.0f; // [m/s]
+        static constexpr auto SPEED_OF_SOUND_R = 1.0f / 343.0f; // [m/s] @ 20 deg C
 
         Position left{-0.5f * _listenerLeftRightDistance, 0.0f};
         Position right{0.5f * _listenerLeftRightDistance, 0.0f};
@@ -72,18 +72,18 @@ namespace dsp {
         right.x += _listenerPosition.x;
         right.y += _listenerPosition.y;
 
-        const float leftDistance = _sourcePosition.distanceTo(left);
-        const float rightDistance = _sourcePosition.distanceTo(right);
-        const float maxDistance = std::max(leftDistance, rightDistance);
-        const float maxT = maxDistance / speedOfSound;
-        const auto delayLengthInSamples = static_cast<size_t>(SAMPLE_RATE_F * maxT + 0.5f);
+        const auto leftDistance = _sourcePosition.distanceTo(left);
+        const auto rightDistance = _sourcePosition.distanceTo(right);
+        const auto maxDistance = std::max(leftDistance, rightDistance);
+        const auto maxT = maxDistance * SPEED_OF_SOUND_R;
+        const auto delayLengthInSamples = static_cast<size_t>(std::lround(SAMPLE_RATE_F * maxT));
 
         _delayLine.resize(delayLengthInSamples);
 
-        _leftDelay = static_cast<int>(roundf(leftDistance * SAMPLE_RATE_F / speedOfSound));
-        _rightDelay = static_cast<int>(roundf(rightDistance * SAMPLE_RATE_F / speedOfSound));
+        _leftDelay = static_cast<int>(roundf(leftDistance * SAMPLE_RATE_F * SPEED_OF_SOUND_R));
+        _rightDelay = static_cast<int>(roundf(rightDistance * SAMPLE_RATE_F * SPEED_OF_SOUND_R));
 
-        constexpr float att = 0.7f; // [0..1]
+        constexpr auto att = 0.7f; // [0..1]
 
         // Angular attenuation
         _leftAttenuation = 0.5f * att * (std::cosf(leftAngle) + 1.0f) + 1.0f - att;

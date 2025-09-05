@@ -36,9 +36,13 @@ float PipeWave::getPipeFrequency() const noexcept {
 }
 
 void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
-    std::random_device rnd;
-    std::mt19937 gen(rnd());
-    std::uniform_real_distribution dist(-0.5f, 0.5f);
+    if (state.envelopeState == Over) {
+        return;
+    }
+
+    thread_local std::random_device rnd;
+    thread_local std::mt19937 gen(rnd());
+    thread_local std::uniform_real_distribution dist(-0.5f, 0.5f);
 
     assert(state.envelopeState != PipeWave::Idle);
     assert(attackWaveformStart != nullptr);
@@ -162,9 +166,9 @@ void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
 }
 
 void PipeWave::generateWavetable() {
-    static thread_local std::random_device rnd;
-    static thread_local std::mt19937 gen(rnd());
-    static thread_local std::uniform_real_distribution dist(-1.0f, 1.0f);
+    thread_local std::random_device rnd;
+    thread_local std::mt19937 gen(rnd());
+    thread_local std::uniform_real_distribution dist(-1.0f, 1.0f);
 
     float noteAttack = _model->getNoteAttack(_note);
 
