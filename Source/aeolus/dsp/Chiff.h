@@ -45,7 +45,7 @@ public:
         BiquadFilter::resetState(lpState);
     }
 
-    void process(std::array<float, PROCESS_FRAMES_SIZE>& out, const PipeWave::State& in) {
+    void process(const PipeWave::State &in, std::array<float, PROCESS_FRAMES_SIZE> &out) {
         if (in.envelopeState == PipeWave::Over) {
             framesUntilRelease -= std::min(framesUntilRelease, static_cast<size_t>(PROCESS_FRAMES_SIZE));
         }
