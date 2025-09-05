@@ -85,7 +85,9 @@ void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
         if (releasePosition < loopWaveformStart) {
 
             while (period--) {
-                *playHead++ += releaseGain * *releasePosition++;
+                *playHead = releaseGain * *releasePosition;
+                ++playHead;
+                ++releasePosition;
                 releaseGain -= gainDecayPerSample;
             }
 
@@ -108,7 +110,8 @@ void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
                 if (releasePosition >= _loopEndPtr) {
                     releasePosition -= _loopLength;
                 }
-                *playHead++ += releaseGain * (releasePosition [0] + releaseInterpolation * (releasePosition [1] - releasePosition [0]));
+                *playHead = releaseGain * (releasePosition [0] + releaseInterpolation * (releasePosition [1] - releasePosition [0]));
+                ++playHead;
                 releaseGain -= gainDecayPerSample;
             }
             state.releaseInterpolationPhase = releaseInterpolation;
@@ -128,7 +131,9 @@ void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
 
         if (playbackPosition < loopWaveformStart) {
             while (period--) {
-                *playHead++ += *playbackPosition++;
+                *playHead = *playbackPosition;
+                ++playbackPosition;
+                ++playHead;
             }
         } else {
             float playInterpolationPhase = state.playInterpolationPhase;
@@ -150,7 +155,7 @@ void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
                 if (playbackPosition >= _loopEndPtr) {
                     playbackPosition -= _loopLength;
                 }
-                *playHead += playbackPosition[0] + playInterpolationPhase * (playbackPosition[1] - playbackPosition[0]);
+                *playHead = playbackPosition[0] + playInterpolationPhase * (playbackPosition[1] - playbackPosition[0]);
                 ++playHead;
             }
 

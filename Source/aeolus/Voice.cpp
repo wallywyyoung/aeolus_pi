@@ -44,9 +44,8 @@ void Voice::release() {
 }
 
 void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
-    buffer.fill(0.0f);
     state.pipeWave->play(state, buffer);
-    chiff.process(buffer, state);
+    chiff.process(state, buffer);
     spatialSource.process(buffer, out);
 }
 
