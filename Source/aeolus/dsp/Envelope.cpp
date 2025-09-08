@@ -33,16 +33,16 @@ Envelope::Envelope(const Trigger& trigger) {
     sustainLevel = trigger.sustain;
 
     attackRate = trigger.attack * SAMPLE_RATE_F;
-    attackCoef = calculate(attackRate, AttackTargetRatio);
-    attackBase = (1.0f + AttackTargetRatio) * (1.0f - attackCoef);
+    attackCoefficient = calculate(attackRate, ATTACK_TARGET_RATIO);
+    attackBase = (1.0f + ATTACK_TARGET_RATIO) * (1.0f - attackCoefficient);
 
     decayRate = trigger.decay * SAMPLE_RATE_F;
-    decayCoef = calculate(decayRate, DecayReleaseTargetRatio);
-    decayBase = (sustainLevel - DecayReleaseTargetRatio) * (1.0f - decayCoef);
+    decayCoefficient = calculate(decayRate, DECAY_RELEASE_TARGET_RATIO);
+    decayBase = (sustainLevel - DECAY_RELEASE_TARGET_RATIO) * (1.0f - decayCoefficient);
 
     releaseRate = trigger.release * SAMPLE_RATE_F;
-    releaseCoef = calculate(releaseRate, DecayReleaseTargetRatio);
-    releaseBase = -DecayReleaseTargetRatio * (1.0f - releaseCoef);
+    releaseCoefficient = calculate(releaseRate, DECAY_RELEASE_TARGET_RATIO);
+    releaseBase = -DECAY_RELEASE_TARGET_RATIO * (1.0f - releaseCoefficient);
 }
 
 void Envelope::release() {
@@ -53,9 +53,8 @@ void Envelope::release() {
 
 void Envelope::release(const float t) {
     releaseRate = t * SAMPLE_RATE_F;
-    releaseCoef = calculate(releaseRate, DecayReleaseTargetRatio);
-    releaseBase = -DecayReleaseTargetRatio * (1.0f - releaseCoef);
-
+    releaseCoefficient = calculate(releaseRate, DECAY_RELEASE_TARGET_RATIO);
+    releaseBase = -DECAY_RELEASE_TARGET_RATIO * (1.0f - releaseCoefficient);
     currentState = Release;
 }
 
@@ -65,7 +64,7 @@ float Envelope::next() {
     case Off:
         break;
     case Attack:
-        currentLevel = attackBase + currentLevel * attackCoef;
+        currentLevel = attackBase + currentLevel * attackCoefficient;
 
         if (currentLevel >= 1.0f) {
             currentLevel = 1.0f;
@@ -73,7 +72,7 @@ float Envelope::next() {
         }
         break;
     case Decay:
-        currentLevel = decayBase + currentLevel * decayCoef;
+        currentLevel = decayBase + currentLevel * decayCoefficient;
 
         if (currentLevel <= sustainLevel) {
             currentLevel = sustainLevel;
@@ -83,7 +82,7 @@ float Envelope::next() {
     case Sustain:
         break;
     case Release:
-        currentLevel = releaseBase + currentLevel * releaseCoef;
+        currentLevel = releaseBase + currentLevel * releaseCoefficient;
 
         if (currentLevel <= 0.0f) {
             currentLevel = 0.0f;

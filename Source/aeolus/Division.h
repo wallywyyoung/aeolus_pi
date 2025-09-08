@@ -21,10 +21,10 @@
 #pragma once
 
 #include "StaticAudioBuffer.h"
-#include "aeolus/AudioParameter.h"
+#include "aeolus/SmoothFloat.h"
 #include "aeolus/Stop.h"
 #include "aeolus/Voice.h"
-#include "aeolus/dsp/filter.h"
+#include "aeolus/dsp/Filter.h"
 
 #include <bitset>
 #include <vector>
@@ -106,8 +106,8 @@ private:
     bool tremulantEnabled; ///< Whether tremulant is enabled.
 
 
-    AudioParameter tremulantLevel {0.0f, 0.0f, TREMULANT_TARGET_LEVEL, 0.1f};
-    AudioParameter gain{ 1.0f };
+    SmoothFloat tremulantLevel {0.0f, 0.0f, TREMULANT_TARGET_LEVEL, 0.1f};
+    SmoothFloat gain{ 1.0f };
 
     /// Swell low-pass filter.
     dsp::BiquadFilter::Spec swellFilterSpec;

@@ -39,8 +39,8 @@ add_executable(aeolus_pi
         Source/AudioBuffer.h
         Source/IOManager.cpp
         Source/IOManager.h
-        Source/aeolus/AudioParameter.cpp
-        Source/aeolus/AudioParameter.h
+        Source/aeolus/SmoothFloat.cpp
+        Source/aeolus/SmoothFloat.h
         Source/aeolus/Division.cpp
         Source/aeolus/Division.h
         Source/aeolus/DivisionFactory.cpp
@@ -74,13 +74,12 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/Envelope.h
         Source/aeolus/dsp/Chiff.cpp
         Source/aeolus/dsp/Chiff.h
-        Source/aeolus/dsp/convolve.h
-        Source/aeolus/dsp/convolver.cpp
-        Source/aeolus/dsp/fft.cpp
-        Source/aeolus/dsp/fft.h
-        Source/aeolus/dsp/filter.cpp
-        Source/aeolus/dsp/interpolator.cpp
-        Source/aeolus/dsp/interpolator.h
+        Source/aeolus/dsp/Convolve.h
+        Source/aeolus/dsp/Convolver.cpp
+        Source/aeolus/dsp/FFT.cpp
+        Source/aeolus/dsp/FFT.h
+        Source/aeolus/dsp/Filter.cpp
+        Source/aeolus/dsp/Filter.h
         Source/aeolus/dsp/SpatialSource.cpp
         Source/aeolus/StopFactory.cpp
         Source/aeolus/utilities/SimdUtilities.cpp
@@ -90,6 +89,7 @@ add_executable(aeolus_pi
 
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     target_sources(aeolus_pi PRIVATE
             Source/RtAudioInterface.h

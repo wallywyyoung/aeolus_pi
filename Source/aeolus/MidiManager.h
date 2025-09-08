@@ -63,7 +63,6 @@ public:
         std::vector<MidiData> midiBuffer{};
         this->pop(midiBuffer);
         for (const MidiData& event : midiBuffer) {
-            std::cout << event.channel << " " << event.eventType << std::endl;
             ProcessMidiEvent(event);
         }
     }
@@ -144,7 +143,7 @@ private:
         };
         switch (static_cast<DivisionControl>(event.param)) {
             case Swell:
-                organInterface->handleDivisionSwell(event.channel, event.value * DYNAMIC_RANGE_R);
+                organInterface->handleDivisionSwell(event.channel, static_cast<float>(event.value) * DYNAMIC_RANGE_R);
                 break;
             case AllDivisionNotesOff:
                 organInterface->setDivisionAllNotesOff(event.channel);
@@ -168,6 +167,8 @@ private:
             case MidiData::PC:
                 handlePC(event);
                 break;
+            default:
+                throw std::runtime_error("Unknown Midi Event");
         }
     }
 };

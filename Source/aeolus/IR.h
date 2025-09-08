@@ -32,9 +32,9 @@ class IR : public AudioBuffer {
 public:
     explicit IR() = delete;
 
-    IR(const std::string &name, const AudioFile<float> audioFile, const int startOffset = 0) : AudioBuffer(audioFile.getNumChannels(), audioFile.getNumSamplesPerChannel()), name(name), zeroDelay(false) {
-        for (int i = 0; i < getNumChannels(); ++i) {
-            std::copy(audioFile.samples[i].begin() + startOffset, audioFile.samples[i].end(), audioBuffer.begin() + (i * bufferSize));
+    IR(const std::string& name, const AudioFile<float>& audioFile, const int startOffset = 0) : AudioBuffer(audioFile.getNumChannels(), audioFile.getNumSamplesPerChannel()), name(name), zeroDelay(false) {
+        for (std::size_t i = 0; i < getNumChannels(); ++i) {
+            std::copy(audioFile.samples[i].begin() + startOffset, audioFile.samples[i].end(), audioBuffer.begin() + static_cast<std::vector<float>::difference_type>(i * bufferSize));
         }
     }
 

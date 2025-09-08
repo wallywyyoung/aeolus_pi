@@ -33,20 +33,19 @@
 bool running = true;
 
 void signalHandler(const int signal) {
-    std::cout << "Aeolus got signal " << signal << std::endl;
     running = false;
     exit(signal);
 }
 
 int main (int, char*[]) {
     std::signal(SIGINT | SIGTERM | SIGSEGV | SIGABRT | SIGFPE | SIGILL | SIGBUS, signalHandler);
-    const auto* engineGlobal = new EngineGlobal();
+    auto engineGlobal = new EngineGlobal();
 #ifdef LINUX
-    const auto* audioInterface = new AlsaInterface(
-        std::bind(&EngineGlobal::process, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1),
-        std::bind(&EngineGlobal::pushMidi, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1));
+    const auto audioInterface = new AlsaInterface(
+        [engineGlobal](float (&out)[PROCESS_SAMPLES_SIZE]){ engineGlobal->process(out); },
+        [engineGlobal](const MidiData& midiData){ engineGlobal->pushMidi(midiData); });
 #elifdef MACOS
-    const auto* audioInterface = new RtAudioInterface(std::bind(&EngineGlobal::process, const_cast<EngineGlobal*>(engineGlobal), std::placeholders::_1));
+    const auto audioInterface = new RtAudioInterface([engineGlobal](float (&out)[PROCESS_SAMPLES_SIZE]){ engineGlobal->process(out); });
 #endif
     std::cout << "Aeolus is Ready" << std::endl;
     do {
@@ -54,4 +53,5 @@ int main (int, char*[]) {
     } while(running);
     std::cout << "Aeolus is Closing" << std::endl;
     delete audioInterface;
+    delete engineGlobal;
 }

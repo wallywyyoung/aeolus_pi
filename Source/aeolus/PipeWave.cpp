@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <random>
 #include <vector>
@@ -224,7 +225,7 @@ void PipeWave::generateWavetable() {
     auto numberCyclesOfFundamental = 0;
 
     // Pass frequency in Hz to looplen function
-    looplen(targetFrequencyHz, SAMPLE_RATE_F / static_cast<float>(_sampleStep), (int) (SAMPLE_RATE_F / 6.0f), _loopLength, numberCyclesOfFundamental);
+    looplen(targetFrequencyHz, SAMPLE_RATE_F / static_cast<float>(_sampleStep), static_cast<int>(SAMPLE_RATE_F / 6.0f), _loopLength, numberCyclesOfFundamental);
     assert(_loopLength > 0);
     assert(numberCyclesOfFundamental > 0);
 
@@ -275,10 +276,10 @@ void PipeWave::generateWavetable() {
     const float baseNoteAmplitude = math::exp2ap(DECIBEL_TO_LINEAR_APPROX * _model->getNoteVolume(_note));
 
     for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
-        const float harmonicFreqHz = static_cast<float>(harmonic + 1) * targetFrequencyHz;
 
         // Strict anti-aliasing: skip harmonics that would alias
-        if (harmonicFreqHz > SAMPLE_RATE_F * 0.45f) {
+        if (const float harmonicFreqHz = static_cast<float>(harmonic + 1) * targetFrequencyHz;
+            harmonicFreqHz > SAMPLE_RATE_F * 0.45f) {
             break;
         }
 
@@ -374,26 +375,26 @@ void PipeWave::looplen(const float fundamentalFreqHz, const float effectiveSampl
     cycleCount = std::max(1, b);
 }
 
-void PipeWave::attgain(float* att, int n, float p)
-{
-    float w = 0.05f;
-    float y = 0.6f;
+void PipeWave::attgain(float *att, const int &n, const float &p) {
+    auto w = 0.05f;
+    auto y = 0.6f;
 
-    if (p > 0.0f)
+    if (p > 0.0f) {
         y += 0.11f * p;
+    }
 
-    float z = 0.0;
-    int j = 0;
+    auto z = 0.0f;
+    auto j = 0;
 
-    for (int i = 1; i <= 24; i++)
+    for (auto i = 1; i <= 24; i++)
     {
-        int k = n * i / 24;
-        float x =  1.0f - z - 1.5f * y;
+        const auto k = n * i / 24;
+        const auto x =  1.0f - z - 1.5f * y;
         y += w * x;
-        float d = k == j ? 0.0f : w * y * p / (k - j);
+        const auto d = k == j ? 0.0f : w * y * p / static_cast<float>(k - j);
 
         while (j < k) {
-            float m = (float) j / n;
+            const auto m = static_cast<float>(j) / static_cast<float>(n);
             att[j++] = (1.0f - m) * z + m;
             z += d;
         }

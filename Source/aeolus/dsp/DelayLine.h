@@ -20,9 +20,7 @@
 
 #pragma once
 
-#include <array>
 #include <cmath>
-#include <cstdint>
 #include <cstring>
 #include <vector>
 
@@ -56,7 +54,7 @@ namespace dsp {
             const auto integral = std::floor(delay);
             const auto fraction = delay - integral;
 
-            auto index = (static_cast<size_t>(integral) + writeIndex) % buffer.size();
+            const auto index = (static_cast<size_t>(integral) + writeIndex) % buffer.size();
             assert(index < buffer.size());
             const auto a = buffer[index];
             const auto b = index < buffer.size() - 1 ? buffer[index + 1] : buffer[0];

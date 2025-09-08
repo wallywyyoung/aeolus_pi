@@ -65,7 +65,6 @@ int AlsaInterface::getMidiClientId(const std::string &clientName) {
     do {
         const auto name = snd_seq_client_info_get_name(info);
         const auto id = snd_seq_client_info_get_client(info);
-        std::cout << clientName << " : " << id << std::endl;
         if (std::strcmp(name, clientName.c_str()) == 0) {
             return id;
         }

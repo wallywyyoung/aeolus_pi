@@ -26,7 +26,7 @@
 #include "MemoryConstants.h"
 #include "aeolus/utilities/SimdUtilities.h"
 
-RtAudioInterface::RtAudioInterface(std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio) : processAudio(processAudio) {
+RtAudioInterface::RtAudioInterface(const std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> &processAudio) : processAudio(processAudio) {
     const auto sp = new RtAudio::StreamParameters();
     try {
         device = new RtAudio(RtAudio::MACOSX_CORE);
@@ -42,7 +42,7 @@ RtAudioInterface::RtAudioInterface(std::function<void(float (&out)[PROCESS_SAMPL
     device->startStream();
 }
 
-int RtAudioInterface::audioHandler(void *outputBuffer, void *inputBuffer, unsigned int nFrames, double streamTime, RtAudioStreamStatus status, void *userData) {
+int RtAudioInterface::audioHandler(void *outputBuffer, void *inputBuffer, const unsigned int nFrames, double streamTime, RtAudioStreamStatus status, void *userData) {
     SimdUtilities::enableFlushToZero();
     if (nFrames < PROCESS_FRAMES_SIZE) {
         return 1;

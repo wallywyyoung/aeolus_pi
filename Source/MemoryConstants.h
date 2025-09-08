@@ -18,9 +18,6 @@
 // ----------------------------------------------------------------------------
 
 #pragma once
-#include <cmath>
-
-#include "aeolus/globals.h"
 
 /// Processing sample rate.
 /// There are few harmonics generated, so can be set this low.

@@ -21,21 +21,20 @@
 
 #ifdef MACOS
 
-#include <functional>
-
 #include <RtAudio.h>
-#include <string>
+#include <functional>
 #include "MemoryConstants.h"
 
 class RtAudioInterface final {
 public:
     ~RtAudioInterface() = default;
-    explicit RtAudioInterface(std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio);
+    explicit RtAudioInterface(const std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> &processAudio);
 
 private:
     std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio;
     RtAudio* device;
-    static int audioHandler(void *outputBuffer, void *inputBuffer, unsigned int nFrames, double streamTime, RtAudioStreamStatus status, void *userData);
+    static int audioHandler(void *outputBuffer, void *inputBuffer, unsigned int nFrames, double streamTime,
+                            RtAudioStreamStatus status, void *userData);
     void endPlayback();
 };
 

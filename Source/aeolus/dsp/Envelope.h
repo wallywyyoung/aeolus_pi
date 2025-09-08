@@ -27,8 +27,8 @@ namespace dsp {
 class Envelope {
 public:
     enum State { Off = 0, Attack, Decay, Sustain, Release, NumStates };
-    constexpr static float AttackTargetRatio = 0.3f;
-    constexpr static float DecayReleaseTargetRatio = 0.0001f;
+    constexpr static auto ATTACK_TARGET_RATIO = 0.3f;
+    constexpr static auto DECAY_RELEASE_TARGET_RATIO = 0.0001f;
     struct Trigger { float attack = 0.0f; float decay = 0.0f; float sustain = 1.0f; float release = 1.0f; };
 
     explicit Envelope(const Trigger& trigger);
@@ -49,15 +49,15 @@ private:
     float currentLevel{ 0.0f };
 
     float attackRate;
-    float attackCoef;
+    float attackCoefficient;
     float attackBase;
 
     float decayRate;
-    float decayCoef;
+    float decayCoefficient;
     float decayBase;
 
     float releaseRate;
-    float releaseCoef;
+    float releaseCoefficient;
     float releaseBase;
 
     float sustainLevel;

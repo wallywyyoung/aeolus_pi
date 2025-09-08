@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -19,36 +20,30 @@
 
 #pragma once
 
-#include "aeolus/IR.h"
 #include <memory>
-
-
+#include "aeolus/IR.h"
 
 namespace dsp {
 
 /**
  * @brief Stereo convolution reverb.
  */
-class Convolver final
-{
+class Convolver final {
 public:
-
-    enum Params
-    {
+    enum Params {
         DRY = 0,
         WET,
         GAIN,   // IR sample gain.
-
         NUM_PARAMS
     };
 
     // Default parameters set on creation
-    constexpr static float DefaultDry  = 1.0f;
-    constexpr static float DefaultWet  = 0.25f;
-    constexpr static float DefaultGain = 1.0f;
+    constexpr static auto DEFAULT_DRY  = 1.0f;
+    constexpr static auto DEFAULT_WET  = 0.25f;
+    constexpr static auto DEFAULT_GAIN = 1.0f;
 
     /// Single convolution block size (in number of samples).
-    constexpr static size_t BlockSize = 4096;
+    constexpr static size_t BLOCK_SIZE = 4096;
 
     Convolver();
 
@@ -58,16 +53,15 @@ public:
 
     void setDryWet(float dry, float wet, bool force = false);
 
-    bool isAudible() const;
+    [[nodiscard]] bool isAudible() const;
 
     void process(float *inOut, size_t framesPerChannel, bool nonRealtime = false) const;
 
-    int length() const noexcept;
+    [[nodiscard]] int length() const noexcept;
 
 protected:
-
-    struct Impl;
-    std::unique_ptr<Impl> d;
+    struct Implementation;
+    std::unique_ptr<Implementation> implementation;
 };
 
 } // namespace dsp

@@ -22,7 +22,6 @@
 
 #include <array>
 #include <cmath>
-#include <vector>
 
 #include "aeolus/globals.h"
 

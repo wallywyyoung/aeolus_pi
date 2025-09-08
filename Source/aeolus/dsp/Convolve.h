@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -19,20 +20,20 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
 #include "aeolus/SIMD.h"
-#include "aeolus/memory.h"
 #include "aeolus/Worker.h"
-#include "aeolus/dsp/fft.h"
+#include "aeolus/dsp/FFT.h"
+#include "aeolus/globals.h"
+#include "aeolus/memory.h"
 
-#include <cassert>
 #include <atomic>
-#include <vector>
+#include <cassert>
 #include <cstring>
+#include <vector>
 
 namespace dsp {
 
-struct ConvPartBase
+struct ConvolverPartBase
 {
     float* irBuffer = nullptr;
     float* inputBuffer = nullptr;
@@ -52,8 +53,7 @@ struct ConvPartBase
 };
 
 template<size_t L>
-struct ConvPart : ConvPartBase
-{
+struct ConvolverPart : ConvolverPartBase {
     constexpr static size_t Lendth = L;
     constexpr static size_t Delay = 0;
 
@@ -64,8 +64,7 @@ template <size_t PrevLength, class ...Parts>
 struct Conv;
 
 template <size_t PrevLength, class Part, class ...Parts>
-struct Conv<PrevLength, Part, Parts...>
-{
+struct Conv<PrevLength, Part, Parts...> {
     using Tail = Conv<PrevLength + Part::Length, Parts...>;
 
     constexpr static size_t PrevStageLength = PrevLength;
@@ -101,8 +100,7 @@ struct Conv<PrevLength, Part, Parts...>
 };
 
 template <size_t PrevLength, class Part>
-struct Conv<PrevLength, Part>
-{
+struct Conv<PrevLength, Part> {
     constexpr static size_t PrevStageLength = PrevLength;
     constexpr static size_t Length = Part::Length;
 
@@ -135,36 +133,32 @@ struct Conv<PrevLength, Part>
 //----------------------------------------------------------
 
 template <size_t L>
-struct FIR : ConvPart<L>
-{
+struct FIR : ConvolverPart<L> {
     constexpr static size_t Delay = 0;
     constexpr static size_t Length = L;
 
-    void reset()
-    {
-        ConvPartBase::readIndex = 0;
+    void reset() {
+        ConvolverPartBase::readIndex = 0;
     }
 
-    inline float tick()
-    {
+    inline float tick() {
         float y = 0.0f;
 
-        if (ConvPartBase::readIndex + Length < ConvPartBase::inputSize) {
-            y = SIMD::mul_reduce_unaligned(ConvPartBase::irBuffer, &ConvPartBase::inputBuffer[ConvPartBase::readIndex], Length);
+        if (ConvolverPartBase::readIndex + Length < ConvolverPartBase::inputSize) {
+            y = SIMD::mul_reduce_unaligned(ConvolverPartBase::irBuffer, &ConvolverPartBase::inputBuffer[ConvolverPartBase::readIndex], Length);
         } else {
             for (size_t i = 0; i < Length; ++i)
-                y += ConvPartBase::irBuffer[i] * ConvPartBase::inputBuffer[(ConvPartBase::readIndex + i) % ConvPartBase::inputSize];
+                y += ConvolverPartBase::irBuffer[i] * ConvolverPartBase::inputBuffer[(ConvolverPartBase::readIndex + i) % ConvolverPartBase::inputSize];
         }
 
-        ConvPartBase::readIndex = (ConvPartBase::readIndex - 1) % ConvPartBase::inputSize;
+        ConvolverPartBase::readIndex = (ConvolverPartBase::readIndex - 1) % ConvolverPartBase::inputSize;
 
         return y;
     }
 };
 
 template <size_t L>
-struct FFT : ConvPart<L>
-{
+struct FFT : ConvolverPart<L> {
     constexpr static size_t Delay = L;
     constexpr static size_t Length = L;
     constexpr static size_t Length2 = Length * 2;
@@ -179,8 +173,7 @@ struct FFT : ConvPart<L>
 
     using FftImpl = GFFT<Length2>;
 
-    FFT()
-    {
+    FFT() {
         complexInputBuffer = static_cast<float *>(AlignedMemory<32>::alloc(Length4 * sizeof(float)));
         complexIrBuffer    = static_cast<float *>(AlignedMemory<32>::alloc(Length4 * sizeof(float)));
         tailBuffer         = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
@@ -188,15 +181,13 @@ struct FFT : ConvPart<L>
         reset();
     }
 
-    ~FFT()
-    {
+    ~FFT() {
         AlignedMemory<32>::free(tailBuffer);
         AlignedMemory<32>::free(complexIrBuffer);
         AlignedMemory<32>::free(complexInputBuffer);
     }
 
-    void reset()
-    {
+    void reset() {
         memset(complexInputBuffer, 0, sizeof(float) * Length4);
         memset(complexIrBuffer,    0, sizeof(float) * Length4);
         memset(tailBuffer,         0, sizeof(float) * Length);
@@ -205,33 +196,31 @@ struct FFT : ConvPart<L>
         irReady = false;
     }
 
-    inline float tick()
-    {
+    inline float tick() {
         const float y = complexInputBuffer[tailIndex * 2];
 
         // Feed from input buffer
-        const size_t idx = (ConvPartBase::readIndex - tailIndex) % ConvPartBase::inputSize;
+        const size_t idx = (ConvolverPartBase::readIndex - tailIndex) % ConvolverPartBase::inputSize;
 
-        complexInputBuffer[tailIndex * 2] = ConvPartBase::inputBuffer[idx];
+        complexInputBuffer[tailIndex * 2] = ConvolverPartBase::inputBuffer[idx];
         complexInputBuffer[tailIndex * 2 + 1] = 0.0f;
 
         tailIndex = (tailIndex + 1) % Length;
 
         if (tailIndex == 0) {
             convolve();
-            ConvPartBase::readIndex = (ConvPartBase::readIndex - Length) % ConvPartBase::inputSize;
+            ConvolverPartBase::readIndex = (ConvolverPartBase::readIndex - Length) % ConvolverPartBase::inputSize;
         }
 
         return y;
     }
 
-    void convolve()
-    {
+    void convolve() {
         if (! irReady) {
             size_t j = 0;
 
             for (size_t i = 0; i < Length; ++i) {
-                complexIrBuffer[j++] = ConvPartBase::irBuffer[i];
+                complexIrBuffer[j++] = ConvolverPartBase::irBuffer[i];
                 complexIrBuffer[j++] = 0.0f;
             }
 
@@ -248,7 +237,7 @@ struct FFT : ConvPart<L>
 
         FftImpl::fft(complexInputBuffer);
 
-        // Add tail buffer from previous convolution
+        // Add tail buffer from the previous convolution
         size_t tail = 0;
 
         for (size_t i = 0; i < Length2; i += 2) {
@@ -265,8 +254,7 @@ struct FFT : ConvPart<L>
 //----------------------------------------------------------
 
 template <class ...Parts>
-struct CascadeConvolver : Conv<0, Parts...>
-{
+struct CascadeConvolver : Conv<0, Parts...> {
     using Parent = Conv<0, Parts...>;
     constexpr static size_t Length = Parent::Length;
 
@@ -309,8 +297,7 @@ struct CascadeConvolver : Conv<0, Parts...>
 //----------------------------------------------------------
 
 template <size_t L>
-class EquallyPartitionedConvolver final
-{
+class EquallyPartitionedConvolver final {
 public:
 
     static_assert(math::isPowerOfTwo(L), "Block length must be a power of two");
@@ -330,24 +317,19 @@ public:
         , irSpectrumBufferSize{Length4 * n}
         , irInputIndex{0}
         , irInputBlockIndex{0}
-        , blocks{n}
-    {
-
+        , blocks{n} {
         inputSpectrumBuffer = static_cast<float *>(AlignedMemory<32>::alloc(inputSpectrumBufferSize * sizeof(float)));
         irSpectrumBuffer = static_cast<float *>(AlignedMemory<32>::alloc(irSpectrumBufferSize * sizeof(float)));
-
         reset();
     }
 
-    ~EquallyPartitionedConvolver()
-    {
+    ~EquallyPartitionedConvolver() {
         setWorker (nullptr);
         AlignedMemory<32>::free(irSpectrumBuffer);
         AlignedMemory<32>::free(inputSpectrumBuffer);
     }
 
-    void resize(size_t n)
-    {
+    void resize(size_t n) {
         if (n * Length4 != irSpectrumBufferSize) {
             AlignedMemory<32>::free(irSpectrumBuffer);
             irSpectrumBufferSize = n * Length4;
@@ -365,14 +347,12 @@ public:
         reset();
     }
 
-    void setWorker(Worker* w)
-    {
+    void setWorker(Worker* w) {
         for (auto& block : blocks)
             block.worker = w;
     }
 
-    void reset()
-    {
+    void reset() {
         inputIndex = 0;
 
         memset(inputSpectrumBuffer, 0, sizeof(float) * inputSpectrumBufferSize);
@@ -395,8 +375,7 @@ public:
         }
     }
 
-    void feedIr(const float x)
-    {
+    void feedIr(const float x) {
         assert(irInputIndex < irSpectrumBufferSize);
         assert(irInputBlockIndex < blocks.size());
 
@@ -412,8 +391,7 @@ public:
         }
     }
 
-    float tick(const float &x)
-    {
+    float tick(const float &x) {
         float y = 0.0f;
 
         for (auto& block : blocks)
@@ -432,8 +410,7 @@ public:
         return y;
     }
 
-    void inputFft()
-    {
+    void inputFft() {
         // Clear padding
         memset(&inputSpectrumBuffer[inputSpectrumIndex + Length2], 0, sizeof (float) * Length2);
 
@@ -457,14 +434,13 @@ public:
         blocks[0].dephase = false;
     }
 
-    void convolveBlocks()
-    {
-        for (auto& block : blocks)
+    void convolveBlocks() {
+        for (auto& block : blocks) {
             block.convolve();
+        }
     }
 
 private:
-    //------------------------------------------------------
 
     struct Block final : Worker::Job
     {
@@ -483,7 +459,7 @@ private:
         size_t preconvolveIndex = 0;
         std::atomic<bool> preconvolved = false;
 
-        Block() {
+        explicit Block() {
             convolutionBuffer = static_cast<float *>(AlignedMemory<32>::alloc(Length4 * sizeof(float)));
             outputBuffer      = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
             tailBuffer        = static_cast<float *>(AlignedMemory<32>::alloc(Length * sizeof(float)));
@@ -501,8 +477,7 @@ private:
             AlignedMemory<32>::free(convolutionBuffer);
         }
 
-        void reset()
-        {
+        void reset() {
             memset(convolutionBuffer, 0, sizeof(float) * Length4);
             memset(outputBuffer,      0, sizeof(float) * Length);
             memset(tailBuffer,        0, sizeof(float) * Length);
@@ -513,16 +488,14 @@ private:
             preconvolved =false;
         }
 
-        void irFft()
-        {
+        void irFft() {
             assert(irSpectrumPtr != nullptr);
             FftImpl::fft_real_padded(irSpectrumPtr);
             irReady = true;
         }
 
-        void convolve()
-        {
-            // IR is not ready yet - nothig to do
+        void convolve() {
+            // IR is not ready yet - nothing to do
             if (! irReady)
                 return;
 
@@ -537,8 +510,7 @@ private:
             dephase = true;
         }
 
-        void preconvolve()
-        {
+        void preconvolve() {
             assert(inputSpectrumPtr != nullptr);
             assert(irSpectrumPtr != nullptr);
 
@@ -552,12 +524,12 @@ private:
             preconvolved = true;
         }
 
-        void postconvolve()
-        {
-            if (! preconvolved)
-                return; // Not ready :(
+        void postconvolve() {
+            if (! preconvolved) {
+                return; // Not ready
+            }
 
-            // Add tail buffer from previous convolution
+            // Add tail buffer from the previous convolution
             size_t tail = 0;
 
             for (size_t i = 0; i < Length2; i += 2) {
@@ -572,29 +544,26 @@ private:
             preconvolved = false;
         }
 
-        float tick()
-        {
+        float tick() {
             const float y = outputBuffer[tailIndex];
             tailIndex = (tailIndex + 1) % Length;
 
             if (dephase && tailIndex == preconvolveIndex) {
-                if (worker != nullptr)
+                if (worker != nullptr) {
                     worker->addJob (this);
-                else
+                } else {
                     preconvolve();
+                }
             }
 
             return y;
         }
 
         // Job
-        void run() override
-        {
+        void run() override {
             preconvolve();
         }
     };
-
-    //------------------------------------------------------
 
     size_t inputIndex;
 

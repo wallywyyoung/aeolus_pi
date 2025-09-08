@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -17,50 +18,47 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/dsp/filter.h"
-
+#include "aeolus/dsp/Filter.h"
 #include <cassert>
 #include <cmath>
 #include <cstring>
-#include <stdexcept>
-
+#include <numbers>
 #include "MemoryConstants.h"
 
 namespace dsp {
 
-void BiquadFilter::updateSpec(Spec& spec)
-{
-    float A = 0.0f;
+void BiquadFilter::updateSpec(Spec& spec) {
+    auto A = 0.0f;
 
     if (spec.type == PeakingEq || spec.type == LowShelf || spec.type == HighShelf) {
-        A = sqrt(powf(10.0f, spec.dbGain / 40.0f));
+        A = std::sqrt(std::powf(10.0f, spec.dbGain / 40.0f));
     } else {
-        A = sqrtf(powf(10.0f, spec.dbGain / 20.0f));
+        A = std::sqrtf(std::powf(10.0f, spec.dbGain / 20.0f));
     }
 
     const float w0 = 2.0f * std::numbers::pi_v<float> * spec.freq * SAMPLE_RATE_R;
 
-    const float cos_w0 = cos(w0);
-    const float sin_w0 = sin(w0);
-    float alpha = 0.0f;
+    const float cos_w0 = std::cos(w0);
+    const float sin_w0 = std::sin(w0);
+    auto alpha = 0.0f;
 
     switch (spec.type) {
-    case LowPass:
-    case HighPass:
-    case AllPass:
-        alpha = sin_w0 / (2.0f * spec.q);
-        break;
-    case BandPass:
-    case Notch:
-    case PeakingEq:
-        alpha = sin_w0 * sinh(log(2.0f) / 2.0f * spec.q * w0 / sin_w0);
-        break;
-    case LowShelf:
-    case HighShelf:
-        alpha = sin_w0 / 2.0f * sqrt((A + 1.0f / A) * (1.0f / spec.q - 1.0f) + 2.0f);
-        break;
-    default:
-        assert(false);
+        case LowPass:
+        case HighPass:
+        case AllPass:
+            alpha = sin_w0 / (2.0f * spec.q);
+            break;
+        case BandPass:
+        case Notch:
+        case PeakingEq:
+            alpha = sin_w0 * sinh(log(2.0f) / 2.0f * spec.q * w0 / sin_w0);
+            break;
+        case LowShelf:
+        case HighShelf:
+            alpha = sin_w0 / 2.0f * sqrt((A + 1.0f / A) * (1.0f / spec.q - 1.0f) + 2.0f);
+            break;
+        default:
+            assert(false);
     }
 
     switch (spec.type) {
@@ -141,16 +139,11 @@ void BiquadFilter::updateSpec(Spec& spec)
     spec.b[2] /= spec.a[0];
 }
 
-void BiquadFilter::resetState(State &state)
-{
-    memset(&state, 0, sizeof(state));
-}
+void BiquadFilter::resetState(State &state) { memset(&state, 0, sizeof(state)); }
 
-float BiquadFilter::tick(const Spec& spec, State& state, const float in)
-{
+float BiquadFilter::tick(const Spec& spec, State& state, const float in) {
     const float x = in;
-    const float y = spec.b[0] * x + spec.b[1] * state.x[0] + spec.b[2] * state.x[1]
-                    - spec.a[1] * state.y[0] - spec.a[2] * state.y[1];
+    const float y = spec.b[0] * x + spec.b[1] * state.x[0] + spec.b[2] * state.x[1] - spec.a[1] * state.y[0] - spec.a[2] * state.y[1];
 
     state.x[1] = state.x[0];
     state.x[0] = x;
@@ -161,12 +154,10 @@ float BiquadFilter::tick(const Spec& spec, State& state, const float in)
 }
 
 
-void BiquadFilter::process(const Spec &spec, const size_t &size, const float *in, float *out, State &state)
-{
+void BiquadFilter::process(const Spec &spec, const size_t &size, const float *in, float *out, State &state) {
     for (size_t i = 0; i < size; ++i) {
         const float x = in[i];
-        const float y = spec.b[0] * x + spec.b[1] * state.x[0] + spec.b[2] * state.x[1]
-                        - spec.a[1] * state.y[0] - spec.a[2] * state.y[1];
+        const float y = spec.b[0] * x + spec.b[1] * state.x[0] + spec.b[2] * state.x[1] - spec.a[1] * state.y[0] - spec.a[2] * state.y[1];
 
         state.x[1] = state.x[0];
         state.x[0] = x;

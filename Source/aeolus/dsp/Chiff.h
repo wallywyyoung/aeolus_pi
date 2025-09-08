@@ -24,7 +24,7 @@
 #include "aeolus/PipeWave.h"
 #include "aeolus/dsp/DelayLineStatic.h"
 #include "aeolus/dsp/Envelope.h"
-#include "aeolus/dsp/filter.h"
+#include "aeolus/dsp/Filter.h"
 
 namespace dsp {
 

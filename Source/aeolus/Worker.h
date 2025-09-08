@@ -26,8 +26,8 @@
 /**
  * @brief Schedule jobs run on a separate thread.
  *
- * This class uses a lock-free queue to schedulre jobs
- * on audio thread, and execute them on a side thead.
+ * This class uses a lock-free queue to schedule jobs
+ * on the audio thread and execute them on a side thread.
  * This is normally used for samples streaming.
  */
 class Worker final

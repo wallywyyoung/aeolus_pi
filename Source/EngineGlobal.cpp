@@ -28,17 +28,16 @@ EngineGlobal::EngineGlobal() {
     irs = IOManager::loadIRs();
     for (int i = 0; i <  model.getStopsCount(); ++i) {
         // TODO: Fix this mapping in JSON.
-        std::cout << "Loading " << model[i].getFileName() << std::endl;
         _rankwavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale, tuningFrequency));
     }
     generateWavetables();
-    organ = new Organ(std::bind(&EngineGlobal::getStopByName, this, std::placeholders::_1));
+    organ = new Organ([this](const std::string &name) { return getStopByName(name); });
     organInterface = static_cast<OrganInterface *>(organ);
     reverbTailCounter = convolver.setIR(irs.irs[0]);
 #if DEBUG
     std::cout << "Setting debug stop/note on" << std::endl;
-    organ->setDivisionStopOn(0,0);
-    organ->setDivisionNoteOn(0,50);
+    organ->setGlobalAllStopsOn();
+    // organ->setDivisionNoteOn(0,50);
 #endif
 }
 

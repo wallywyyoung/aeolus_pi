@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -19,41 +20,28 @@
 
 #pragma once
 
-#include "aeolus/globals.h"
-#include "aeolus/SIMD.h"
-
-#include <cmath>
 #include <array>
 #include <complex>
 #include <valarray>
+#include "aeolus/SIMD.h"
+#include "aeolus/globals.h"
 
 namespace dsp {
 
 /**
  * @brief Fast Fourier transformation of a complex array.
  */
-class Fft
-{
+class Fft {
 public:
+    enum class Window{ None, Hann, Hamming, Blackman };
 
-    enum class Window
-    {
-        None,
-        Hann,
-        Hamming,
-        Blackman
-    };
+    static void direct(std::valarray<std::complex<float>>& x, Window win = Window::None);
 
-    using Complex = std::complex<float>;
-    using Array = std::valarray<Complex>;
-
-    static void direct(Array& x, Window win = Window::None);
-
-    static void inverse(Array& x);
+    static void inverse(std::valarray<std::complex<float>>& x);
 
 private:
 
-    static void applyWindow(Array& x, Window win);
+    static void applyWindow(std::valarray<std::complex<float>>& x, Window win);
 };
 
 //----------------------------------------------------------

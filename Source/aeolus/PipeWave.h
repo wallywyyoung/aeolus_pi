@@ -21,11 +21,9 @@
 
 #pragma once
 
+#include <memory>
 #include "MemoryConstants.h"
 #include "aeolus/Addsynth.h"
-
-#include <iostream>
-#include <memory>
 
 
 /**
@@ -87,7 +85,7 @@ private:
     static constexpr auto PLAY_INTERPOLATION_SPEED_SCALING = 0.0005f;
     static void looplen(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength,
                         int &cycleCount);
-    static void attgain(float* att, int n, float p);
+    static void attgain(float *att, const int &n, const float &p);
 
     std::shared_ptr<Addsynth> _model;
     int _note;

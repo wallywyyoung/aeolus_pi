@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -17,88 +18,79 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/AudioParameter.h"
-#include "aeolus/dsp/convolve.h"
-#include "aeolus/dsp/convolver.h"
+#include "aeolus/dsp/Convolver.h"
+#include "aeolus/SmoothFloat.h"
+#include "aeolus/dsp/Convolve.h"
 
 #include "StaticAudioBuffer.h"
 #include "aeolus/IR.h"
 
 namespace dsp {
 
-using ConvHead = CascadeConvolver<FIR<32>, FFT<32>, FFT<64>, FFT<128>, FFT<256>, FFT<512>, FFT<1024>, FFT<2048>>;
+using ConvolverHead = CascadeConvolver<FIR<32>, FFT<32>, FFT<64>, FFT<128>, FFT<256>, FFT<512>, FFT<1024>, FFT<2048>>;
 
-static_assert(ConvHead::Length == Convolver::BlockSize, "Header block size is wrong");
+static_assert(ConvolverHead::Length == Convolver::BLOCK_SIZE, "Header block size is wrong");
 
-struct Convolver::Impl {
-    enum State {
-        Idle,
-        Init,
-        FeedHeadIR,
-        ProcessWithIRStream,
-        Process
-    };
+struct Convolver::Implementation {
+    enum State { Idle, Init, FeedHeadIR, ProcessWithIRStream, Process };
 
-    AudioParameterPool params;
+    SmoothFloatPool<NUM_PARAMS> params;
     Worker worker;
     size_t length;
 
     State state;
 
-    ConvHead headL;
-    ConvHead headR;
+    ConvolverHead headL;
+    ConvolverHead headR;
     bool zeroDelay;
 
-    EquallyPartitionedConvolver<BlockSize> convL;
-    EquallyPartitionedConvolver<BlockSize> convR;
+    EquallyPartitionedConvolver<BLOCK_SIZE> convL;
+    EquallyPartitionedConvolver<BLOCK_SIZE> convR;
 
-    std::vector<FFT<BlockSize>> blocksL{};
-    std::vector<FFT<BlockSize>> blocksR{};
+    std::vector<FFT<BLOCK_SIZE>> blocksL{};
+    std::vector<FFT<BLOCK_SIZE>> blocksR{};
 
     // For zero-delay convolution
-    StaticAudioBuffer<ConvHead::Length, 2> input;
-    AudioBuffer ir { 2, ConvHead::Length };
+    StaticAudioBuffer<ConvolverHead::Length, 2> input;
+    AudioBuffer ir { 2, ConvolverHead::Length };
     size_t irSamplesRead;
 
     size_t inputSize;
     size_t framesProcessed;
 
-    Impl () : params{NUM_PARAMS} , length{0} , state{Idle} , zeroDelay{true} , irSamplesRead{0} , inputSize{0} , framesProcessed{0} {
+    explicit Implementation() : length{0} , state{Idle} , zeroDelay{true} , irSamplesRead{0} , inputSize{0} , framesProcessed{0} {
         params[DRY].setName("dry");
-        params[DRY].setValue(DefaultDry, true);
+        params[DRY].setValue(DEFAULT_DRY, true);
 
         params[WET].setName("wet");
-        params[WET].setValue(DefaultWet, true);
+        params[WET].setValue(DEFAULT_WET, true);
 
         params[GAIN].setName("gain");
-        params[GAIN].setValue(DefaultGain, true);
+        params[GAIN].setValue(DEFAULT_GAIN, true);
 
         worker.start();
     }
 
-    ~Impl()
-    {
+    ~Implementation() {
         worker.stop();
     }
 
-    void init ()
-    {
-        const size_t numBlocks = length < BlockSize ? 1 : (length - 1) / BlockSize + 1;
-        inputSize = numBlocks * BlockSize;
+    void init () {
+        const size_t numBlocks = length < BLOCK_SIZE ? 1 : (length - 1) / BLOCK_SIZE + 1;
+        inputSize = numBlocks * BLOCK_SIZE;
 
         convL.resize(numBlocks);
         convR.resize(numBlocks);
 
-        headL.init(ir.getWritePointer(0), input.getWritePointer(0), BlockSize);
-        headR.init(ir.getWritePointer(1), input.getWritePointer(1), BlockSize);
+        headL.init(ir.getWritePointer(0), input.getWritePointer(0), BLOCK_SIZE);
+        headR.init(ir.getWritePointer(1), input.getWritePointer(1), BLOCK_SIZE);
 
         updateRealtime (false);
 
         reset();
     }
 
-    void updateRealtime(const bool isNonRealtime)
-    {
+    void updateRealtime(const bool isNonRealtime) {
         // Run convolution on a side thread for real-time processing.
         if (isNonRealtime) {
             convL.setWorker(nullptr);
@@ -109,8 +101,7 @@ struct Convolver::Impl {
         }
     }
 
-    void reset()
-    {
+    void reset() {
         input.clear();
         ir.clear();
         irSamplesRead = 0;
@@ -124,20 +115,16 @@ struct Convolver::Impl {
         framesProcessed = 0;
     }
 
-    void setDryWet(const float dry, const float wet, const bool force)
-    {
+    void setDryWet(const float dry, const float wet, const bool force) {
         params[DRY].setValue(dry, force);
         params[WET].setValue(wet, force);
     }
 
-    float isAudible() const
-    {
-        return params[WET].target() > 0.0f
-            || params[WET].value() > 0.0f;
+    [[nodiscard]] bool isAudible() const {
+        return params[WET].target() > 0.0f || params[WET].value() > 0.0f;
     }
 
-    void setIR(const IR& newIr)
-    {
+    void setIR(const IR& newIr) {
         ir = static_cast<AudioBuffer>(newIr);
 
         // Reset the convolver to the initial state
@@ -145,8 +132,8 @@ struct Convolver::Impl {
         framesProcessed = 0;
         input.clear();
 
-        headL.init(this->ir.getWritePointer(0), input.getWritePointer(0), BlockSize);
-        headR.init(this->ir.getWritePointer(1), input.getWritePointer(1), BlockSize);
+        headL.init(this->ir.getWritePointer(0), input.getWritePointer(0), BLOCK_SIZE);
+        headR.init(this->ir.getWritePointer(1), input.getWritePointer(1), BLOCK_SIZE);
 
         headL.reset();
         headR.reset();
@@ -154,7 +141,7 @@ struct Convolver::Impl {
         convL.reset();
         convR.reset();
 
-        int i = zeroDelay ? BlockSize : 0;
+        int i = zeroDelay ? BLOCK_SIZE : 0;
         const float* irL = ir.getReadPointer(0);
         const float* irR = ir.getReadPointer(1);
 
@@ -173,25 +160,23 @@ struct Convolver::Impl {
         state = Process;
     }
 
-    void prepareToPlay ()
-    {
+    void prepareToPlay () {
         state = Init;
         init();
     }
 
-    void process(float *inOut, const size_t framesPerChannel)
-    {
-        if (state == Init)
+    void process(float *inOut, const size_t framesPerChannel) {
+        if (state == Init) {
             state = zeroDelay ? FeedHeadIR : ProcessWithIRStream;
+        }
 
-        if (state == FeedHeadIR)
-        {
+        if (state == FeedHeadIR) {
             // ir buffer is ready at this point
-            if (ir.getNumSamples() <= BlockSize) {
+            if (ir.getNumSamples() <= BLOCK_SIZE) {
                 irSamplesRead = ir.getNumSamples();
                 state = Process;
             } else {
-                irSamplesRead = BlockSize;
+                irSamplesRead = BLOCK_SIZE;
                 state = ProcessWithIRStream;
             }
         }
@@ -214,8 +199,7 @@ struct Convolver::Impl {
         }
     }
 
-    void processFrame(float *inOut, const size_t framesPerChannel)
-    {
+    void processFrame(float *inOut, const size_t framesPerChannel) {
         if (zeroDelay) {
             for (size_t i = 0; i < framesPerChannel; ++i) {
                 const float l = convL.tick(inOut[i * 2]) + headL.tick(inOut[i * 2]);
@@ -242,39 +226,34 @@ struct Convolver::Impl {
     }
 };
 
-//----------------------------------------------------------
-
-Convolver::Convolver()
-    : d(std::make_unique<Impl>())
-{
-}
+Convolver::Convolver() : implementation(std::make_unique<Implementation>()) { }
 
 Convolver::~Convolver() = default;
 
 int Convolver::setIR(const IR &ir) {
-    d->length = static_cast<int>((ir.getNumSamples() / BlockSize + 1) * BlockSize);
-    d->setIR(ir);
-    d->prepareToPlay();
-    d->zeroDelay = ir.zeroDelay;
+    implementation->length = static_cast<int>((ir.getNumSamples() / BLOCK_SIZE + 1) * BLOCK_SIZE);
+    implementation->setIR(ir);
+    implementation->prepareToPlay();
+    implementation->zeroDelay = ir.zeroDelay;
     return length();
 }
 
 void Convolver::setDryWet(const float dry, const float wet, const bool force) {
-    d->setDryWet(dry, wet, force);
+    implementation->setDryWet(dry, wet, force);
 }
 
 bool Convolver::isAudible() const {
-    return d->isAudible();
+    return implementation->isAudible();
 }
 
 void Convolver::process(float *inOut, const size_t framesPerChannel, const bool nonRealtime) const {
-    d->updateRealtime(nonRealtime);
-    d->process(inOut, framesPerChannel);
+    implementation->updateRealtime(nonRealtime);
+    implementation->process(inOut, framesPerChannel);
 }
 
 int Convolver::length() const noexcept
 {
-    return static_cast<int>(d->length);
+    return static_cast<int>(implementation->length);
 }
 } // namespace dsp
 

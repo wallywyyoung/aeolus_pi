@@ -21,7 +21,6 @@
 #include "aeolus/dsp/Chiff.h"
 
 #include <array>
-#include <cmath>
 #include <random>
 
 

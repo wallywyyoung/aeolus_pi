@@ -1,5 +1,6 @@
 // ----------------------------------------------------------------------------
 //
+//  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -17,53 +18,40 @@
 //
 // ----------------------------------------------------------------------------
 
-#include "aeolus/dsp/fft.h"
-
-#include <cmath>
+#include "aeolus/dsp/FFT.h"
 #include <algorithm>
-
-
-
-
+#include <cmath>
 
 namespace dsp {
 
-static float hann(const int i, const int n)
-{
-    return 0.5f * (1.0f - std::cos (std::numbers::pi_v<float> * 2.0f * i / (n - 1)));
-}
+static float hann(const int i, const int n) { return 0.5f * (1.0f - std::cos (std::numbers::pi_v<float> * 2.0f * static_cast<float>(i) / static_cast<float>(n - 1))); }
 
-static float hamming(const int i, const int n)
-{
-    return 0.53836f + 0.46164f * std::cos (std::numbers::pi_v<float> * 2.0f * i / (n - 1));
-}
+static float hamming(const int i, const int n) { return 0.53836f + 0.46164f * std::cos (std::numbers::pi_v<float> * 2.0f * static_cast<float>(i) / static_cast<float>(n - 1)); }
 
-static float blackman(const int i, const int n)
-{
-    const auto x = std::numbers::pi_v<float> * 2.0f * i / (n - 1);
+static float blackman(const int i, const int n) {
+    const auto x = std::numbers::pi_v<float> * 2.0f * static_cast<float>(i) / static_cast<float>(n - 1);
     return 0.42659f - 0.49656f * std::cos (x) + 0.076849f * std::cos (2.0f * x);
 }
 
-void Fft::direct(Array& x, const Window win)
-{
+void Fft::direct(std::valarray<std::complex<float>>& x, const Window win) {
     applyWindow(x, win);
 
     const auto N = static_cast<unsigned int>(x.size());
     // DFT
     unsigned int k = N;
-    const float thetaT = std::numbers::pi_v<float> / N;
-    Complex phiT = Complex (std::cos (thetaT), std::sin (thetaT)), T;
+    const float thetaT = std::numbers::pi_v<float> / static_cast<float>(N);
+    auto phiT = std::complex(std::cos (thetaT), std::sin (thetaT));
 
     while (k > 1) {
         const unsigned int n = k;
         k >>= 1;
         phiT = phiT * phiT;
-        T = 1.0L;
+        std::complex T{1.0f, 0.0f};
 
         for (unsigned int l = 0; l < k; l++) {
             for (unsigned int a = l; a < N; a += n) {
                 const unsigned int b = a + k;
-                Complex t = x[a] - x[b];
+                auto t = x[a] - x[b];
                 x[a] += x[b];
                 x[b] = t * T;
             }
@@ -85,7 +73,7 @@ void Fft::direct(Array& x, const Window win)
         b = ((b >> 16) | (b << 16)) >> (32 - m);
 
         if (b > a) {
-            const Complex t = x[a];
+            const auto t = x[a];
             x[a] = x[b];
             x[b] = t;
         }
@@ -93,7 +81,7 @@ void Fft::direct(Array& x, const Window win)
 
 }
 
-void Fft::inverse(Array &x)
+void Fft::inverse(std::valarray<std::complex<float>> &x)
 {
     // conjugate the complex numbers
     x = x.apply(std::conj);
@@ -105,25 +93,25 @@ void Fft::inverse(Array &x)
     x = x.apply(std::conj);
 
     // scale the numbers
-    std::ranges::transform(begin(x),end(x), begin(x),[x](const Complex c){return c / static_cast<float>(x.size());});
+    std::ranges::transform(begin(x),end(x), begin(x),[x](const std::complex<float> c){return c / static_cast<float>(x.size());});
     // x /= static_cast<float>(x.size());
 }
 
-void Fft::applyWindow(Array&x, const Window win)
+void Fft::applyWindow(std::valarray<std::complex<float>>&x, const Window win)
 {
     switch (win) {
     case Window::None:
         break;
     case Window::Hann:
-        for (int i = 0; i < x.size(); ++i)
+        for (auto i = 0; i < x.size(); ++i)
             x[i] *= hann(i, static_cast<int>(x.size()));
         break;
     case Window::Hamming:
-        for (int i = 0; i < x.size(); ++i)
+        for (auto i = 0; i < x.size(); ++i)
             x[i] *= hamming(i, static_cast<int>(x.size()));
         break;
     case Window::Blackman:
-        for (int i = 0; i < x.size(); ++i)
+        for (auto i = 0; i < x.size(); ++i)
             x[i] *= blackman(i, static_cast<int>(x.size()));
         break;
     default:

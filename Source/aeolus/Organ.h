@@ -20,16 +20,12 @@
 
 #pragma once
 
-#include <chrono>
-
-
+#include <vector>
 #include "StaticAudioBuffer.h"
 #include "aeolus/Division.h"
 #include "aeolus/MidiManager.h"
-#include "aeolus/dsp/convolver.h"
+#include "aeolus/dsp/Convolver.h"
 #include "aeolus/globals.h"
-
-#include <vector>
 
 
 /**

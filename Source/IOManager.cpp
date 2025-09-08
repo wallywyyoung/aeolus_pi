@@ -20,21 +20,22 @@
 // ----------------------------------------------------------------------------
 
 #include "IOManager.h"
-#include "aeolus/Addsynth.h"
-#include "aeolus/Division.h"
-#include "EngineGlobal.h"
-#include "aeolus/dsp/convolver.h"
-#include <fstream>
+#include <AudioFile/AudioFile.h>
 #include <algorithm>
 #include <filesystem>
-#include <AudioFile/AudioFile.h>
+#include <fstream>
 #include <nlohmann/json.hpp>
+#include <sstream>
+#include "EngineGlobal.h"
+#include "aeolus/Addsynth.h"
+#include "aeolus/Division.h"
+#include "aeolus/dsp/Convolver.h"
 
 IRs IOManager::loadIRs() {
     std::ifstream stream("./Resources/irs/irs.json");
     auto jsonIRs = nlohmann::json::parse(stream);
     IRs irs;
-    irs.longestIRLength = dsp::Convolver::BlockSize;
+    irs.longestIRLength = dsp::Convolver::BLOCK_SIZE;
     AudioFile<float> audioFile;
     std::ostringstream path;
     for (auto jsonIr: jsonIRs["irs"]){

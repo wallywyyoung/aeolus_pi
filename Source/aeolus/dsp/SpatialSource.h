@@ -23,7 +23,7 @@
 #include "MemoryConstants.h"
 #include "StaticAudioBuffer.h"
 #include "aeolus/dsp/DelayLine.h"
-#include "aeolus/dsp/filter.h"
+#include "aeolus/dsp/Filter.h"
 #include "aeolus/globals.h"
 
 namespace dsp {
