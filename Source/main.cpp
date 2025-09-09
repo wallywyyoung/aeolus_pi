@@ -23,12 +23,10 @@
 #include "EngineGlobal.h"
 
 #ifdef LINUX
-#include "AlsaInterface.h"
+#include "AlsaMidiInterface.h"
 #endif
-
-#ifdef MACOS
+#include "AlsaAudioInterface.h"
 #include "RtAudioInterface.h"
-#endif
 
 bool running = true;
 
@@ -41,9 +39,8 @@ int main (int, char*[]) {
     std::signal(SIGINT | SIGTERM | SIGSEGV | SIGABRT | SIGFPE | SIGILL | SIGBUS, signalHandler);
     auto engineGlobal = new EngineGlobal();
 #ifdef LINUX
-    const auto audioInterface = new AlsaInterface(
-        [engineGlobal](float (&out)[PROCESS_SAMPLES_SIZE]){ engineGlobal->process(out); },
-        [engineGlobal](const MidiData& midiData){ engineGlobal->pushMidi(midiData); });
+    const auto midiInterface = new AlsaMidiInterface([engineGlobal](const MidiData& midiData){ engineGlobal->pushMidi(midiData); });
+    const auto audioInterface = new AlsaAudioInterface([engineGlobal](float (&out)[PROCESS_SAMPLES_SIZE]){ engineGlobal->process(out); });
 #elifdef MACOS
     const auto audioInterface = new RtAudioInterface([engineGlobal](float (&out)[PROCESS_SAMPLES_SIZE]){ engineGlobal->process(out); });
 #endif
@@ -53,5 +50,8 @@ int main (int, char*[]) {
     } while(running);
     std::cout << "Aeolus is Closing" << std::endl;
     delete audioInterface;
+#ifdef LINUX
+    delete midiInterface;
+#endif
     delete engineGlobal;
 }

@@ -19,19 +19,42 @@
 
 #pragma once
 
-#include <RtAudio.h>
+#ifdef LINUX
+
 #include <functional>
+#include <memory>
+#include <thread>
+#include <alsa/asoundlib.h>
 #include "MemoryConstants.h"
 
-class RtAudioInterface final {
-public:
-    ~RtAudioInterface() = default;
-    explicit RtAudioInterface(const std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> &processAudio);
+class MidiData;
 
-private:
-    std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio;
-    RtAudio* device;
-    static int audioHandler(void *outputBuffer, void *inputBuffer, unsigned int nFrames, double streamTime,
-                            RtAudioStreamStatus status, void *userData);
-    void endPlayback();
+class AlsaMidiInterface {
+    //    General
+    static constexpr auto CONFIG_FILE = "./Resources/configs/audio.json";
+
+    //    Midi
+    struct MidiThreadObjects {
+        std::function<void(const MidiData&)> submitMidiEvent;
+        bool runningMidi = false;
+        snd_seq_t *sequencer{};
+        int portID{};
+        int npfd{};
+        std::unique_ptr<pollfd> pfd;
+    };
+    alignas(CACHE_LINE_SIZE) MidiThreadObjects midiThreadObjects{};
+    std::thread midiThread;
+
+    //    Midi
+    void initMidi(const std::string &clientName);
+    void beginPollMidi();
+    static void* midiHandler(const MidiThreadObjects *midiThreadObjects);
+    void endPollMidi();
+    [[nodiscard]] int getMidiClientId(const std::string &clientName) const;
+
+public:
+    explicit AlsaMidiInterface(std::function<void(const MidiData&)> submitMidi);
+    ~AlsaMidiInterface();
 };
+
+#endif

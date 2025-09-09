@@ -85,29 +85,28 @@ add_executable(aeolus_pi
         Source/aeolus/utilities/SimdUtilities.cpp
         Source/aeolus/utilities/SimdUtilities.h
         Source/aeolus/dsp/DelayLineStatic.h
+        Source/AlsaMidiInterface.h
+        Source/AlsaMidiInterface.cpp
+        Source/RtAudioInterface.h
+        Source/RtAudioInterface.cpp
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)
+find_package(RtAudio CONFIG REQUIRED)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    target_sources(aeolus_pi PRIVATE
-            Source/RtAudioInterface.h
-            Source/RtAudioInterface.cpp)
-    find_package(rtmidi CONFIG REQUIRED)
-    find_package(RtAudio CONFIG REQUIRED)
-    target_link_libraries(aeolus_pi PRIVATE RtAudio::rtaudio RtMidi::rtmidi)
     target_compile_definitions(aeolus_pi PRIVATE MACOS)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_sources(aeolus_pi PRIVATE
-            Source/AlsaInterface.cpp
-            Source/AlsaInterface.h)
+            Source/AlsaAudioInterface.cpp
+            Source/AlsaAudioInterface.h)
     find_package(ALSA REQUIRED)
     target_link_libraries(aeolus_pi PRIVATE ALSA::ALSA)
     target_compile_definitions(aeolus_pi PRIVATE LINUX)
 endif()
 
-target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile)
+target_link_libraries(aeolus_pi PRIVATE nlohmann_json::nlohmann_json AudioFile::AudioFile RtAudio::rtaudio)
 target_compile_definitions(aeolus_pi PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 
 file(COPY Resources DESTINATION ${CMAKE_BINARY_DIR})

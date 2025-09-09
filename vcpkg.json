@@ -3,12 +3,13 @@
   "dependencies" : [ {
     "name" : "alsa",
     "version>=" : "1.2.14",
-    "platform" : "linux"
+    "platform" : "arm64 & linux"
   }, {
-    "name" : "rtmidi",
-    "version>=" : "6.0.0",
-    "platform": "arm64 & osx"
-  },  {
+    "name" : "rtaudio",
+    "version>=" : "6.0.1#1",
+    "features": ["alsa"],
+    "platform" : "arm64 & linux"
+  }, {
     "name" : "rtaudio",
     "version>=" : "6.0.1#1",
     "platform": "arm64 & osx"

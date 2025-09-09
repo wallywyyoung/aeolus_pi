@@ -22,15 +22,13 @@
 #ifdef LINUX
 
 #include <functional>
-#include <memory>
 #include <thread>
 #include <alsa/asoundlib.h>
-
 #include "MemoryConstants.h"
 
 class MidiData;
 
-class AlsaInterface {
+class AlsaAudioInterface {
     //    General
     enum SampleFormat {
         S24 = SND_PCM_FORMAT_S24_3LE,
@@ -39,19 +37,6 @@ class AlsaInterface {
     static constexpr auto SAMPLE_FORMAT = S24;
     static constexpr auto CONFIG_FILE = "./Resources/configs/audio.json";
 
-    //    Midi
-    struct MidiThreadObjects {
-        std::function<void(const MidiData&)> submitMidiEvent;
-        bool runningMidi = false;
-        snd_seq_t *sequencer{};
-        int portID{};
-        int npfd{};
-        std::unique_ptr<pollfd> pfd;
-    };
-    alignas(CACHE_LINE_SIZE) MidiThreadObjects midiThreadObjects{};
-    std::thread midiThread;
-
-    //    Audio
     struct AudioThreadObjects {
         std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio;
         bool runningAudio = false;
@@ -60,22 +45,14 @@ class AlsaInterface {
     alignas(CACHE_LINE_SIZE) AudioThreadObjects audioThreadObjects{};
     std::thread audioThread;
 
-    //    Midi
-    void initMidi(const std::string &clientName);
-    void beginPollMidi();
-    static void* midiHandler(const MidiThreadObjects *midiThreadObjects);
-    void endPollMidi();
-    [[nodiscard]] int getMidiClientId(const std::string &clientName);
-
-    //    Audio
     void initAudio(const std::string &deviceName);
     void beginPlayback();
     static void audioHandler(const AudioThreadObjects * a);
     void endPlayback();
 
 public:
-    explicit AlsaInterface(std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio, std::function<void(const MidiData&)> submitMidi);
-    ~AlsaInterface();
+    explicit AlsaAudioInterface(std::function<void(float (&out)[PROCESS_SAMPLES_SIZE])> processAudio);
+    ~AlsaAudioInterface();
 };
 
 #endif
