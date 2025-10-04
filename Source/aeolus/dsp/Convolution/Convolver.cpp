@@ -38,8 +38,12 @@ int Convolver::setIR(const IR &newIr) {
     framesProcessed = 0;
     input.clear();
 
-    uniformPartitionedL.resizeAndReset(numBlocks);
-    uniformPartitionedR.resizeAndReset(numBlocks);
+    // uniformPartitionedL.resizeAndReset(numBlocks);
+    // uniformPartitionedR.resizeAndReset(numBlocks);
+    epcL.resize(numBlocks);
+    epcR.resize(numBlocks);
+    epcL.reset();
+    epcR.reset();
 
     cascadeL.init(ir.getWritePointer (0), input.getWritePointer (0));
     cascadeR.init(ir.getWritePointer (1), input.getWritePointer (1));
@@ -48,13 +52,17 @@ int Convolver::setIR(const IR &newIr) {
     const float* irL = ir.getReadPointer(0);
     const float* irR = ir.getReadPointer(1);
     while (i < std::min(inputSize, newIr.getNumSamples())) {
-        uniformPartitionedL.feedIr(irL[i]);
-        uniformPartitionedR.feedIr(irR[i]);
+        // uniformPartitionedL.feedIr(irL[i]);
+        // uniformPartitionedR.feedIr(irR[i]);
+        epcL.feedIr(irL[i]);
+        epcR.feedIr(irR[i]);
         ++i;
     }
     while (i < inputSize) {
-        uniformPartitionedL.feedIr(0.0f);
-        uniformPartitionedR.feedIr(0.0f);
+        // uniformPartitionedL.feedIr(0.0f);
+        // uniformPartitionedR.feedIr(0.0f);
+        epcL.feedIr(0.0f);
+        epcR.feedIr(0.0f);
         ++i;
     }
 
@@ -70,8 +78,12 @@ void Convolver::process(float *inOut, const size_t framesPerChannel) {
 
     if (state == PROCESS_WITH_IR_STREAM || state == PROCESS) {
         for (auto i = 0; i < framesPerChannel; ++i) {
-            const auto l = uniformPartitionedL.tick(inOut[i * 2]) + cascadeL.tick(inOut[i * 2]);
-            const auto r = uniformPartitionedR.tick(inOut[i * 2 + 1]) + cascadeR.tick(inOut[i * 2 + 1]);
+            // const auto l = uniformPartitionedL.tick(inOut[i * 2]);
+            // const auto r = uniformPartitionedR.tick(inOut[i * 2 + 1]);
+            const auto l = epcL.tick(inOut[i * 2]);
+            const auto r = epcR.tick(inOut[i * 2 + 1]);
+            // const auto l = uniformPartitionedL.tick(inOut[i * 2]) + cascadeL.tick(inOut[i * 2]);
+            // const auto r = uniformPartitionedR.tick(inOut[i * 2 + 1]) + cascadeR.tick(inOut[i * 2 + 1]);
             const auto thisDry = dry.nextValue();
             const auto thisWet = wet.nextValue();
             inOut[i*2] = (l * thisWet) + (inOut[i*2] * thisDry);

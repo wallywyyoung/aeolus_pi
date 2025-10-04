@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "../../../../EquallyPartitionedConvolver.h"
 #include "StaticAudioBuffer.h"
 #include "aeolus/IR.h"
 #include "aeolus/SmoothFloat.h"
@@ -49,8 +50,10 @@ private:
     CascadeConvolver cascadeL{};
     CascadeConvolver cascadeR{};
 
-    UniformPartitionedConvolver<BLOCK_SIZE> uniformPartitionedL{};
-    UniformPartitionedConvolver<BLOCK_SIZE> uniformPartitionedR{};
+    // UniformPartitionedConvolver<BLOCK_SIZE> uniformPartitionedL{};
+    // UniformPartitionedConvolver<BLOCK_SIZE> uniformPartitionedR{};
+    EquallyPartitionedConvolver<BLOCK_SIZE> epcL{};
+    EquallyPartitionedConvolver<BLOCK_SIZE> epcR{};
 
     // For zero-delay convolution
     StaticAudioBuffer<CascadeConvolver::BLOCK_SIZE, 2> input{};

@@ -94,6 +94,7 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/Convolution/Convolver.cpp
         Source/aeolus/dsp/Convolution/DanielsonLanczos.h
         Source/aeolus/dsp/Convolution/GFFT.h
+        EquallyPartitionedConvolver.h
 )
 
 target_compile_options(aeolus_pi PRIVATE -fsanitize=address -g)
