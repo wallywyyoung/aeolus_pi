@@ -21,15 +21,13 @@
 
 #include <memory>
 
-
 /**
  * Allocate memory with predefined alignment.
  *
  * Ported from https://embeddedartistry.com/blog/2017/2/20/implementing-aligned-malloc
  */
 template <size_t Align>
-struct AlignedMemory
-{
+struct AlignedMemory {
     typedef uint16_t offset_t;
     constexpr static size_t PTR_OFFSET_SIZE = sizeof(offset_t);
     constexpr static size_t alignment = Align;

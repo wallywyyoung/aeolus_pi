@@ -21,7 +21,7 @@ project(aeolus_pi)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=cortex-a72 -march=armv8-a+simd")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=cortex-a72 -march=armv8-a+simd -ffp-contract=off -fno-fast-math")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
 
 include_directories(Source)
@@ -74,8 +74,6 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/Envelope.h
         Source/aeolus/dsp/Chiff.cpp
         Source/aeolus/dsp/Chiff.h
-        Source/aeolus/dsp/Convolve.h
-        Source/aeolus/dsp/Convolver.cpp
         Source/aeolus/dsp/FFT.cpp
         Source/aeolus/dsp/FFT.h
         Source/aeolus/dsp/Filter.cpp
@@ -89,7 +87,17 @@ add_executable(aeolus_pi
         Source/AlsaMidiInterface.cpp
         Source/RtAudioInterface.h
         Source/RtAudioInterface.cpp
+        Source/aeolus/dsp/Convolution/CascadeConvolver.h
+        Source/aeolus/dsp/Convolution/FIR.h
+        Source/aeolus/dsp/Convolution/FFT.h
+        Source/aeolus/dsp/Convolution/UniformPartitionedConvolver.h
+        Source/aeolus/dsp/Convolution/Convolver.cpp
+        Source/aeolus/dsp/Convolution/DanielsonLanczos.h
+        Source/aeolus/dsp/Convolution/GFFT.h
 )
+
+target_compile_options(aeolus_pi PRIVATE -fsanitize=address -g)
+target_link_options(aeolus_pi PRIVATE -fsanitize=address)
 
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)

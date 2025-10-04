@@ -35,22 +35,21 @@ static float blackman(const int i, const int n) {
 
 void Fft::direct(std::valarray<std::complex<float>>& x, const Window win) {
     applyWindow(x, win);
-
-    const auto N = static_cast<unsigned int>(x.size());
     // DFT
-    unsigned int k = N;
-    const float thetaT = std::numbers::pi_v<float> / static_cast<float>(N);
-    auto phiT = std::complex(std::cos (thetaT), std::sin (thetaT));
-
+    const auto N = static_cast<unsigned int>(x.size());
+    auto k = N;
+    const auto thetaT = std::numbers::pi_v<float> / static_cast<float>(N);
+    auto phiT = std::complex(std::cos(thetaT),std::sin (thetaT));
+	// TODO T and n WERE DEFINED HERE
     while (k > 1) {
-        const unsigned int n = k;
+        const unsigned int n = k; // TODO
         k >>= 1;
         phiT = phiT * phiT;
-        std::complex T{1.0f, 0.0f};
+        std::complex T{1.0f, 0.0f}; // TODO
 
         for (unsigned int l = 0; l < k; l++) {
             for (unsigned int a = l; a < N; a += n) {
-                const unsigned int b = a + k;
+                const auto b = a + k;
                 auto t = x[a] - x[b];
                 x[a] += x[b];
                 x[b] = t * T;
@@ -81,8 +80,7 @@ void Fft::direct(std::valarray<std::complex<float>>& x, const Window win) {
 
 }
 
-void Fft::inverse(std::valarray<std::complex<float>> &x)
-{
+void Fft::inverse(std::valarray<std::complex<float>> &x) {
     // conjugate the complex numbers
     x = x.apply(std::conj);
 
@@ -93,12 +91,11 @@ void Fft::inverse(std::valarray<std::complex<float>> &x)
     x = x.apply(std::conj);
 
     // scale the numbers
-    std::ranges::transform(begin(x),end(x), begin(x),[x](const std::complex<float> c){return c / static_cast<float>(x.size());});
-    // x /= static_cast<float>(x.size());
+
+    x /= static_cast<float>(x.size());
 }
 
-void Fft::applyWindow(std::valarray<std::complex<float>>&x, const Window win)
-{
+void Fft::applyWindow(std::valarray<std::complex<float>>&x, const Window win) {
     switch (win) {
     case Window::None:
         break;

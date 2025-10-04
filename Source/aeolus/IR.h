@@ -32,15 +32,13 @@ class IR : public AudioBuffer {
 public:
     explicit IR() = delete;
 
-    IR(const std::string& name, const AudioFile<float>& audioFile, const int startOffset = 0) : AudioBuffer(audioFile.getNumChannels(), audioFile.getNumSamplesPerChannel()), name(name), zeroDelay(false) {
+    IR(const std::string& name, const AudioFile<float>& audioFile) : AudioBuffer(audioFile.getNumChannels(), audioFile.getNumSamplesPerChannel()), name(name) {
         for (std::size_t i = 0; i < getNumChannels(); ++i) {
-            std::copy(audioFile.samples[i].begin() + startOffset, audioFile.samples[i].end(), audioBuffer.begin() + static_cast<std::vector<float>::difference_type>(i * bufferSize));
+            std::copy(audioFile.samples[i].begin(), audioFile.samples[i].end(), audioBuffer.begin() + static_cast<std::vector<float>::difference_type>(i * bufferSize));
         }
     }
 
     IR(const IR& other) = default;
-
-    bool zeroDelay;
 
     void clear() {
         name.clear();

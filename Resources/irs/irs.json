@@ -3,63 +3,47 @@
     {
       "name" : "York Guildhall Council Chamber",
       "fileName" : "york_council_chamber.wav",
-      "gain" : 0.25,
-      "startOffset" : 216
+      "gain" : 0.25
     },
     {
       "name" : "St Laurentius, Molenbeek",
       "fileName" : "st_laurentius_molenbeek.wav",
-      "gain" : 0.8,
-      "startOffset" : 15
+      "gain" : 0.8
     },
     {
       "name" : "St Andrew's Church",
       "fileName" : "st_andrews_church.wav",
-      "gain" : 1.0,
-      "startOffset" : 1796
+      "gain" : 1.0
     },
     {
       "name" : "St George's Episcopal Church",
       "fileName" : "st_georges_far.wav",
-      "gain" : 1.0,
-      "startOffset" : 1776
+      "gain" : 1.0
     },
     {
       "name" : "Lady Chapel, St Albans Cathedral",
       "fileName" : "lady_chapel_stalbans.wav",
-      "gain" : 1.0,
-      "startOffset" : 385
+      "gain" : 1.0
     },
     {
       "name" : "1st Baptist Church, Nashville",
       "fileName" : "1st_baptist_nashville_balcony.wav",
-      "gain" : 1.0,
-      "startOffset" : 1764
-    },
-    {
-      "name" : "Elveden Hall, Suffolk",
-      "fileName" : "elveden_hall_suffolk_england.wav",
-      "gain" : 0.1,
-      "startOffset" : 0,
-      "note" : "false - This one is delayed on purpose - 28"
+      "gain" : 1.0
     },
     {
       "name" : "R1 Nuclear Reactor Hall",
       "fileName" : "r1_nuclear_reactor_hall.wav",
-      "gain" : 0.4,
-      "startOffset" : 1995
+      "gain" : 0.4
     },
     {
       "name" : "Sports Centre, University of York",
       "fileName" : "york_uni_sportscentre.wav",
-      "gain" : 0.4,
-      "startOffset" : 1309
+      "gain" : 0.4
     },
     {
       "name" : "York Minster",
       "fileName" : "york_minster.wav",
-      "gain" : 0.3,
-      "startOffset" : 3098
+      "gain" : 0.3
     }
   ]
 }

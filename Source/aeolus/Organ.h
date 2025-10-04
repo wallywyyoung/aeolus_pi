@@ -24,7 +24,7 @@
 #include "StaticAudioBuffer.h"
 #include "aeolus/Division.h"
 #include "aeolus/MidiManager.h"
-#include "aeolus/dsp/Convolver.h"
+#include "aeolus/dsp/Convolution/Convolver.h"
 #include "aeolus/globals.h"
 
 

@@ -28,10 +28,12 @@ Organ::Organ(const std::function<std::shared_ptr<RankWave>(const std::string&)> 
 }
 
 void Organ::setDivisionNoteOn(const int &division, const int &note) {
+    std::cout << "Organ - NOTE ON" << std::endl;
     divisions[division]->setNoteOn(note);
 }
 
 void Organ::setDivisionNoteOff(const int &division, const int &note) {
+    std::cout << "Organ - NOTE OFF" << std::endl;
     divisions[division]->setNoteOff(note);
 }
 

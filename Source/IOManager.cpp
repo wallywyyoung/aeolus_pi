@@ -29,20 +29,18 @@
 #include "EngineGlobal.h"
 #include "aeolus/Addsynth.h"
 #include "aeolus/Division.h"
-#include "aeolus/dsp/Convolver.h"
+#include "aeolus/dsp/Convolution/Convolver.h"
 
 IRs IOManager::loadIRs() {
     std::ifstream stream("./Resources/irs/irs.json");
     auto jsonIRs = nlohmann::json::parse(stream);
     IRs irs;
-    irs.longestIRLength = dsp::Convolver::BLOCK_SIZE;
+    irs.longestIRLength = Convolver::BLOCK_SIZE;
     AudioFile<float> audioFile;
     std::ostringstream path;
     for (auto jsonIr: jsonIRs["irs"]){
-        auto zeroDelay = jsonIr.contains("zeroDelay") ? static_cast<bool>(jsonIr["zeroDelay"]) : false;
-        auto startOffset = zeroDelay? 0 : static_cast<int>(jsonIr["startOffset"]);
         audioFile.load("./Resources/irs/" + std::to_string(SAMPLE_RATE) + "/" + static_cast<std::string>(jsonIr["fileName"]));
-        auto ir = IR(jsonIr["name"], audioFile, startOffset);
+        auto ir = IR(jsonIr["name"], audioFile);
         //TODO: This must be wrong.
         auto gain = static_cast<float>(jsonIr["gain"]);
         ir.applyGain(gain);

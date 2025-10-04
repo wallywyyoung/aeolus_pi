@@ -48,7 +48,7 @@ public:
         const bool wasAudioGenerated = organ->process(out);
         // Reverb Block
         // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
-        reverbTailCounter = wasAudioGenerated ? convolver.length() : std::max(0, reverbTailCounter - PROCESS_FRAMES_SIZE);
+        reverbTailCounter = wasAudioGenerated ? convolver.getLength() : std::max(0, reverbTailCounter - PROCESS_FRAMES_SIZE);
         if (reverbTailCounter > 0 && convolver.isAudible()) {
             convolver.process(out, PROCESS_FRAMES_SIZE);
         }
@@ -66,6 +66,6 @@ private:
     int longestIrLength{};                              ///< Longest IR length in samples
     float tuningFrequency { TUNING_FREQUENCY_DEFAULT }; ///< Middle A tuning frequency.
 
-    dsp::Convolver convolver;
+    Convolver convolver{};
     int reverbTailCounter{0};
 };

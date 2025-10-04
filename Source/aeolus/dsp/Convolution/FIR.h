@@ -20,50 +20,21 @@
 
 #pragma once
 
-#include <memory>
-#include "aeolus/IR.h"
+#include "aeolus/SIMD.h"
+#include "aeolus/globals.h"
 
-namespace dsp {
-
-/**
- * @brief Stereo convolution reverb.
- */
-class Convolver final {
+class FIR {
 public:
-    enum Params {
-        DRY = 0,
-        WET,
-        GAIN,   // IR sample gain.
-        NUM_PARAMS
-    };
-
-    // Default parameters set on creation
-    constexpr static auto DEFAULT_DRY  = 1.0f;
-    constexpr static auto DEFAULT_WET  = 0.25f;
-    constexpr static auto DEFAULT_GAIN = 1.0f;
-
-    /// Single convolution block size (in number of samples).
-    constexpr static size_t BLOCK_SIZE = 4096;
-
-    Convolver();
-
-    ~Convolver();
-
-    int setIR(const IR &ir);
-
-    void setDryWet(float dry, float wet, bool force = false);
-
-    [[nodiscard]] bool isAudible() const;
-
-    void process(float *inOut, size_t framesPerChannel, bool nonRealtime = false) const;
-
-    [[nodiscard]] int length() const noexcept;
-
-protected:
-    struct Implementation;
-    std::unique_ptr<Implementation> implementation;
+    template<size_t L>
+    static float tick(const float* irBuffer, const float* inputBuffer, const size_t& inputSize, size_t& readIndex) {
+    static_assert(math::isPowerOfTwo(L), "Convolution part length must be a power of two");
+        auto y = 0.0f;
+        if (readIndex + L < inputSize) {
+            y = SIMD::mul_reduce_unaligned(irBuffer, &inputBuffer[readIndex], L);
+        } else {
+            for (size_t i = 0; i < L; ++i)
+                y += irBuffer[i] * inputBuffer[(readIndex + i) % inputSize];
+        }
+        return y;
+    }
 };
-
-} // namespace dsp
-
-
