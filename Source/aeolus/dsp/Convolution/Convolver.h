@@ -49,9 +49,6 @@ private:
 
     CascadeConvolver cascadeL{};
     CascadeConvolver cascadeR{};
-
-    // UniformPartitionedConvolver<BLOCK_SIZE> uniformPartitionedL{};
-    // UniformPartitionedConvolver<BLOCK_SIZE> uniformPartitionedR{};
     EquallyPartitionedConvolver<BLOCK_SIZE> epcL{};
     EquallyPartitionedConvolver<BLOCK_SIZE> epcR{};
 

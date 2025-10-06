@@ -78,12 +78,8 @@ void Convolver::process(float *inOut, const size_t framesPerChannel) {
 
     if (state == PROCESS_WITH_IR_STREAM || state == PROCESS) {
         for (auto i = 0; i < framesPerChannel; ++i) {
-            // const auto l = uniformPartitionedL.tick(inOut[i * 2]);
-            // const auto r = uniformPartitionedR.tick(inOut[i * 2 + 1]);
-            const auto l = epcL.tick(inOut[i * 2]);
-            const auto r = epcR.tick(inOut[i * 2 + 1]);
-            // const auto l = uniformPartitionedL.tick(inOut[i * 2]) + cascadeL.tick(inOut[i * 2]);
-            // const auto r = uniformPartitionedR.tick(inOut[i * 2 + 1]) + cascadeR.tick(inOut[i * 2 + 1]);
+            const auto l = epcL.tick(inOut[i * 2]) + cascadeL.tick(inOut[i * 2]);
+            const auto r = epcR.tick(inOut[i * 2 + 1]) + cascadeR.tick(inOut[i * 2 + 1]);
             const auto thisDry = dry.nextValue();
             const auto thisWet = wet.nextValue();
             inOut[i*2] = (l * thisWet) + (inOut[i*2] * thisDry);
