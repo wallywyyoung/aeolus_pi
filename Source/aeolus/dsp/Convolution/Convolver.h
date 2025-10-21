@@ -58,23 +58,48 @@ private:
     size_t irSamplesRead{ 0 };
     size_t inputSize{ 0 };
     size_t framesProcessed{ 0 };
+    size_t tailCounter{ 0 };
+
+    [[nodiscard]] bool isAudible() const {
+        return wet.target() > 0.0f || wet.value() > 0.0f;
+    }
 
 public:
     Convolver() = default;
     ~Convolver() = default;
 
-    [[nodiscard]] int setIR(const IR &newIr);
+    [[nodiscard]] size_t setIR(const IR &newIr);
 
     void setDryWet(const float newDry, const float newWet, const bool force = false) {
         dry.setValue(newDry, force);
         wet.setValue(newWet, force);
     }
 
-    [[nodiscard]] bool isAudible() const {
-        return wet.target() > 0.0f || wet.value() > 0.0f;
+    template<size_t SAMPLES_PER_CHANNEL>
+    void process(float *inOut, const bool& wasAudioGenerated) {
+        // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
+        tailCounter = wasAudioGenerated ? length : std::max(0, static_cast<int>(tailCounter) - static_cast<int>(SAMPLES_PER_CHANNEL));
+        if (state == IDLE || !isAudible() || tailCounter == 0) {
+            return;
+        }
+
+        if (state == PROCESS_WITH_IR_STREAM || state == PROCESS) {
+            for (auto i = 0; i < SAMPLES_PER_CHANNEL; ++i) {
+                const auto l = epcL.tick(inOut[i * 2]) + cascadeL.tick(inOut[i * 2]);
+                const auto r = epcR.tick(inOut[i * 2 + 1]) + cascadeR.tick(inOut[i * 2 + 1]);
+                const auto thisDry = dry.nextValue();
+                const auto thisWet = wet.nextValue();
+                inOut[i*2] = (l * thisWet) + (inOut[i*2] * thisDry);
+                inOut[i*2+1] = (r * thisWet) + (inOut[i*2+1] * thisDry);
+            }
+        }
+
+        if (state == PROCESS_WITH_IR_STREAM) {
+            framesProcessed += SAMPLES_PER_CHANNEL;
+            if (framesProcessed >= inputSize || irSamplesRead >= ir.getNumSamples()) {
+                // The entire IR has been read, switch to processing without IR streaming
+                state = PROCESS;
+            }
+        }
     }
-
-    void process(float *inOut, size_t framesPerChannel);
-
-    [[nodiscard]] int getLength() const noexcept { return static_cast<int>(length); }
 };

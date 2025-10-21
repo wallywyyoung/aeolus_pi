@@ -85,26 +85,22 @@ public:
     [[nodiscard]] GlobalPiston captureStateAsPiston() const;
 
     bool process(float (&out)[PROCESS_SAMPLES_SIZE]) {
+        memset(&out, 0.0f, PROCESS_SAMPLES_SIZE * sizeof(float));
         auto wasAudioGenerated = false;
         const static auto LEFT_BUFFER = divisionFrameBuffer.getReadPointer(0);
         const static auto RIGHT_BUFFER = divisionFrameBuffer.getReadPointer(1);
-            generateTremulant();
-            for (const auto &division : divisions) {
-                if (!division->process(divisionFrameBuffer, voiceFrameBuffer)) {
-                    continue;
-                }
-                division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
-                for (auto j = 0; j < PROCESS_FRAMES_SIZE; ++j) {
-                    if (wasAudioGenerated) {
-                        out[j * 2] += LEFT_BUFFER[j];
-                        out[j * 2 + 1] += RIGHT_BUFFER[j];
-                    } else {
-                        out[j * 2] = LEFT_BUFFER[j];
-                        out[j * 2 + 1] = RIGHT_BUFFER[j];
-                    }
-                }
-                wasAudioGenerated = true;
+        generateTremulant();
+        for (const auto &division : divisions) {
+            if (!division->process(divisionFrameBuffer, voiceFrameBuffer)) {
+                continue;
             }
+            division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
+            for (auto j = 0; j < PROCESS_FRAMES_SIZE; ++j) {
+                out[j * 2] += LEFT_BUFFER[j];
+                out[j * 2 + 1] += RIGHT_BUFFER[j];
+            }
+            wasAudioGenerated = true;
+        }
         return wasAudioGenerated;
     }
 };

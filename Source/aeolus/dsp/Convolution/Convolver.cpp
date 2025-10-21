@@ -22,7 +22,7 @@
 
 #include <future>
 
-int Convolver::setIR(const IR &newIr) {
+void Convolver::setIR(const IR &newIr) {
     state = INIT;
 
     ir = newIr;
@@ -38,8 +38,6 @@ int Convolver::setIR(const IR &newIr) {
     framesProcessed = 0;
     input.clear();
 
-    // uniformPartitionedL.resizeAndReset(numBlocks);
-    // uniformPartitionedR.resizeAndReset(numBlocks);
     epcL.resize(numBlocks);
     epcR.resize(numBlocks);
     epcL.reset();
@@ -52,15 +50,11 @@ int Convolver::setIR(const IR &newIr) {
     const float* irL = ir.getReadPointer(0);
     const float* irR = ir.getReadPointer(1);
     while (i < std::min(inputSize, newIr.getNumSamples())) {
-        // uniformPartitionedL.feedIr(irL[i]);
-        // uniformPartitionedR.feedIr(irR[i]);
         epcL.feedIr(irL[i]);
         epcR.feedIr(irR[i]);
         ++i;
     }
     while (i < inputSize) {
-        // uniformPartitionedL.feedIr(0.0f);
-        // uniformPartitionedR.feedIr(0.0f);
         epcL.feedIr(0.0f);
         epcR.feedIr(0.0f);
         ++i;
@@ -68,30 +62,5 @@ int Convolver::setIR(const IR &newIr) {
 
     state = PROCESS;
 
-    return getLength();
-}
-
-void Convolver::process(float *inOut, const size_t framesPerChannel) {
-    if (state == IDLE) {
-        return;
-    }
-
-    if (state == PROCESS_WITH_IR_STREAM || state == PROCESS) {
-        for (auto i = 0; i < framesPerChannel; ++i) {
-            const auto l = epcL.tick(inOut[i * 2]) + cascadeL.tick(inOut[i * 2]);
-            const auto r = epcR.tick(inOut[i * 2 + 1]) + cascadeR.tick(inOut[i * 2 + 1]);
-            const auto thisDry = dry.nextValue();
-            const auto thisWet = wet.nextValue();
-            inOut[i*2] = (l * thisWet) + (inOut[i*2] * thisDry);
-            inOut[i*2+1] = (r * thisWet) + (inOut[i*2+1] * thisDry);
-        }
-    }
-
-    if (state == PROCESS_WITH_IR_STREAM) {
-        framesProcessed += framesPerChannel;
-        if (framesProcessed >= inputSize || irSamplesRead >= ir.getNumSamples()) {
-            // The entire IR has been read, switch to processing without IR streaming
-            state = PROCESS;
-        }
-    }
+    return length;
 }

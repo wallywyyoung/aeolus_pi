@@ -156,11 +156,9 @@ private:
     void ProcessMidiEvent(const MidiData& event) {
         switch (event.eventType) {
             case MidiData::NOTE_ON:
-                std::cout << "MidiManager - NOTE ON" << std::endl;
                 organInterface->setDivisionNoteOn(event.channel, event.param);
                 break;
             case MidiData::NOTE_OFF:
-                std::cout << "MidiManager - NOTE OFF" << std::endl;
                 organInterface->setDivisionNoteOff(event.channel, event.param);
                 break;
             case MidiData::CC:

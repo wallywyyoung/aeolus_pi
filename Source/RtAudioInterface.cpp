@@ -36,11 +36,7 @@ RtAudioInterface::RtAudioInterface(const std::function<void(float (&out)[PROCESS
         sp->nChannels = OUTPUT_CHANNELS;
         sp->firstChannel = 0;
         auto frames = static_cast<unsigned int>(PROCESS_FRAMES_SIZE);
-#ifdef MACOS
-        device->openStream(sp, nullptr, RTAUDIO_FLOAT32, SAMPLE_RATE, &frames, audioHandler, this);
-#elifdef LINUX
         device->openStream(sp, nullptr, RTAUDIO_SINT24, SAMPLE_RATE, &frames, audioHandler, this);
-#endif
     } catch (const std::exception &e) {
         throw std::runtime_error(std::string("RtAudioInterface::initAudio(): ") + e.what());
     }
@@ -53,17 +49,11 @@ int RtAudioInterface::audioHandler(void *outputBuffer, void *inputBuffer, const 
     if (nFrames < PROCESS_FRAMES_SIZE) {
         return 1;
     }
-#ifdef MACOS
-    const auto a = static_cast<RtAudioInterface*>(userData);
-    auto* output = static_cast<float(*)[PROCESS_SAMPLES_SIZE]>(outputBuffer);
-    a->processAudio(*output);
-#elifdef LINUX
     alignas(CACHE_LINE_SIZE) static float fBuffer[PROCESS_SAMPLES_SIZE];
     const auto a = static_cast<RtAudioInterface*>(userData);
     auto* output = static_cast<uint8_t(*)[PROCESS_SAMPLES_SIZE * 3]>(outputBuffer);
     a->processAudio(fBuffer);
     SimdUtilities::ConvertF32toS24(fBuffer, *output);
-#endif
     SimdUtilities::disableFlushToZero();
     return 0;
 }

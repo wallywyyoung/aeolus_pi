@@ -47,15 +47,11 @@ public:
         // Organ Block
         const bool wasAudioGenerated = organ->process(out);
         // Reverb Block
-        // When there is no audio generated, we let the reverb tail sound and stop the reverb processing to avoid convolving with silence.
-        reverbTailCounter = wasAudioGenerated ? convolver.getLength() : std::max(0, reverbTailCounter - PROCESS_FRAMES_SIZE);
-        if (reverbTailCounter > 0 && convolver.isAudible()) {
-            convolver.process(out, PROCESS_FRAMES_SIZE);
-        }
+        convolver.process<PROCESS_FRAMES_SIZE>(out, wasAudioGenerated);
     }
 
 private:
-    constexpr static float TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
+    constexpr static auto TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
     void generateWavetables() const;
 
     Model model;
@@ -67,5 +63,4 @@ private:
     float tuningFrequency { TUNING_FREQUENCY_DEFAULT }; ///< Middle A tuning frequency.
 
     Convolver convolver{};
-    int reverbTailCounter{0};
 };
