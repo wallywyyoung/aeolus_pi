@@ -36,7 +36,8 @@ void signalHandler(const int signal) {
 }
 
 int main (int, char*[]) {
-    std::signal(SIGINT | SIGTERM | SIGSEGV | SIGABRT | SIGFPE | SIGILL | SIGBUS, signalHandler);
+    std::signal(SIGTERM, signalHandler);
+    std::signal(SIGINT, signalHandler);
     auto engineGlobal = new EngineGlobal();
 #ifdef LINUX
     const auto midiInterface = new AlsaMidiInterface([engineGlobal](const MidiData& midiData){ engineGlobal->pushMidi(midiData); });

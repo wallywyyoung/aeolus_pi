@@ -97,9 +97,6 @@ add_executable(aeolus_pi
         EquallyPartitionedConvolver.h
 )
 
-target_compile_options(aeolus_pi PRIVATE -fsanitize=address -g)
-target_link_options(aeolus_pi PRIVATE -fsanitize=address)
-
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)
 find_package(RtAudio CONFIG REQUIRED)

@@ -65,7 +65,7 @@ void SimdUtilities::ConvertF32toS24(const float (&in)[PROCESS_SAMPLES_SIZE], std
     const float32x4_t max = vdupq_n_f32(1.0f);
     const float32x4_t scale = vdupq_n_f32(8388607.0f);
 
-    for (auto i = 0; i + 4 <= ALSA_BUFFER_SAMPLES_SIZE; i += 8) {
+    for (auto i = 0; i + 8 <= PROCESS_SAMPLES_SIZE; i += 8) {
         // Convert f32 into s24
         float32x4_t in0 = vld1q_f32(in + i);                                 // Input
         float32x4_t clamped0 = vmaxq_f32(min, vminq_f32(max, in0));  // Clamp
