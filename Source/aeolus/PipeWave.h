@@ -49,9 +49,10 @@ public:
         float releaseGain{0.0f};               // _g_r
         int remainingReleaseFrames{0};         // _i_r
 
-        float outputGain;
-        float chiffGain;
+        float outputGain{};
+        float chiffGain{};
 
+        State() = default;
         explicit State(std::shared_ptr<PipeWave> pipeWave, const float& outputGain, const float& chiffGain) : pipeWave(pipeWave), envelopeState(Attack), outputGain(outputGain), chiffGain(chiffGain) {}
 
         void release() { envelopeState = Release; }

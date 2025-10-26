@@ -57,7 +57,9 @@ namespace dsp {
             float angleTo(const Position &other) const noexcept { return atan2f(other.y, other.x) - atan2f(y, x); }
         };
 
-        explicit SpatialSource(int note, float fd, float fn);
+        SpatialSource() = default;
+
+        void init(int note, float fd, float fn);
 
         void reset();
 

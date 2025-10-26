@@ -35,8 +35,21 @@ EngineGlobal::EngineGlobal() {
     organInterface = static_cast<OrganInterface *>(organ);
     convolver.setIR(irs.irs[0]);
     std::cout << "Setting debug stop/note on" << std::endl;
-    organ->setDivisionStopOn(0,0);
-    organ->setDivisionNoteOn(0,50);
+    organ->setDivisionStopOn(1,0);
+    // organ->setDivisionStopOn(1,1);
+    // organ->setDivisionStopOn(1,2);
+    // organ->setDivisionStopOn(1,3);
+    // organ->setDivisionStopOn(1,4);
+    // organ->setDivisionStopOn(1,5);
+    // organ->setDivisionStopOn(1,6);
+    // organ->setDivisionStopOn(1,7);
+    // organ->setDivisionStopOn(1,8);
+    // organ->setDivisionStopOn(1,9);
+    // organ->setDivisionStopOn(1,10); // BROKEN
+    // organ->setDivisionStopOn(1,11); // BROKEN
+    // organ->setDivisionStopOn(1,12); // BROKEN
+    // organ->setDivisionStopOn(1,13); // BROKEN
+    // organ->setDivisionNoteOn(0,50);
 }
 
 void EngineGlobal::generateWavetables() const {

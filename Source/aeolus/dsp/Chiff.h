@@ -33,14 +33,15 @@ namespace dsp {
  */
 class Chiff {
 public:
-    Chiff(const float& frequency, const float& invertedFrequency, const float& chiffGain, const size_t& surroundingFrames) :
-    envelope{{5.0f * invertedFrequency, 100.0f * invertedFrequency, 0.01f, 100.0f * invertedFrequency}},
-    pipeDelay{SAMPLE_RATE_F * invertedFrequency},
-    lpSpec{BiquadFilter::LowPass, std::fmin(NYQUIST_WITH_MARGIN * SAMPLE_RATE_F, frequency * 4.0f), BUTTERWORTH_Q, 0.0f},
-    chiffDelayFrameCount{static_cast<size_t>(std::min<float>(static_cast<float>(delayLine.size()), 0.5f * invertedFrequency * SAMPLE_RATE_F))},
-    framesUntilRelease{surroundingFrames + OUTPUT_CHANNELS * chiffDelayFrameCount},
-    gain{chiffGain}
-    {
+    Chiff() = default;
+
+    void init(const float& frequency, const float& invertedFrequency, const float& chiffGain, const size_t& surroundingFrames) {
+        envelope.init({5.0f * invertedFrequency, 100.0f * invertedFrequency, 0.01f, 100.0f * invertedFrequency});
+        pipeDelay = SAMPLE_RATE_F * invertedFrequency;
+        lpSpec = {BiquadFilter::LowPass, std::fmin(NYQUIST_WITH_MARGIN * SAMPLE_RATE_F, frequency * 4.0f), BUTTERWORTH_Q, 0.0f};
+        chiffDelayFrameCount = static_cast<size_t>(std::min<float>(static_cast<float>(dsp::DelayLineStatic<48000>::size()), 0.5f * invertedFrequency * SAMPLE_RATE_F));
+        framesUntilRelease = surroundingFrames + OUTPUT_CHANNELS * chiffDelayFrameCount;
+        gain = chiffGain;
         BiquadFilter::updateSpec(lpSpec);
         BiquadFilter::resetState(lpState);
     }
@@ -78,17 +79,17 @@ private:
     Envelope envelope;
 
     DelayLineStatic<SAMPLE_RATE> pipeResonator;
-    float pipeDelay;
+    float pipeDelay{};
 
     // Feedback low-pass filter;
-    BiquadFilter::Spec lpSpec;
+    BiquadFilter::Spec lpSpec{};
     BiquadFilter::State lpState {};
 
     DelayLineStatic<SAMPLE_RATE> delayLine{};
-    size_t chiffDelayFrameCount;
-    size_t framesUntilRelease;  ///< Counter to account for the delayed sound before recycling the voice.
+    size_t chiffDelayFrameCount{};
+    size_t framesUntilRelease{};  ///< Counter to account for the delayed sound before recycling the voice.
 
-    float gain;
+    float gain{};
 
     void process(std::array<float, PROCESS_FRAMES_SIZE> &out);
 };

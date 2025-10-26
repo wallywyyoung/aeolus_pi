@@ -23,7 +23,7 @@
 #include "aeolus/Organ.h"
 #include "aeolus/StopFactory.h"
 
-void DivisionFactory::initFromJson(std::vector<std::shared_ptr<Division>> &divisions, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName) {
+void DivisionFactory::initFromJson(std::vector<std::shared_ptr<Division>> &divisions, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName, std::shared_ptr<VoicePool<>> voicePool) {
     const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
     if (!exists(configFile)) {
         return;
@@ -36,6 +36,7 @@ void DivisionFactory::initFromJson(std::vector<std::shared_ptr<Division>> &divis
     divisions.reserve(json.count("divisions"));
     for (auto divisionDef : json["divisions"]) {
         auto division = initFromJson(divisionDef, getStopByName);
+        division->voicePool = voicePool;
         divisions.push_back(std::move(division));
     }
     for (auto& division : divisions) {

@@ -22,6 +22,7 @@
 
 #include <vector>
 #include "StaticAudioBuffer.h"
+#include "VoicePool.h"
 #include "aeolus/Division.h"
 #include "aeolus/MidiManager.h"
 #include "aeolus/dsp/Convolution/Convolver.h"
@@ -47,6 +48,7 @@ class Organ final : public MidiManager::OrganInterface {
     StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> divisionFrameBuffer;
     StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> voiceFrameBuffer;
     StaticAudioBuffer<PROCESS_FRAMES_SIZE, 1> tremulantFrameBuffer;
+    std::shared_ptr<VoicePool<>> voicePool { std::make_shared<VoicePool<>>()};
 
     float tremulantPhase{0.0f};
 

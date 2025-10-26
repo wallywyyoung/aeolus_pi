@@ -31,7 +31,9 @@ public:
     constexpr static auto DECAY_RELEASE_TARGET_RATIO = 0.0001f;
     struct Trigger { float attack = 0.0f; float decay = 0.0f; float sustain = 1.0f; float release = 1.0f; };
 
+    Envelope() = default;
     explicit Envelope(const Trigger& trigger);
+    void init(const Trigger& trigger);
 
     [[nodiscard]] State state() const noexcept { return currentState; }
     void release();

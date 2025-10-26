@@ -23,16 +23,16 @@
 #include "aeolus/Organ.h"
 
 
-Voice::Voice(PipeWave::State newState, const int& newStopIndex) :
-    state(std::move(newState)), stopIndex(newStopIndex),
-    spatialSource(state.pipeWave->getNote(), static_cast<float>(state.pipeWave->getModel()->getFd()), static_cast<float>(state.pipeWave->getModel()->getFd())),
-    chiff([&]() {
-        const auto freq = state.pipeWave->getPipeFrequency();
-        const float att = 1.0f - expf(-freq * FREQUENCY_ROLLOFF);
-        return dsp::Chiff(freq, 1.0f / freq,
+void Voice::init(PipeWave::State newState, const int& newStopIndex) {
+    state = std::move(newState);
+    stopIndex = newStopIndex;
+    spatialSource.init(state.pipeWave->getNote(), static_cast<float>(state.pipeWave->getModel()->getFd()), static_cast<float>(state.pipeWave->getModel()->getFd()));
+    const auto freq = state.pipeWave->getPipeFrequency();
+    const float att = 1.0f - expf(-freq * FREQUENCY_ROLLOFF);
+    chiff.init(freq, 1.0f / freq,
             std::min<float>(1.0f, BASE_CHIFF_INTENSITY * state.chiffGain * att),
             spatialSource.getPostFxSamplesCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH));
-    }()) {}
+}
 
 void Voice::release() {
     if (state.envelopeState == PipeWave::Over) {

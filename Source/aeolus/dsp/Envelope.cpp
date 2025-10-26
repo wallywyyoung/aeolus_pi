@@ -28,8 +28,11 @@ namespace dsp {
 
 // Ported from
 // https://www.earlevel.com/main/2013/06/03/envelope-generators-adsr-code/
-
 Envelope::Envelope(const Trigger& trigger) {
+    init(trigger);
+}
+
+void Envelope::init(const Trigger& trigger) {
     sustainLevel = trigger.sustain;
 
     attackRate = trigger.attack * SAMPLE_RATE_F;

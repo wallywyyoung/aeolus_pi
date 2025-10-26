@@ -2,6 +2,7 @@
 //
 //  Copyright (C) 2025 Wally Young <wallywyyoung@users.noreply.github.com>
 //  Copyright (C) 2021 Arthur Benilov <arthur.benilov@gmail.com>
+//  Copyright (C) 2003-2013 Fons Adriaensen <fons@linuxaudio.org>
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -16,20 +17,30 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
 #pragma once
+#include "aeolus/Voice.h"
 
-#include "aeolus/Division.h"
-
-#include <memory>
-#include <nlohmann/json.hpp>
-
-#include "VoicePool.h"
-
-class DivisionFactory {
+template <size_t MAX_VOICES = 128>
+class VoicePool {
+    std::array<Voice, MAX_VOICES> pool{ };
+    std::vector<std::shared_ptr<Voice>> freeVoices;
 public:
-    static void initFromJson(std::vector<std::shared_ptr<Division>> &divisions, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName, std::shared_ptr<VoicePool<>> voicePool);
-private:
-    static std::shared_ptr<Division> initFromJson(nlohmann::json &json, std::function<std::shared_ptr<RankWave>(const std::string &)> getStopByName);
+    VoicePool() {
+        for (auto voice : pool) {
+            freeVoices.push_back(std::make_shared<Voice>(voice));
+        }
+    }
+
+    std::shared_ptr<Voice> getVoice(const PipeWave::State& state, const int stopIndex) {
+        auto voice = freeVoices.back();
+        freeVoices.pop_back();
+        voice->init(state,stopIndex);
+        return voice;
+    }
+
+    void releaseVoice(std::shared_ptr<Voice> &voice) {
+        freeVoices.push_back(voice);
+    }
 };

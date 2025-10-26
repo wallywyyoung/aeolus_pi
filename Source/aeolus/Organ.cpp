@@ -24,7 +24,7 @@
 #include <memory>
 
 Organ::Organ(const std::function<std::shared_ptr<RankWave>(const std::string&)> &getStopByName) {
-    DivisionFactory::initFromJson(divisions, getStopByName);
+    DivisionFactory::initFromJson(divisions, getStopByName, voicePool);
 }
 
 void Organ::setDivisionNoteOn(const int &division, const int &note) {

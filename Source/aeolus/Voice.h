@@ -33,13 +33,18 @@ class Voice {
     constexpr static auto BASE_CHIFF_INTENSITY = 0.02f;
     constexpr static auto STARTING_STEREO_WIDTH = 0.15f;
 
-    PipeWave::State state; ///< Pipe state associated with this voice.
+    PipeWave::State state{ }; ///< Pipe state associated with this voice.
     int stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
     std::array<float, PROCESS_FRAMES_SIZE> buffer{ 0.0f };
-    dsp::SpatialSource spatialSource; /// Stereo spatial modeller.
-    dsp::Chiff chiff; /// Attack chiff.
+    dsp::SpatialSource spatialSource{}; /// Stereo spatial modeller.
+    dsp::Chiff chiff{}; /// Attack chiff.
 public:
-    explicit Voice(PipeWave::State newState, const int& newStopIndex);
+    Voice() = default;
+    void init(PipeWave::State newState, const int& newStopIndex);
+
+    [[nodiscard]] bool isForState(const PipeWave::State& other) const {
+        return state.pipeWave == other.pipeWave;
+    }
 
     void release();
     void process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out);

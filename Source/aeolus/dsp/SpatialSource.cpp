@@ -26,8 +26,9 @@
 
 namespace dsp {
 
-    SpatialSource::SpatialSource(const int note, const float fd, const float fn) :
-        _sourcePosition{STARTING_STEREO_WIDTH * fd / fn * (note % 2 != 0 ? 1.0f : -1.0f) * static_cast<float>(abs(note - MIDDLE_C)), PIPE_HEIGHT} {
+    void SpatialSource::init(const int note, const float fd, const float fn) {
+        _sourcePosition.x = STARTING_STEREO_WIDTH * fd / fn * (note % 2 != 0 ? 1.0f : -1.0f) * static_cast<float>(abs(note - MIDDLE_C));
+        _sourcePosition.y = PIPE_HEIGHT;
         recalculate();
     }
 
@@ -50,10 +51,9 @@ namespace dsp {
         }
     }
 
-    static float distanceToCutOffFrequency(const float d)
-{
-    return 22.0e3f * expf(-0.09f * d);
-}
+    static float distanceToCutOffFrequency(const float d) {
+        return 22.0e3f * expf(-0.09f * d);
+    }
 
     void SpatialSource::recalculate() {
         static constexpr auto SPEED_OF_SOUND_R = 1.0f / 343.0f; // [m/s] @ 20 deg C

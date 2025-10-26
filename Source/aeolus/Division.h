@@ -29,6 +29,8 @@
 #include <bitset>
 #include <vector>
 
+#include "VoicePool.h"
+
 class Organ;
 /**
  * @brief Single keyboard division.
@@ -105,7 +107,6 @@ private:
     bool hasTremulant;     ///< Whether this division has a tremulant control.
     bool tremulantEnabled; ///< Whether tremulant is enabled.
 
-
     SmoothFloat tremulantLevel {0.0f, 0.0f, TREMULANT_TARGET_LEVEL, 0.1f};
     SmoothFloat gain{ 1.0f };
 
@@ -119,7 +120,9 @@ private:
     dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> tremulantDelayR;
 
     std::vector<Stop> stops{};            ///< All the stops this division has.
-    std::vector<Voice> activeVoices;     ///< Active voices on this division.
+    std::vector<std::shared_ptr<Voice>> activeVoices;     ///< Active voices on this division.
+
+    std::shared_ptr<VoicePool<>> voicePool{};
 
     std::bitset<TOTAL_NOTES> keysState;           ///< Key state for this division.
     std::bitset<TOTAL_NOTES> aggregatedKeysState; ///< Key state aggregated from coupled divisions.
