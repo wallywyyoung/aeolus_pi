@@ -46,7 +46,7 @@ public:
 
     void generateWavetables();
 
-    PipeWave::State trigger(const int &note, const float &outputGain, const float &chiffGain);
+    std::shared_ptr<PipeWave> getPipeWave(const int &note);
 
 private:
     void createPipes(const Scale& scale, float tuningFrequency);

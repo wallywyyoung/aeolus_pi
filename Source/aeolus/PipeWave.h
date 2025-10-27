@@ -36,12 +36,12 @@
  */
 class PipeWave final {
 public:
-    enum EnvelopeState { Idle, Attack, Release, Over }; /// Envelope state.
+    enum EnvelopeState { Attack, Release, Inactive }; /// Envelope state.
 
     /// Playback state.
     struct State {
         std::shared_ptr<PipeWave> pipeWave{nullptr};
-        EnvelopeState envelopeState{Idle};
+        EnvelopeState envelopeState{Inactive};
         float* position{nullptr};
         float interpolationPhase{0.0f};
         float interpolationSpeed{0.0f};
@@ -52,7 +52,18 @@ public:
         float (State::*getPhaseStep)() = &State::phaseStepPlayback;
 
         State() = default;
-        explicit State(std::shared_ptr<PipeWave> pipeWave, const float& outputGain, const float& chiffGain) : pipeWave(pipeWave), envelopeState(Attack), outputGain(outputGain), chiffGain(chiffGain) {}
+        void init(const std::shared_ptr<PipeWave>& newPipeWave, const float& newOutputGain, const float& newChiffGain) {
+            pipeWave = newPipeWave;
+            envelopeState = Attack;
+            position = pipeWave->attackWaveformStart;
+            interpolationPhase = 0.0f;
+            interpolationSpeed = 0.0f;
+            gain = 1.0f;
+            remainingReleaseFrames = pipeWave->releaseFrameCount;
+            outputGain = newOutputGain;
+            chiffGain = newChiffGain;
+            getPhaseStep = &State::phaseStepPlayback;
+        }
 
         void release() {
             envelopeState = Release;
@@ -60,8 +71,7 @@ public:
         }
 
         [[nodiscard]] bool isTriggered() const noexcept { return pipeWave != nullptr && envelopeState == Attack; }
-        [[nodiscard]] bool isIdle() const noexcept { return envelopeState == Idle; }
-        [[nodiscard]] bool isOver() const noexcept { return envelopeState == Over; }
+        [[nodiscard]] bool isOver() const noexcept { return envelopeState == Inactive; }
 
     private:
         float phaseStepPlayback() {

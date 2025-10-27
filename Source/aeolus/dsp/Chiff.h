@@ -47,7 +47,7 @@ public:
     }
 
     void process(const PipeWave::State &in, std::array<float, PROCESS_FRAMES_SIZE> &out) {
-        if (in.envelopeState == PipeWave::Over) {
+        if (in.envelopeState == PipeWave::Inactive) {
             framesUntilRelease -= std::min(framesUntilRelease, static_cast<size_t>(PROCESS_FRAMES_SIZE));
         }
         for (float &sample : out) {

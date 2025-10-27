@@ -40,7 +40,7 @@ class Voice {
     dsp::Chiff chiff{}; /// Attack chiff.
 public:
     Voice() = default;
-    void init(PipeWave::State newState, const int& newStopIndex);
+    void init(const std::shared_ptr<PipeWave>& pipeWave, const float &outputGain, const float &chiffGain, const int &newStopIndex);
 
     [[nodiscard]] bool isForState(const PipeWave::State& other) const {
         return state.pipeWave == other.pipeWave;
@@ -51,7 +51,6 @@ public:
     void setStopIndex(const int idx) noexcept { stopIndex = idx; }
 
     [[nodiscard]] bool isOver() const noexcept;
-    [[nodiscard]] bool isIdle() const noexcept { return state.envelopeState == PipeWave::Idle; }
     [[nodiscard]] bool isActive() const noexcept;
     [[nodiscard]] bool isActiveForStopNote(const int &thisStopIndex, const int &note) const noexcept;
     [[nodiscard]] int getNote() const;

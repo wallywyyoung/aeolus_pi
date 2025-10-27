@@ -37,7 +37,7 @@ float PipeWave::getPipeFrequency() const noexcept {
 }
 
 void PipeWave::playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
-    if (state.envelopeState == Over) {
+    if (state.envelopeState == Inactive) {
         return;
     }
 
@@ -80,7 +80,7 @@ void PipeWave::playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &ou
     if (state.envelopeState == Release) {
         --state.remainingReleaseFrames;
         if (state.remainingReleaseFrames == 0) {
-            state.envelopeState = Over;
+            state.envelopeState = Inactive;
         }
     }
 }

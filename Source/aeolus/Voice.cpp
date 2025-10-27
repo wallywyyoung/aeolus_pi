@@ -23,19 +23,19 @@
 #include "aeolus/Organ.h"
 
 
-void Voice::init(PipeWave::State newState, const int& newStopIndex) {
-    state = std::move(newState);
+void Voice::init(const std::shared_ptr<PipeWave>& pipeWave, const float &outputGain, const float &chiffGain, const int &newStopIndex) {
+    state.init(pipeWave, outputGain, chiffGain);
     stopIndex = newStopIndex;
-    spatialSource.init(state.pipeWave->getNote(), static_cast<float>(state.pipeWave->getModel()->getFd()), static_cast<float>(state.pipeWave->getModel()->getFd()));
-    const auto freq = state.pipeWave->getPipeFrequency();
+    spatialSource.init(pipeWave->getNote(), static_cast<float>(pipeWave->getModel()->getFd()), static_cast<float>(pipeWave->getModel()->getFd()));
+    const auto freq = pipeWave->getPipeFrequency();
     const float att = 1.0f - expf(-freq * FREQUENCY_ROLLOFF);
     chiff.init(freq, 1.0f / freq,
-            std::min<float>(1.0f, BASE_CHIFF_INTENSITY * state.chiffGain * att),
+            std::min<float>(1.0f, BASE_CHIFF_INTENSITY * chiffGain * att),
             spatialSource.getPostFxSamplesCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH));
 }
 
 void Voice::release() {
-    if (state.envelopeState == PipeWave::Over) {
+    if (state.envelopeState == PipeWave::Inactive) {
         std::cerr << "Release was called after the voice was over!" << std::endl;
         return;
     }
