@@ -29,9 +29,7 @@ void Voice::init(const std::shared_ptr<PipeWave>& pipeWave, const float &outputG
     spatialSource.init(pipeWave->getNote(), static_cast<float>(pipeWave->getModel()->getFd()), static_cast<float>(pipeWave->getModel()->getFd()));
     const auto freq = pipeWave->getPipeFrequency();
     const float att = 1.0f - expf(-freq * FREQUENCY_ROLLOFF);
-    chiff.init(freq, 1.0f / freq,
-            std::min<float>(1.0f, BASE_CHIFF_INTENSITY * chiffGain * att),
-            spatialSource.getPostFxSamplesCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH));
+    chiff.init(freq, 1.0f / freq, std::min<float>(1.0f, BASE_CHIFF_INTENSITY * chiffGain * att), spatialSource.getPostFxSamplesCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH));
 }
 
 void Voice::release() {
