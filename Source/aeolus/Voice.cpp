@@ -39,7 +39,7 @@ void Voice::release() {
         std::cerr << "Release was called after the voice was over!" << std::endl;
         return;
     }
-    state.release();
+    state.envelopeState = PipeWave::RELEASE;
     chiff.release();
 }
 
@@ -50,7 +50,7 @@ void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out
 }
 
 bool Voice::isOver() const noexcept {
-    return state.isOver() && chiff.isOver();
+    return state.envelopeState == PipeWave::EnvelopeState::OVER && chiff.isOver();
 }
 
 bool Voice::isActive() const noexcept {

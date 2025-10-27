@@ -25,7 +25,6 @@
 #include "MemoryConstants.h"
 #include "aeolus/Addsynth.h"
 
-
 /**
  * @brief Single pipe wavetable.
  *
@@ -34,17 +33,15 @@
  */
 class PipeWave final {
 public:
-    enum EnvelopeState : uint8_t { ATTACK, RELEASE, OVER };
-
-    /// Playback state.
+    enum EnvelopeState : uint8_t { OVER, ATTACK, RELEASE };
     struct State {
-        std::shared_ptr<PipeWave> pipeWave{nullptr};
-        EnvelopeState envelopeState{OVER};
-        float* position{nullptr};
-        float interpolationPhase{0.0f};
-        float interpolationSpeed{0.0f};
-        float gain{ 1.0f };
-        int remainingReleaseFrames{0};
+        std::shared_ptr<PipeWave> pipeWave{};
+        EnvelopeState envelopeState{};
+        float* position{};
+        float interpolationPhase{};
+        float interpolationSpeed{};
+        float gain{};
+        int remainingReleaseFrames{};
         float outputGain{};
         float chiffGain{};
 
@@ -60,10 +57,6 @@ public:
             outputGain = newOutputGain;
             chiffGain = newChiffGain;
         }
-
-        void release() { envelopeState = RELEASE; }
-
-        [[nodiscard]] bool isOver() const noexcept { return envelopeState == OVER; }
     };
 
     PipeWave() = delete;
@@ -71,9 +64,9 @@ public:
     PipeWave(const PipeWave& other) = delete;
     ~PipeWave() = default;
 
-    [[nodiscard]] std::shared_ptr<Addsynth> getModel() const noexcept { return _model; }
-    [[nodiscard]] int getNote() const noexcept { return _note + _model->getNoteMin(); }
-    [[nodiscard]] float getFreqency() const noexcept { return _freq; }
+    [[nodiscard]] std::shared_ptr<Addsynth> getModel() const noexcept { return model; }
+    [[nodiscard]] int getNote() const noexcept { return note + model->getNoteMin(); }
+    [[nodiscard]] float getFreqency() const noexcept { return freq; }
     [[nodiscard]] float getPipeFrequency() const noexcept;
 
     void generateWavetable();
@@ -91,22 +84,22 @@ private:
                         int &cycleCount);
     static void attgain(float *att, const int &n, const float &p);
 
-    std::shared_ptr<Addsynth> _model;
-    int _note;
-    float _freq;
+    std::shared_ptr<Addsynth> model;
+    int note;
+    float freq;
 
-    int _attackLength;          // _l0
-    int _loopLength;            // _l1
-    int _sampleStep;            // _k_s
-    int releaseFrameCount;     // _k_r
-    float releaseDecayRate;     // _m_r
-    float _releaseDetune;       // _d_r
-    float _instability;         // _d_p
+    int attackLength;       // _l0
+    int loopLength;         // _l1
+    int sampleStep;         // _k_s
+    int releaseFrameCount;  // _k_r
+    float releaseDecayRate; // _m_r
+    float releaseDetune;    // _d_r
+    float instability;      // _d_p
 
-    std::vector<float> _wavetable;
+    std::vector<float> wavetable;
 
     float* attackWaveformStart; // _p0
     float* loopWaveformStart;   // _p1
-    float* _loopEndPtr;         // _p2
+    float* loopEndPtr;          // _p2
 };
 
