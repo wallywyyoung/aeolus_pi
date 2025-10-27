@@ -26,12 +26,9 @@
 
 SmoothFloat::SmoothFloat(const float value, const float min, const float max, const float smooth) : currentValue{value}, minValue{min}, maxValue{max}, targetValue{value}, frac{smooth}, smoothing{false} { }
 
-void SmoothFloat::setValue(const float v, const float s, const bool force)
-{
+void SmoothFloat::setValue(const float v, const float s, const bool force) {
     targetValue = limitRange(minValue, maxValue, v);
-
     frac = limitRange(0.0f, 1.0f, s);
-
     if (force) {
         currentValue = targetValue;
         smoothing = false;
@@ -40,10 +37,8 @@ void SmoothFloat::setValue(const float v, const float s, const bool force)
     }
 }
 
-void SmoothFloat::setValue(const float v, const bool force)
-{
+void SmoothFloat::setValue(const float v, const bool force) {
     targetValue = limitRange(minValue, maxValue, v);
-
     if (force) {
         currentValue = targetValue;
         smoothing = false;
@@ -52,28 +47,22 @@ void SmoothFloat::setValue(const float v, const bool force)
     }
 }
 
-void SmoothFloat::setSmoothing(const float s) noexcept
-{
+void SmoothFloat::setSmoothing(const float s) noexcept {
     frac = limitRange(0.0f, 1.0f, s);
 }
 
-void SmoothFloat::setRange(const float min, const float max)
-{
+void SmoothFloat::setRange(const float min, const float max) {
     minValue = std::min<float>(min, max);
     maxValue = std::max<float>(min, max);
 }
 
-SmoothFloat& SmoothFloat::operator = (const float v)
-{
+SmoothFloat& SmoothFloat::operator = (const float v) {
     setValue(v);
-
     return *this;
 }
 
-float SmoothFloat::nextValue()
-{
+float SmoothFloat::nextValue() {
     updateSmoothing();
-
     if (smoothing) {
         const float prevValue { currentValue };
         currentValue = targetValue * frac + currentValue * (1.0f - frac);
@@ -83,14 +72,12 @@ float SmoothFloat::nextValue()
             currentValue = targetValue;
         }
     }
-
     return currentValue;
 }
 
-void SmoothFloat::updateSmoothing()
-{
+void SmoothFloat::updateSmoothing() {
     smoothing = std::abs(currentValue - targetValue) > std::numeric_limits<float>::epsilon();
-
-    if (!smoothing)
+    if (!smoothing) {
         currentValue = targetValue;
+    }
 }

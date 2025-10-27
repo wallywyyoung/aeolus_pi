@@ -22,7 +22,7 @@
 
 #include <future>
 
-size_t Convolver::setIR(const IR &newIr) {
+void Convolver::setIR(const IR &newIr) {
     state = INIT;
 
     ir = newIr;
@@ -61,6 +61,4 @@ size_t Convolver::setIR(const IR &newIr) {
     }
 
     state = PROCESS;
-
-    return length;
 }

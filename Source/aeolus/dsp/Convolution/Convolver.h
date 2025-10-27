@@ -68,7 +68,7 @@ public:
     Convolver() = default;
     ~Convolver() = default;
 
-    [[nodiscard]] size_t setIR(const IR &newIr);
+    void setIR(const IR &newIr);
 
     void setDryWet(const float newDry, const float newWet, const bool force = false) {
         dry.setValue(newDry, force);

@@ -57,7 +57,7 @@ public:
     void setNoteOff(const int &note);
     void setAllNotesOff();
     // Modifiers
-    void handleSwell(const int& value);
+    void handleSwell(const float& value);
     // Stops
     void setStopOn(const int& stop);
     void setStopOff(const int& stop);

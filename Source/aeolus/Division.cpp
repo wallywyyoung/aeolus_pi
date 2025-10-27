@@ -56,7 +56,7 @@ void Division::setAllNotesOff() {
     keysState.reset();
 }
 
-void Division::handleSwell(const int& value) {
+void Division::handleSwell(const float& value) {
     if (hasSwell) {
         gain.setValue(value);
     }
