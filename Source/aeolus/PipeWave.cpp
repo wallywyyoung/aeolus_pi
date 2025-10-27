@@ -36,139 +36,53 @@ float PipeWave::getPipeFrequency() const noexcept {
     return _freq * static_cast<float>(_model->getFn()) / static_cast<float>(_model->getFd());
 }
 
-void PipeWave::play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
+void PipeWave::playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
     if (state.envelopeState == Over) {
         return;
     }
-
-    thread_local std::random_device rnd;
-    thread_local std::mt19937 gen(rnd());
-    thread_local std::uniform_real_distribution dist(-0.5f, 0.5f);
 
     assert(state.envelopeState != PipeWave::Idle);
     assert(attackWaveformStart != nullptr);
     assert(loopWaveformStart != nullptr);
     assert(_loopEndPtr != nullptr);
 
-    float* playbackPosition = state.playbackPosition;
-    float* releasePosition = state.releasePosition;
-
-    if (state.envelopeState == Attack) {
-        if (playbackPosition == nullptr) {
-            playbackPosition = attackWaveformStart;
-            state.playInterpolationPhase = 0.0f;
-            state.playInterpolationSpeed = 0.0f;
+    auto gainDecay = 0.0f;
+    if (state.envelopeState == Release) {
+        const int remainingReleaseFrames = state.remainingReleaseFrames - 1;
+        gainDecay = state.gain / static_cast<float>(PROCESS_FRAMES_SIZE);
+        if (remainingReleaseFrames > 0) {
+            gainDecay *= releaseDecayRate;
         }
-    } else if (state.envelopeState == Release) {
-        if (releasePosition == nullptr) {
-            releasePosition = playbackPosition;
-            playbackPosition = nullptr;
-            state.releaseGain = 1.0f;
-            state.releaseInterpolationPhase = state.playInterpolationPhase;
-            state.remainingReleaseFrames = releaseFrameCount;
+    }
+    if (state.position < loopWaveformStart) {
+        for (auto& sample : out) {
+            sample = state.gain * *state.position;
+            ++state.position;
+            state.gain -= gainDecay;
         }
     } else {
-        assert(false); // Invalid envelope state
+        const auto phaseStep = (state.*state.getPhaseStep)();
+        for (auto& sample : out) {
+            state.interpolationPhase += phaseStep;
+
+            const int phaseOverflow = (state.interpolationPhase > 1.0f) - (state.interpolationPhase < 0.0f);
+            state.position += phaseOverflow;
+            state.interpolationPhase -= static_cast<float>(phaseOverflow);
+
+            state.position += _sampleStep;
+            if (state.position >= _loopEndPtr) {
+                state.position -= _loopLength;
+            }
+            sample = state.gain * (state.position [0] + state.interpolationPhase * (state.position[1] - state.position[0]));
+            state.gain -= gainDecay;
+        }
     }
-
-    if (releasePosition) {
-        int period = PROCESS_FRAMES_SIZE;
-        auto playHead = out.begin();
-        float releaseGain = state.releaseGain;
-        const int remainingReleaseFrames = state.remainingReleaseFrames - 1;
-
-        float gainDecayPerSample = releaseGain / static_cast<float>(PROCESS_FRAMES_SIZE);
-
-        if (remainingReleaseFrames > 0) {
-            gainDecayPerSample *= releaseDecayRate;
-        }
-
-        if (releasePosition < loopWaveformStart) {
-
-            while (period--) {
-                *playHead = releaseGain * *releasePosition;
-                ++playHead;
-                ++releasePosition;
-                releaseGain -= gainDecayPerSample;
-            }
-
-        } else {
-
-            float releaseInterpolation = state.releaseInterpolationPhase;
-            const auto releaseDetune = _releaseDetune;
-
-            while (period--) {
-                releaseInterpolation += releaseDetune;
-
-                if (releaseInterpolation > 1.0f) {
-                    releaseInterpolation -= 1.0f;
-                    releasePosition += 1;
-                } else if (releaseInterpolation < 0.0f) {
-                    releaseInterpolation += 1.0f;
-                    releasePosition -= 1;
-                }
-                releasePosition += _sampleStep;
-                if (releasePosition >= _loopEndPtr) {
-                    releasePosition -= _loopLength;
-                }
-                *playHead = releaseGain * (releasePosition [0] + releaseInterpolation * (releasePosition [1] - releasePosition [0]));
-                ++playHead;
-                releaseGain -= gainDecayPerSample;
-            }
-            state.releaseInterpolationPhase = releaseInterpolation;
-        }
-        if (remainingReleaseFrames > 0) {
-            state.releaseGain = releaseGain;
-            state.remainingReleaseFrames = remainingReleaseFrames;
-        } else {
-            releasePosition = nullptr;
+    if (state.envelopeState == Release) {
+        --state.remainingReleaseFrames;
+        if (state.remainingReleaseFrames == 0) {
             state.envelopeState = Over;
         }
     }
-
-    if (playbackPosition) {
-        int period = PROCESS_FRAMES_SIZE;
-        auto playHead = out.begin();
-
-        if (playbackPosition < loopWaveformStart) {
-            while (period--) {
-                *playHead = *playbackPosition;
-                ++playbackPosition;
-                ++playHead;
-            }
-        } else {
-            float playInterpolationPhase = state.playInterpolationPhase;
-            state.playInterpolationSpeed += _instability * PLAY_INTERPOLATION_SPEED_SCALING * (NOISE_SCALING* _instability * dist(gen) - state.playInterpolationSpeed);
-            const float dy = state.playInterpolationSpeed * static_cast<float>(_sampleStep);
-
-            while (period--) {
-                playInterpolationPhase += dy;
-
-                if (playInterpolationPhase > 1.0f) {
-                    playInterpolationPhase -= 1.0f;
-                    playbackPosition += 1;
-                } else if (playInterpolationPhase < 0.0f) {
-                    playInterpolationPhase += 1.0f;
-                    playbackPosition -= 1;
-                }
-                // TODO: THIS IS WHERE THIS IS BROKEN
-                playbackPosition += _sampleStep;
-                if (playbackPosition >= _loopEndPtr) {
-                    playbackPosition -= _loopLength;
-                }
-                *playHead = playbackPosition[0] + playInterpolationPhase * (playbackPosition[1] - playbackPosition[0]);
-                ++playHead;
-            }
-
-            state.playInterpolationPhase = playInterpolationPhase;
-        }
-    }
-
-    if (playbackPosition == nullptr && releasePosition == nullptr) {
-        state.envelopeState = Over;
-    }
-    state.playbackPosition = playbackPosition;
-    state.releasePosition = releasePosition;
 }
 
 void PipeWave::generateWavetable() {

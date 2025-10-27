@@ -22,6 +22,8 @@
 #pragma once
 
 #include <memory>
+#include <random>
+
 #include "MemoryConstants.h"
 #include "aeolus/Addsynth.h"
 
@@ -40,25 +42,36 @@ public:
     struct State {
         std::shared_ptr<PipeWave> pipeWave{nullptr};
         EnvelopeState envelopeState{Idle};
-        float* playbackPosition{nullptr};      // _p_p
-        float playInterpolationPhase{0.0f};    // _y_p
-        float playInterpolationSpeed{0.0f};    // _z_p
-
-        float* releasePosition{nullptr};       // _p_r
-        float releaseInterpolationPhase{0.0f}; // _y_r
-        float releaseGain{0.0f};               // _g_r
-        int remainingReleaseFrames{0};         // _i_r
-
+        float* position{nullptr};
+        float interpolationPhase{0.0f};
+        float interpolationSpeed{0.0f};
+        float gain{1.0f};
+        int remainingReleaseFrames{0};
         float outputGain{};
         float chiffGain{};
+        float (State::*getPhaseStep)() = &State::phaseStepPlayback;
 
         State() = default;
         explicit State(std::shared_ptr<PipeWave> pipeWave, const float& outputGain, const float& chiffGain) : pipeWave(pipeWave), envelopeState(Attack), outputGain(outputGain), chiffGain(chiffGain) {}
 
-        void release() { envelopeState = Release; }
+        void release() {
+            envelopeState = Release;
+            getPhaseStep = &State::phaseStepRelease;
+        }
+
         [[nodiscard]] bool isTriggered() const noexcept { return pipeWave != nullptr && envelopeState == Attack; }
         [[nodiscard]] bool isIdle() const noexcept { return envelopeState == Idle; }
         [[nodiscard]] bool isOver() const noexcept { return envelopeState == Over; }
+
+    private:
+        float phaseStepPlayback() {
+            static std::random_device rnd;
+            static std::mt19937 gen(rnd());
+            static std::uniform_real_distribution dist(-0.5f, 0.5f);
+            interpolationSpeed += pipeWave->_instability * PLAY_INTERPOLATION_SPEED_SCALING * (NOISE_SCALING * pipeWave->_instability * dist(gen) - interpolationSpeed);
+            return interpolationSpeed * static_cast<float>(pipeWave->_sampleStep);
+        }
+        float phaseStepRelease() { return pipeWave->_releaseDetune; }
     };
 
     PipeWave() = delete;
@@ -75,7 +88,7 @@ public:
 
     void generateWavetable();
 
-    void play(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out);
+    void playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out);
 
 private:
     static constexpr auto CENTS_IN_OCTAVE = 1200.0f;
