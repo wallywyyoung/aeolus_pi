@@ -35,7 +35,7 @@ void Voice::init(const std::shared_ptr<PipeWave>& pipeWave, const float &outputG
 }
 
 void Voice::release() {
-    if (state.envelopeState == PipeWave::Inactive) {
+    if (state.envelopeState == PipeWave::OVER) {
         std::cerr << "Release was called after the voice was over!" << std::endl;
         return;
     }
@@ -54,7 +54,7 @@ bool Voice::isOver() const noexcept {
 }
 
 bool Voice::isActive() const noexcept {
-    return state.envelopeState == PipeWave::Attack;
+    return state.envelopeState == PipeWave::ATTACK;
 }
 
 bool Voice::isActiveForStopNote(const int &thisStopIndex, const int &note) const noexcept {

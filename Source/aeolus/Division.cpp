@@ -294,8 +294,8 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
             continue;
         }
         for (const auto& rankWave : zone.rankWaves) {
-            if (auto state = rankWave->trigger(note, stop.getGain(), stop.getChiffGain()); state.isTriggered()) {
-                auto voice = voicePool->getVoice(state, stopIndex);
+            if (auto pipewave = rankWave->getPipeWave(note); pipewave != nullptr) {
+                auto voice = voicePool->getVoice(pipewave, stop.getGain(), stop.getChiffGain(), stopIndex);
                 activeVoices.emplace_back(voice);
                 voiceTriggered = true;
             }

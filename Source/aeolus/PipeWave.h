@@ -22,8 +22,6 @@
 #pragma once
 
 #include <memory>
-#include <random>
-
 #include "MemoryConstants.h"
 #include "aeolus/Addsynth.h"
 
@@ -36,25 +34,24 @@
  */
 class PipeWave final {
 public:
-    enum EnvelopeState { Attack, Release, Inactive }; /// Envelope state.
+    enum EnvelopeState : uint8_t { ATTACK, RELEASE, OVER };
 
     /// Playback state.
     struct State {
         std::shared_ptr<PipeWave> pipeWave{nullptr};
-        EnvelopeState envelopeState{Inactive};
+        EnvelopeState envelopeState{OVER};
         float* position{nullptr};
         float interpolationPhase{0.0f};
         float interpolationSpeed{0.0f};
-        float gain{1.0f};
+        float gain{ 1.0f };
         int remainingReleaseFrames{0};
         float outputGain{};
         float chiffGain{};
-        float (State::*getPhaseStep)() = &State::phaseStepPlayback;
 
         State() = default;
         void init(const std::shared_ptr<PipeWave>& newPipeWave, const float& newOutputGain, const float& newChiffGain) {
             pipeWave = newPipeWave;
-            envelopeState = Attack;
+            envelopeState = ATTACK;
             position = pipeWave->attackWaveformStart;
             interpolationPhase = 0.0f;
             interpolationSpeed = 0.0f;
@@ -62,26 +59,11 @@ public:
             remainingReleaseFrames = pipeWave->releaseFrameCount;
             outputGain = newOutputGain;
             chiffGain = newChiffGain;
-            getPhaseStep = &State::phaseStepPlayback;
         }
 
-        void release() {
-            envelopeState = Release;
-            getPhaseStep = &State::phaseStepRelease;
-        }
+        void release() { envelopeState = RELEASE; }
 
-        [[nodiscard]] bool isTriggered() const noexcept { return pipeWave != nullptr && envelopeState == Attack; }
-        [[nodiscard]] bool isOver() const noexcept { return envelopeState == Inactive; }
-
-    private:
-        float phaseStepPlayback() {
-            static std::random_device rnd;
-            static std::mt19937 gen(rnd());
-            static std::uniform_real_distribution dist(-0.5f, 0.5f);
-            interpolationSpeed += pipeWave->_instability * PLAY_INTERPOLATION_SPEED_SCALING * (NOISE_SCALING * pipeWave->_instability * dist(gen) - interpolationSpeed);
-            return interpolationSpeed * static_cast<float>(pipeWave->_sampleStep);
-        }
-        float phaseStepRelease() { return pipeWave->_releaseDetune; }
+        [[nodiscard]] bool isOver() const noexcept { return envelopeState == OVER; }
     };
 
     PipeWave() = delete;
@@ -89,9 +71,7 @@ public:
     PipeWave(const PipeWave& other) = delete;
     ~PipeWave() = default;
 
-
     [[nodiscard]] std::shared_ptr<Addsynth> getModel() const noexcept { return _model; }
-
     [[nodiscard]] int getNote() const noexcept { return _note + _model->getNoteMin(); }
     [[nodiscard]] float getFreqency() const noexcept { return _freq; }
     [[nodiscard]] float getPipeFrequency() const noexcept;

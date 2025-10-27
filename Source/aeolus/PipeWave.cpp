@@ -37,21 +37,24 @@ float PipeWave::getPipeFrequency() const noexcept {
 }
 
 void PipeWave::playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
-    if (state.envelopeState == Inactive) {
+    if (state.envelopeState == OVER) {
         return;
     }
 
-    assert(state.envelopeState != PipeWave::Idle);
+    assert(state.envelopeState != OVER);
     assert(attackWaveformStart != nullptr);
     assert(loopWaveformStart != nullptr);
     assert(_loopEndPtr != nullptr);
 
     auto gainDecay = 0.0f;
-    if (state.envelopeState == Release) {
-        const int remainingReleaseFrames = state.remainingReleaseFrames - 1;
-        gainDecay = state.gain / static_cast<float>(PROCESS_FRAMES_SIZE);
-        if (remainingReleaseFrames > 0) {
+    if (state.envelopeState == RELEASE) {
+        static constexpr auto PROCESS_FRAMES_SIZE_R = 1.0f / static_cast<float>(PROCESS_FRAMES_SIZE);
+        gainDecay = state.gain * PROCESS_FRAMES_SIZE_R;
+        if (state.remainingReleaseFrames > 0) {
             gainDecay *= releaseDecayRate;
+            --state.remainingReleaseFrames;
+        } else {
+            state.envelopeState = OVER;
         }
     }
     if (state.position < loopWaveformStart) {
@@ -61,7 +64,16 @@ void PipeWave::playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &ou
             state.gain -= gainDecay;
         }
     } else {
-        const auto phaseStep = (state.*state.getPhaseStep)();
+        auto phaseStep = 0.0f;
+        if (state.envelopeState == ATTACK) {
+            static std::random_device rnd;
+            static std::mt19937 gen(rnd());
+            static std::uniform_real_distribution dist(-0.5f, 0.5f);
+            state.interpolationSpeed += _instability * PLAY_INTERPOLATION_SPEED_SCALING * (NOISE_SCALING * _instability * dist(gen) - state.interpolationSpeed);
+            phaseStep = state.interpolationSpeed * static_cast<float>(_sampleStep);
+        } else { // RELEASE
+            phaseStep = _releaseDetune;
+        }
         for (auto& sample : out) {
             state.interpolationPhase += phaseStep;
 
@@ -75,12 +87,6 @@ void PipeWave::playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &ou
             }
             sample = state.gain * (state.position [0] + state.interpolationPhase * (state.position[1] - state.position[0]));
             state.gain -= gainDecay;
-        }
-    }
-    if (state.envelopeState == Release) {
-        --state.remainingReleaseFrames;
-        if (state.remainingReleaseFrames == 0) {
-            state.envelopeState = Inactive;
         }
     }
 }
