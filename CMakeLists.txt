@@ -94,7 +94,7 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/Convolution/Convolver.cpp
         Source/aeolus/dsp/Convolution/DanielsonLanczos.h
         Source/aeolus/dsp/Convolution/GFFT.h
-        EquallyPartitionedConvolver.h
+        Source/aeolus/dsp/Convolution/EquallyPartitionedConvolver.h
         Source/RestManager.h
         Source/RestManager.cpp
 )
