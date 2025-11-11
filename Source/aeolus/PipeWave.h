@@ -80,8 +80,7 @@ private:
     static constexpr auto DECIBEL_TO_LINEAR_APPROX = 0.1661f;
     static constexpr auto NOISE_SCALING = 0.05f;
     static constexpr auto PLAY_INTERPOLATION_SPEED_SCALING = 0.0005f;
-    static void looplen(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength,
-                        int &cycleCount);
+    static void looplen(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength, int &cycleCount);
     static void attgain(float *att, const int &n, const float &p);
 
     std::shared_ptr<Addsynth> model;

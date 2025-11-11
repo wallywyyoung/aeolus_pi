@@ -111,7 +111,7 @@ void AlsaAudioInterface::audioHandler(const AudioThreadObjects * a) {
         }
 
         a->processAudio(fBuffer);
-        SimdUtilities::ConvertF32toS24(fBuffer, oBuffer);
+        SimdUtilities::convertF32ToS24(fBuffer, oBuffer);
         written = snd_pcm_writei(a->playback, oBuffer, PROCESS_FRAMES_SIZE);
 
         if (written < 0) {

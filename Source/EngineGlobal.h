@@ -20,11 +20,12 @@
 
 #pragma once
 
+#include <memory>
 #include <unordered_map>
-
+#include "aeolus/IR.h"
+#include "aeolus/MidiManager.h"
 #include "aeolus/Model.h"
-#include "aeolus/Organ.h"
-#include "aeolus/RankWave.h"
+#include "aeolus/dsp/Convolution/Convolver.h"
 #include "aeolus/Scale.h"
 
 /**
@@ -32,6 +33,8 @@
  *
  * This class in a singleton which is shared among all the plugin instances.
  */
+class RankWave;
+class Organ;
 
 class EngineGlobal final : public MidiManager {
 public:
@@ -41,21 +44,16 @@ public:
     [[nodiscard]] std::shared_ptr<RankWave> getStopByName(const std::string &name) const { return _rankwavesByName.at(name); }
     void pushMidi(const MidiData& midiData) { push(midiData); }
 
-    void process(float (&out)[PROCESS_SAMPLES_SIZE]) {
-        // Midi / Configuration Block
-        ProcessMidiBuffer();
-        // Organ Block
-        const bool wasAudioGenerated = organ->process(out);
-        // Reverb Block
-        convolver.process<PROCESS_FRAMES_SIZE>(out, wasAudioGenerated);
-    }
+    void process(float (&out)[PROCESS_SAMPLES_SIZE]);
+
+    std::shared_ptr<Organ> getOrgan() { return organ; }
 
 private:
     constexpr static auto TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
     void generateWavetables() const;
 
     Model model;
-    Organ *organ;
+    std::shared_ptr<Organ> organ;
     std::unordered_map<std::string, std::shared_ptr<RankWave>> _rankwavesByName{};
     IRs irs;
     std::shared_ptr<Scale> scale { std::make_shared<Scale>(Scale::EqualTemp)};

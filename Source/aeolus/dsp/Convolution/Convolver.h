@@ -20,13 +20,12 @@
 
 #pragma once
 
-#include "../../../../EquallyPartitionedConvolver.h"
 #include "StaticAudioBuffer.h"
 #include "aeolus/IR.h"
 #include "aeolus/SmoothFloat.h"
 #include "aeolus/Worker.h"
 #include "aeolus/dsp/Convolution/CascadeConvolver.h"
-#include "aeolus/dsp/Convolution/UniformPartitionedConvolver.h"
+#include "aeolus/dsp/Convolution/EquallyPartitionedConvolver.h"
 
 /**
  * @brief Stereo convolution reverb.

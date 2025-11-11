@@ -19,10 +19,11 @@
 // ----------------------------------------------------------------------------
 
 #include "EngineGlobal.h"
+#include <thread>
 #include "IOManager.h"
 #include "aeolus/Organ.h"
+#include "aeolus/RankWave.h"
 #include "aeolus/utilities/SimdUtilities.h"
-#include <thread>
 
 EngineGlobal::EngineGlobal() {
     irs = IOManager::loadIRs();
@@ -31,25 +32,18 @@ EngineGlobal::EngineGlobal() {
         _rankwavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale, tuningFrequency));
     }
     generateWavetables();
-    organ = new Organ([this](const std::string &name) { return getStopByName(name); });
-    organInterface = static_cast<OrganInterface *>(organ);
+    organ = std::make_shared<Organ>([this](const std::string &name) { return getStopByName(name); });
+    organInterface = static_cast<OrganInterface *>(organ.get());
     convolver.setIR(irs.irs[0]);
-    std::cout << "Setting debug stop/note on" << std::endl;
-    organ->setDivisionStopOn(1,0);
-    // organ->setDivisionStopOn(1,1);
-    // organ->setDivisionStopOn(1,2);
-    // organ->setDivisionStopOn(1,3);
-    // organ->setDivisionStopOn(1,4);
-    // organ->setDivisionStopOn(1,5);
-    // organ->setDivisionStopOn(1,6);
-    // organ->setDivisionStopOn(1,7);
-    // organ->setDivisionStopOn(1,8);
-    // organ->setDivisionStopOn(1,9);
-    // organ->setDivisionStopOn(1,10); // BROKEN
-    // organ->setDivisionStopOn(1,11); // BROKEN
-    // organ->setDivisionStopOn(1,12); // BROKEN
-    // organ->setDivisionStopOn(1,13); // BROKEN
-    // organ->setDivisionNoteOn(0,50);
+}
+
+void EngineGlobal::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
+    // Midi / Configuration Block
+    ProcessMidiBuffer();
+    // Organ Block
+    const bool wasAudioGenerated = organ->process(out);
+    // Reverb Block
+    convolver.process<PROCESS_FRAMES_SIZE>(out, wasAudioGenerated);
 }
 
 void EngineGlobal::generateWavetables() const {

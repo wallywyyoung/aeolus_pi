@@ -33,7 +33,7 @@
 PipeWave::PipeWave(const std::shared_ptr<Addsynth> &model, const int note, const float freq) : model(model), note(note), freq(freq) { }
 
 float PipeWave::getPipeFrequency() const noexcept {
-    return freq * static_cast<float>(model->getFn()) / static_cast<float>(model->getFd());
+    return freq;
 }
 
 void PipeWave::playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
@@ -41,10 +41,9 @@ void PipeWave::playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &ou
         return;
     }
 
-    assert(state.envelopeState != OVER);
     assert(attackWaveformStart != nullptr);
     assert(loopWaveformStart != nullptr);
-    assert(_loopEndPtr != nullptr);
+    assert(loopEndPtr != nullptr);
 
     auto gainDecay = 0.0f;
     if (state.envelopeState == RELEASE) {
@@ -141,12 +140,11 @@ void PipeWave::generateWavetable() {
     } else {
         sampleStep = 1;
     }
-
     auto numberCyclesOfFundamental = 0;
 
     // Pass frequency in Hz to looplen function
     looplen(targetFrequencyHz, SAMPLE_RATE_F / static_cast<float>(sampleStep), static_cast<int>(SAMPLE_RATE_F / 6.0f), loopLength, numberCyclesOfFundamental);
-    assert(_loopLength > 0);
+    assert(loopLength > 0);
     assert(numberCyclesOfFundamental > 0);
 
     if (loopLength < sampleStep * PROCESS_FRAMES_SIZE) {
@@ -181,7 +179,7 @@ void PipeWave::generateWavetable() {
         auto t = 0.0f;
         // Interpolate from attack frequency to target frequency during the attack
         for (auto i = 0; i <= attackLength; ++i) {
-            phaseSteps[i] = t - floorf(t + 0.5f);
+            phaseSteps[i] = std::fmod(t, 1.0f);
             t += (i < attackSampleCount) ? ((static_cast<float>(attackSampleCount - i) * attackFrequency + static_cast<float>(i) * targetFrequency) / static_cast<float>(attackSampleCount)) : targetFrequency;
         }
     }
@@ -190,13 +188,12 @@ void PipeWave::generateWavetable() {
     const float phaseIncrement = static_cast<float>(numberCyclesOfFundamental) / static_cast<float>(loopLength);
     for (auto i = 1; i < loopLength; ++i) {
         const float t = phaseSteps[attackLength] + static_cast<float>(i) * phaseIncrement;
-        phaseSteps[i + attackLength] = t - floorf(t + 0.5f);
+        phaseSteps[i + attackLength] = std::fmod(t, 1.0f);
     }
 
     const float baseNoteAmplitude = math::exp2ap(DECIBEL_TO_LINEAR_APPROX * model->getNoteVolume(note));
 
     for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
-
         // Strict anti-aliasing: skip harmonics that would alias
         if (const float harmonicFreqHz = static_cast<float>(harmonic + 1) * targetFrequencyHz;
             harmonicFreqHz > SAMPLE_RATE_F * 0.45f) {
@@ -210,8 +207,7 @@ void PipeWave::generateWavetable() {
         }
         harmonicLevel = baseNoteAmplitude * math::exp2ap(DECIBEL_TO_LINEAR_APPROX * (harmonicLevel + model->getHarmonicRandomisation(harmonic, note) * dist(gen)));
 
-        // Use unified attack sample count for all harmonics
-        const auto harmonicAttackSampleCount = attackSampleCount;
+        const auto harmonicAttackSampleCount = static_cast<int>(std::round(SAMPLE_RATE_F * model->getHarmonicAttack(harmonic, note)));
         if (harmonicAttackSampleCount > att.size()) {
             att.resize(harmonicAttackSampleCount);
         }
@@ -247,52 +243,51 @@ void PipeWave::generateWavetable() {
 void PipeWave::looplen(const float fundamentalFreqHz, const float effectiveSampleRate, const int maxLoopLength, int &optimalLoopLength, int &cycleCount)
 {
     constexpr int N = 8;
-    int z[N];
-    int integerPart, b;
-    float d;
+    int fractionIntegerParts[N];
+    int integerPart;
+    double frequencyDeviation;
 
-    auto fractionalPart = effectiveSampleRate / fundamentalFreqHz;
-
+    auto fractionalPart = static_cast<double>(effectiveSampleRate / fundamentalFreqHz);
     // Euclidian algorithm for continue fractions.
     for (auto i = 0; i < N; ++i) {
-        integerPart = z[i] = static_cast<int>(floor(fractionalPart));
+        integerPart = fractionIntegerParts[i] = static_cast<int>(std::round(fractionalPart));
         fractionalPart -= static_cast<float>(integerPart);
-        b = 1;
-        int j = i;
+        cycleCount = 1;
+        auto j = i;
 
         while (j > 0) {
             const auto t = integerPart;
-            integerPart = z[--j] * integerPart + b;
-            b = t;
+            integerPart = fractionIntegerParts[--j] * integerPart + cycleCount;
+            cycleCount = t;
         }
 
         if (integerPart < 0) {
             integerPart = -integerPart;
-            b = -b;
+            cycleCount = -cycleCount;
         }
 
         if (integerPart <= maxLoopLength) {
-            d = effectiveSampleRate * static_cast<float>(b) / static_cast<float>(integerPart) - fundamentalFreqHz;
+            frequencyDeviation = effectiveSampleRate * static_cast<float>(cycleCount) / static_cast<float>(integerPart) - fundamentalFreqHz;
 
-            if (fabs(d) < 0.1f && fabs(d) < 3e-4f * fundamentalFreqHz) {
+            if (fabs(frequencyDeviation) < 0.1 && fabs(frequencyDeviation) < 3e-4 * fundamentalFreqHz) {
                 break;
             }
 
-            fractionalPart = (fabs(fractionalPart) < 1e-6f) ? 1e6f : 1.0f / fractionalPart;
+            fractionalPart = (fabs(fractionalPart) < 1e-6) ? 1e6 : 1.0 / fractionalPart;
         } else  {
-            b = static_cast<int>(static_cast<float>(maxLoopLength) * fundamentalFreqHz / effectiveSampleRate);
-            integerPart = static_cast<int>(std::lround(static_cast<float>(b) * effectiveSampleRate / fundamentalFreqHz));
-            d = effectiveSampleRate * b / integerPart - fundamentalFreqHz;
-            if (std::fabs(d) > 1.0f) {
-                std::cerr << "LoopLen: Large error rate. " << d << std::endl;
+            cycleCount = static_cast<int>(static_cast<float>(maxLoopLength) * fundamentalFreqHz / effectiveSampleRate);
+            integerPart = static_cast<int>(std::lround(static_cast<float>(cycleCount) * effectiveSampleRate / fundamentalFreqHz));
+            frequencyDeviation = static_cast<double>(effectiveSampleRate) * static_cast<double>(cycleCount) / static_cast<double>(integerPart) - static_cast<double>(fundamentalFreqHz);
+            if (std::fabs(frequencyDeviation) > 1.0f) {
+                std::cerr << "LoopLen: Large error rate. " << frequencyDeviation << std::endl;
             }
             break;
         }
     }
 
     // Avoid zero loops (can happen with some weird tunings).
-    optimalLoopLength = std::max(1, integerPart);
-    cycleCount = std::max(1, b);
+    optimalLoopLength = std::max(1, std::abs(integerPart));
+    cycleCount = std::max(1, std::abs(cycleCount));
 }
 
 void PipeWave::attgain(float *att, const int &n, const float &p) {
@@ -314,8 +309,8 @@ void PipeWave::attgain(float *att, const int &n, const float &p) {
         const auto d = k == j ? 0.0f : w * y * p / static_cast<float>(k - j);
 
         while (j < k) {
-            const auto m = static_cast<float>(j) / static_cast<float>(n);
-            att[j++] = (1.0f - m) * z + m;
+            const auto m = static_cast<double>(j) / static_cast<double>(n);
+            att[j++] = static_cast<float>((1.0 - m) * static_cast<double>(z) + static_cast<double>(m));
             z += d;
         }
     }

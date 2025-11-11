@@ -53,7 +53,7 @@ int RtAudioInterface::audioHandler(void *outputBuffer, void *inputBuffer, const 
     const auto a = static_cast<RtAudioInterface*>(userData);
     auto* output = static_cast<uint8_t(*)[PROCESS_SAMPLES_SIZE * 3]>(outputBuffer);
     a->processAudio(fBuffer);
-    SimdUtilities::ConvertF32toS24(fBuffer, *output);
+    SimdUtilities::convertF32ToS24(fBuffer, *output);
     SimdUtilities::disableFlushToZero();
     return 0;
 }

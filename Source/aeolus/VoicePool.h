@@ -23,22 +23,22 @@
 template <size_t MAX_VOICES = 128>
 class VoicePool {
     std::array<Voice, MAX_VOICES> pool{ };
-    std::vector<std::shared_ptr<Voice>> freeVoices;
+    std::vector<Voice*> freeVoices;
 public:
     VoicePool() {
         for (auto voice : pool) {
-            freeVoices.push_back(std::make_shared<Voice>(voice));
+            freeVoices.push_back(&voice);
         }
     }
 
-    std::shared_ptr<Voice> getVoice(const std::shared_ptr<PipeWave> &pipeWave, const float &outputGain, const float &chiffGain, const int stopIndex) {
-        auto voice = freeVoices.back();
+    Voice* getVoice(const std::shared_ptr<PipeWave> &pipeWave, const float &outputGain, const float &chiffGain, const int stopIndex) {
+        const auto voice = freeVoices.back();
         freeVoices.pop_back();
         voice->init(pipeWave, outputGain, chiffGain, stopIndex);
         return voice;
     }
 
-    void releaseVoice(std::shared_ptr<Voice> &voice) {
+    void releaseVoice(Voice* &voice) {
         freeVoices.push_back(voice);
     }
 };

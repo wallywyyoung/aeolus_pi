@@ -91,7 +91,7 @@ private:
     void setAllCouplersOff();
     void setAllCouplersOn();
 
-    void recursiveKeyState(std::bitset<TOTAL_NOTES> &aggregated, std::vector<Division *> &traversed);
+    void recursiveKeyState(std::bitset<TOTAL_NOTES> &aggregated);
     bool triggerVoicesForStop(int stopIndex, int note);
     bool isAlreadyVoiced(int stopIndex, int note);
 
@@ -120,12 +120,15 @@ private:
     dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> tremulantDelayR;
 
     std::vector<Stop> stops{};            ///< All the stops this division has.
-    std::vector<std::shared_ptr<Voice>> activeVoices;     ///< Active voices on this division.
+    std::vector<Voice*> activeVoices;     ///< Active voices on this division.
 
     std::shared_ptr<VoicePool<>> voicePool{};
 
     std::bitset<TOTAL_NOTES> keysState;           ///< Key state for this division.
     std::bitset<TOTAL_NOTES> aggregatedKeysState; ///< Key state aggregated from coupled divisions.
+
+    static uint32_t currentKeyStateEpoch;
+    uint32_t lastVisitedKeyStateEpoch{ 0 };
 
     friend class DivisionFactory;
 };

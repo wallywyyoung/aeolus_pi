@@ -20,10 +20,12 @@
 #include "aeolus/utilities/SimdUtilities.h"
 
 #include <algorithm>
-#include <stdint.h>
 #include <arm_neon.h>
 #include <cassert>
 #include <cmath>
+#include <iostream>
+#include <ostream>
+#include <stdint.h>
 
 void SimdUtilities::enableFlushToZero() {
     uint64_t fpsr;
@@ -39,12 +41,12 @@ void SimdUtilities::disableFlushToZero() {
     asm volatile("msr fpcr, %0" : : "ri"(fpsr & ~ftz));
 }
 
-void SimdUtilities::ConvertF32toS16(const float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::int16_t* out) {
+void SimdUtilities::convertF32ToS16(const float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::int16_t* out) {
     const float32x4_t min = vdupq_n_f32(-1.0f);
     const float32x4_t max = vdupq_n_f32(1.0f);
     const float32x4_t scale = vdupq_n_f32(32767.0f);
 
-    int i = 0;
+    auto i = 0;
     for (; i + 4 <= ALSA_BUFFER_SAMPLES_SIZE; i += 4) {
         float32x4_t in0 = vld1q_f32(in + i);
         float32x4_t clamped0 = vmaxq_f32(min, vminq_f32(max, in0));
@@ -60,43 +62,60 @@ void SimdUtilities::ConvertF32toS16(const float (&in)[ALSA_BUFFER_SAMPLES_SIZE],
     }
 }
 
-void SimdUtilities::ConvertF32toS24(const float (&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]) {
-    const float32x4_t min = vdupq_n_f32(-1.0f);
-    const float32x4_t max = vdupq_n_f32(1.0f);
-    const float32x4_t scale = vdupq_n_f32(8388607.0f);
+static uint8x8x3_t bitpackU32ToS24LE(const uint32x4_t& in0, const uint32x4_t& in1) {
+    // Extract the middle 8 bits by shifting and narrowing
+    uint8x8_t lowBytes = vmovn_u16(vcombine_u16(vmovn_u32(in0), vmovn_u32(in1)));
+    // Extract the middle 8 bits by shifting and narrowing
+    uint8x8_t midBytes = vmovn_u16(vcombine_u16(vmovn_u32(vshrq_n_u32(in0, 8)), vmovn_u32(vshrq_n_u32(in1, 8))));
+    // Extract the high 8 bits by shifting and narrowing
+    uint8x8_t highBytes = vmovn_u16(vcombine_u16(vmovn_u32(vshrq_n_u32(in0, 16)), vmovn_u32(vshrq_n_u32(in1, 16))));
+    // Interleave the data
+    return {lowBytes, midBytes, highBytes};
+}
 
+static uint32x4_t f32ToS24WordConversion(const float32x4_t& sample) {
+    // F32 to S24 scaling factor multiplied times a Volume constant.
+    const auto volumeScale = vdupq_n_f32(8388607.0f * 0.03);
+    // Cast with hard rounding like vrndaq_f32
+    int32x4_t casted = vcvtaq_s32_f32(vmulq_f32(sample, volumeScale));
+    // uint32x4_t required for bit packing intrinsics
+    return vreinterpretq_u32_s32(casted);
+}
+
+void SimdUtilities::convertF32ToS24(const float (&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]) {
     for (auto i = 0; i + 8 <= PROCESS_SAMPLES_SIZE; i += 8) {
-        // Convert f32 into s24
-        float32x4_t in0 = vld1q_f32(in + i);                                 // Input
-        float32x4_t clamped0 = vmaxq_f32(min, vminq_f32(max, in0));  // Clamp
-        float32x4_t scaled0 = vmulq_f32(clamped0, scale);                 // Scale
-        float32x4_t rounded0 = vrndaq_f32(scaled0);                            // Round
-        int32x4_t casted0 = vcvtq_s32_f32(rounded0);                           // Cast
-        int32x4_t  attenuated0 = vrshrq_n_s32(casted0, 5);                  // Attenuate
+        // Load
+        auto in0 = vld1q_f32(in + i);
+        auto in1 = vld1q_f32(in + i + 4);
 
-        float32x4_t in1 = vld1q_f32(in + i + 4);                             // Input
-        float32x4_t clamped1 = vmaxq_f32(min, vminq_f32(max, in1));  // Clamp
-        float32x4_t scaled1 = vmulq_f32(clamped1, scale);                 // Scale
-        float32x4_t rounded1 = vrndaq_f32(scaled1);                            // Round
-        int32x4_t casted1 = vcvtq_s32_f32(rounded1);                           // Cast
-        int32x4_t attenuated1 = vrshrq_n_s32(casted1, 5);                   // Attenuate
+        // Soft Clip: x * (27 + x^2) / (27 + 9 * x^2)
+        auto xSquared0 = vmulq_f32(in0, in0);
+        auto xSquared1 = vmulq_f32(in1, in1);
 
-        // Bitpack s24 into the output array
-        uint32x4_t u320 = vreinterpretq_u32_s32(attenuated0); // uint32x4_t required for bit packing intrinsics
-        uint32x4_t u321 = vreinterpretq_u32_s32(attenuated1); // uint32x4_t required for bit packing intrinsics
+        const auto c27 = vdupq_n_f32(27.0f);
+        auto numerator0 = vmulq_f32(vaddq_f32(xSquared0, c27), in0);
+        auto numerator1 = vmulq_f32(vaddq_f32(xSquared1, c27), in1);
 
+        const auto c9 = vdupq_n_f32(9.0f);
+        auto denominator0 = vaddq_f32(vmulq_f32(xSquared0, c9), c27);
+        auto denominator1 = vaddq_f32(vmulq_f32(xSquared1, c9), c27);
 
-        uint16x4_t lowBits0 = vmovn_u32(u320); // Extract the lower 8 bits
-        uint16x4_t lowBits1 = vmovn_u32(u321); // Extract the lower 8 bits
-        uint8x8_t lowBytes = vmovn_u16(vcombine_u16(lowBits0, lowBits1)); // Store the lower 8 bits together
+        auto rcp0 = vrecpeq_f32(denominator0);
+        auto rcp1 = vrecpeq_f32(denominator1);
+        rcp0 = vmulq_f32(vrecpsq_f32(denominator0, rcp0), rcp0);
+        rcp1 = vmulq_f32(vrecpsq_f32(denominator1, rcp1), rcp1);
 
-        // Extract the middle 8 bits by shifting and narrowing
-        uint8x8_t midBytes = vmovn_u16(vcombine_u16(vmovn_u32(vshrq_n_u32(u320, 8)), vmovn_u32(vshrq_n_u32(u321, 8))));
+        auto sc0 = vmulq_f32(numerator0, rcp0);
+        auto sc1 = vmulq_f32(numerator1, rcp1);
 
-        // Extract the high 8 bits by shifting and narrowing
-        uint8x8_t highBytes = vmovn_u16(vcombine_u16(vmovn_u32(vshrq_n_u32(u320, 16)), vmovn_u32(vshrq_n_u32(u321, 16))));
+        // Convert
+        auto converted0 = f32ToS24WordConversion(sc0);
+        auto converted1 = f32ToS24WordConversion(sc1);
 
-        uint8x8x3_t packedBytes = {lowBytes, midBytes, highBytes}; // Interleave the data
-        vst3_u8(out + i * 3, packedBytes); // Write interleaved data all at once
+        // Pack
+        auto packedBytes = bitpackU32ToS24LE(converted0, converted1);
+
+        // Write
+        vst3_u8(out + i * 3, packedBytes);
     }
 }
