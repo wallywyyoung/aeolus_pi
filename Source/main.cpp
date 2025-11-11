@@ -27,6 +27,7 @@
 #endif
 #include "AlsaAudioInterface.h"
 #include "RtAudioInterface.h"
+#include "RestManager.h"
 
 bool running = true;
 
@@ -45,11 +46,7 @@ int main (int, char*[]) {
 #elifdef MACOS
     const auto audioInterface = new RtAudioInterface([engineGlobal](float (&out)[PROCESS_SAMPLES_SIZE]){ engineGlobal->process(out); });
 #endif
-    std::cout << "Aeolus is Ready" << std::endl;
-    do {
-        std::this_thread::yield();
-    } while(running);
-    std::cout << "Aeolus is Closing" << std::endl;
+    RestManager::runServer(engineGlobal->getOrgan());
     delete audioInterface;
 #ifdef LINUX
     delete midiInterface;

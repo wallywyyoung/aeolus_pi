@@ -95,6 +95,8 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/Convolution/DanielsonLanczos.h
         Source/aeolus/dsp/Convolution/GFFT.h
         EquallyPartitionedConvolver.h
+        Source/RestManager.h
+        Source/RestManager.cpp
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)
