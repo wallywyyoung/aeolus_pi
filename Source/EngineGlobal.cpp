@@ -42,8 +42,11 @@ void EngineGlobal::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
     ProcessMidiBuffer();
     // Organ Block
     const bool wasAudioGenerated = organ->process(out);
+    //TODO: convolver is too slow to run in debug.
+#ifndef DEBUG
     // Reverb Block
     convolver.process<PROCESS_FRAMES_SIZE>(out, wasAudioGenerated);
+#endif
 }
 
 void EngineGlobal::generateWavetables() const {
