@@ -36,31 +36,21 @@ public:
     Sequencer() = delete;
     explicit Sequencer(Organ& engine, int numSteps = 32);
 
-    [[nodiscard]] int getStepsCount() const noexcept { return static_cast<int>(_steps.size()); }
-    [[nodiscard]] int getCurrentStep() const noexcept { return _currentStep; }
-
-    /**
-     * Capture the organ state into the current step.
-     */
-    void captureCurrentStep();
-
+    [[nodiscard]] int getStepsCount() const noexcept { return static_cast<int>(steps.size()); }
+    [[nodiscard]] int getCurrentStep() const noexcept { return currentStep; }
+    void captureStateToCurrentStep();
     void captureStateToStep(int index);
-
     void setStep(int index, bool captureCurrentState = true);
-
     void stepBackward();
     void stepForward();
-
-    // Set this any time a division changes a value that affects DivisionCoupler.
-    void setCurrentStepDirty() noexcept { _dirty = true; }
-    [[nodiscard]] bool isCurrentStepDirty() const noexcept { return _dirty; }
+    void setCurrentStepDirty() noexcept { dirty = true; } ///< Set this any time a division changes a value that affects DivisionCoupler.
+    [[nodiscard]] bool isCurrentStepDirty() const noexcept { return dirty; }
 
 private:
-
-    Organ& _engine;
-    std::vector<GlobalPiston> _steps;
-    std::atomic<int> _currentStep;
-    bool _dirty;
+    Organ& engine;
+    std::vector<GlobalPiston> steps;
+    std::atomic<int> currentStep;
+    bool dirty;
 };
 
 

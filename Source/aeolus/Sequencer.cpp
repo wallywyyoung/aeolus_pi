@@ -22,43 +22,42 @@
 
 #include <cassert>
 
+Sequencer::Sequencer(Organ& engine, const int numSteps): engine{engine}, steps(numSteps), currentStep{0}, dirty{true} { }
 
-Sequencer::Sequencer(Organ& engine, const int numSteps): _engine{engine}, _steps(numSteps), _currentStep{0}, _dirty{true} { }
-
-void Sequencer::captureCurrentStep() {
-    _steps[_currentStep] = _engine.captureStateAsPiston();
-    _dirty = false;
+void Sequencer::captureStateToCurrentStep() {
+    steps[currentStep] = engine.captureStateAsPiston();
+    dirty = false;
 }
 
 void Sequencer::captureStateToStep(const int index) {
-    assertIsPositiveAndBelow(index, static_cast<int>(_steps.size()));
+    assertIsPositiveAndBelow(index, static_cast<int>(steps.size()));
 
-    _steps[index] = _engine.captureStateAsPiston();
+    steps[index] = engine.captureStateAsPiston();
 
     // Current state now matches the sequencer step, so we switch to it
-    _currentStep = index;
-    _dirty = false;
+    currentStep = index;
+    dirty = false;
 }
 
 auto Sequencer::setStep(const int index, const bool captureCurrentState) -> void {
-    assert(index >= 0 && index < static_cast<int>(_steps.size()));
+    assert(index >= 0 && index < static_cast<int>(steps.size()));
     if (captureCurrentState) {
-        captureCurrentStep();
+        captureStateToCurrentStep();
     }
 
-    _currentStep = index;
-    _engine.recallGlobalPiston(_steps[_currentStep]);
-    _dirty = false;
+    currentStep = index;
+    engine.recallGlobalPiston(steps[currentStep]);
+    dirty = false;
 }
 
 void Sequencer::stepBackward() {
-    if (_currentStep > 0) {
-        setStep(_currentStep - 1);
+    if (currentStep > 0) {
+        setStep(currentStep - 1);
     }
 }
 
 void Sequencer::stepForward() {
-    if (_currentStep < static_cast<int>(_steps.size()) - 1) {
-        setStep(_currentStep + 1);
+    if (currentStep < static_cast<int>(steps.size()) - 1) {
+        setStep(currentStep + 1);
     }
 }
