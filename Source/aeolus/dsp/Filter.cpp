@@ -19,9 +19,10 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/Filter.h"
+
+#include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <cstring>
 #include <numbers>
 #include "MemoryConstants.h"
 
