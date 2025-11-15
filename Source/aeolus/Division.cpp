@@ -108,14 +108,14 @@ void Division::recallPiston(const int &piston) {
 }
 
 void Division::recallPiston(const DivisionPiston &piston) {
-    for (int i = 0; i < piston.stops.size(); ++i) {
+    for (auto i = 0; i < piston.stops.size(); ++i) {
         if (piston.stops[i]) {
             setStopOn(i);
         } else {
             setStopOff(i);
         }
     }
-    for (int i = 0; i < piston.links.size(); ++i) {
+    for (auto i = 0; i < piston.links.size(); ++i) {
         if (piston.links[i]) {
             setCouplerOn(i);
         } else {

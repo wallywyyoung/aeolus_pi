@@ -89,14 +89,14 @@ void IOManager::HN_func_fromJson(HN_func& hnFunc, nlohmann::json& v) {
     if (v.size() < hnFunc._h.size()) {
         return;
     }
-    for (int i = 0; i < hnFunc._h.size(); ++i) {
+    for (auto i = 0; i < hnFunc._h.size(); ++i) {
         N_func_fromJson(hnFunc._h[i], v[i]);
     }
 }
 
 void IOManager::HN_func_fromStream(HN_func& hnFunc, std::istream& stream, const int &nHarm){
     const auto m = std::min(hnFunc._h.size(), static_cast<size_t>(nHarm));
-    for (int i = 0; i < m; ++i) {
+    for (auto i = 0; i < m; ++i) {
         N_func_fromStream(hnFunc._h[i], stream);
     }
 }
@@ -104,20 +104,19 @@ void IOManager::HN_func_fromStream(HN_func& hnFunc, std::istream& stream, const 
 
 void IOManager::N_func_fromJson(N_func &nFunc, const nlohmann::json& v) {
     nFunc._b = v["mask"];
-    if (auto varr = v["values"]; varr.is_array()) {
+    if (const auto& varr = v["values"]; varr.is_array()) {
         if (varr.size() >= nFunc._v.size()) {
-            for (int i = 0; i < nFunc._v.size(); ++i)
+            for (auto i = 0; i < nFunc._v.size(); ++i) {
                 nFunc._v[i] = varr[i];
+            }
         }
     }
 }
 
-void IOManager::N_func_fromStream(N_func &nFunc, std::istream& stream)
-{
+void IOManager::N_func_fromStream(N_func &nFunc, std::istream& stream){
     stream.read(reinterpret_cast<char*>(&nFunc._b), sizeof(int));
-
-    for (int i = 0; i < nFunc._v.size(); ++i) {
-        stream.read(reinterpret_cast<char*>(&nFunc._v[i]), sizeof(float));
+    for (auto& v : nFunc._v) {
+        stream.read(reinterpret_cast<char*>(&v), sizeof(float));
     }
 }
 
