@@ -43,10 +43,6 @@ struct GlobalPiston {
 namespace math {
     float exp2ap(float x);
 
-    /// Linear interpolation
-    template <typename T>
-    T lerp (T a, T b, T frac) { return a + (b - a) * frac; }
-
     template <typename T>
     T lagr (const T* const x, T frac) noexcept
     {

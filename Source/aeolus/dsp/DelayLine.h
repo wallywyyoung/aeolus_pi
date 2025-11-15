@@ -21,9 +21,7 @@
 #pragma once
 
 #include <cmath>
-#include <cstring>
 #include <vector>
-
 #include "aeolus/globals.h"
 
 namespace dsp {
@@ -59,7 +57,7 @@ namespace dsp {
             const auto a = buffer[index];
             const auto b = index < buffer.size() - 1 ? buffer[index + 1] : buffer[0];
 
-            return math::lerp(a, b, fraction);
+            return std::lerp(a, b, fraction);
         }
 
         [[nodiscard]] float readNearest(const int &delay) const {

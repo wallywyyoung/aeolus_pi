@@ -23,8 +23,6 @@
 #include <array>
 #include <cmath>
 
-#include "aeolus/globals.h"
-
 namespace dsp {
     /**
     * @brief Delay line with samples linear interpolation.
@@ -52,7 +50,7 @@ class DelayLineStatic {
             const auto a = buffer[index];
             const auto b = index < buffer.size() - 1 ? buffer[index + 1] : buffer[0];
 
-            return math::lerp(a, b, frac);
+            return std::lerp(a, b, frac);
         }
 
         [[nodiscard]] float readNearest(const size_t delay) const noexcept {
