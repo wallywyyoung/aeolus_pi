@@ -25,7 +25,6 @@
 #include "aeolus/StaticPipe.h"
 #include "dsp/Convolution/Convolver.h"
 
-// Try to fit in a single cache line.
 class alignas(64) PipeState {
     static constexpr auto PLAY_INTERPOLATION_SPEED_SCALING = 0.0005f;
     static constexpr auto NOISE_SCALING = 0.05f;
@@ -39,14 +38,14 @@ class alignas(64) PipeState {
     float instability{}; // Unchanging Data
     float releaseDecayRate{}; // Unchanging Data
     float releaseDetune{}; // Unchanging Data
-    uint8_t sampleStep{}; // Unchanging Data
-    uint8_t note{}; // Unchanging Data
     uint16_t loopLength{}; // Unchanging Data
     uint16_t remainingReleaseFrames{};
+    uint8_t sampleStep{}; // Unchanging Data
+    uint8_t note{}; // Unchanging Data
 public:
-    float outputGain{};
     enum EnvelopeState : uint8_t { OVER, ATTACK, RELEASE };
     EnvelopeState envelopeState{};
+    float outputGain{};
 
     PipeState() = default;
 
@@ -126,3 +125,4 @@ public:
         }
     }
 };
+static_assert(sizeof(PipeState) <= 64, "PipeState must be exactly 64 bytes");
