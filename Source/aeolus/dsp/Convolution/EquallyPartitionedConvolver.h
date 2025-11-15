@@ -21,15 +21,15 @@
 #pragma once
 
 #include <atomic>
+#include <bit>
 #include <cassert>
 #include <vector>
 #include "aeolus/SIMD.h"
 #include "aeolus/dsp/Convolution/GFFT.h"
-#include "aeolus/globals.h"
 
 template <size_t L>
 class EquallyPartitionedConvolver {
-    static_assert(math::isPowerOfTwo(L), "Block length must be a power of two");
+    static_assert(std::has_single_bit(L), "Block length must be a power of two");
     constexpr static size_t SPECTRUM_UNPADDED_SIZE = 2 * L;
     constexpr static size_t SPECTRUM_PADDED_SIZE = 4 * L;
 

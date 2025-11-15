@@ -80,10 +80,4 @@ namespace math {
     struct Sin<B, A, double> {
         constexpr static double value = (A * std::numbers::pi_v<float> / B) * SinCosSeries<2, 34, B, A>::value;
     };
-
-    template <typename T>
-    constexpr bool isPowerOfTwo(T v)
-    {
-        return (v & (v - 1)) == 0;
-    }
 } // namespace math

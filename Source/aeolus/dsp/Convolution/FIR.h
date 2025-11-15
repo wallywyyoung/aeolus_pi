@@ -20,14 +20,14 @@
 
 #pragma once
 
+#include <bit>
 #include "aeolus/SIMD.h"
-#include "aeolus/globals.h"
 
 class FIR {
 public:
     template<size_t L>
     static float tick(const float* irBuffer, const float* inputBuffer, const size_t& inputSize, size_t& readIndex) {
-    static_assert(math::isPowerOfTwo(L), "Convolution part length must be a power of two");
+    static_assert(std::has_single_bit(L), "Convolution part length must be a power of two");
         auto y = 0.0f;
         if (readIndex + L < inputSize) {
             y = SIMD::mul_reduce_unaligned(irBuffer, &inputBuffer[readIndex], L);

@@ -20,9 +20,10 @@
 
 #pragma once
 
+#include <bit>
 #include "aeolus/SIMD.h"
-#include "aeolus/dsp/Convolution/GFFT.h"
 #include "aeolus/dsp/Convolution/DataFFT.h"
+#include "aeolus/dsp/Convolution/GFFT.h"
 #include "aeolus/globals.h"
 
 class FFT {
@@ -38,7 +39,7 @@ public:
 
     template <size_t L>
     static float tick(const float* inputBuffer, const size_t& inputSize, DataFFT<L>& data) {
-        static_assert(math::isPowerOfTwo(L), "Convolution part length must be a power of two");
+        static_assert(std::has_single_bit(L), "Convolution part length must be a power of two");
         const float y = data.complexInputBuffer[data.tailIndex].real();
 
         // Feed from the input buffer
