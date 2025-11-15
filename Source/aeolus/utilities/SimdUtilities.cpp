@@ -82,38 +82,43 @@ static uint32x4_t f32ToS24WordConversion(const float32x4_t& sample) {
     return vreinterpretq_u32_s32(casted);
 }
 
+static void softClip(float32x4_t& a, float32x4_t& b) {
+    // x * (27 + x^2) / (27 + 9 * x^2)
+    auto xSquared0 = vmulq_f32(a, a);
+    auto xSquared1 = vmulq_f32(b, b);
+
+    const auto c27 = vdupq_n_f32(27.0f);
+    auto numerator0 = vmulq_f32(vaddq_f32(xSquared0, c27), a);
+    auto numerator1 = vmulq_f32(vaddq_f32(xSquared1, c27), b);
+
+    const auto c9 = vdupq_n_f32(9.0f);
+    auto denominator0 = vaddq_f32(vmulq_f32(xSquared0, c9), c27);
+    auto denominator1 = vaddq_f32(vmulq_f32(xSquared1, c9), c27);
+
+    auto rcp0 = vrecpeq_f32(denominator0);
+    auto rcp1 = vrecpeq_f32(denominator1);
+    rcp0 = vmulq_f32(vrecpsq_f32(denominator0, rcp0), rcp0);
+    rcp1 = vmulq_f32(vrecpsq_f32(denominator1, rcp1), rcp1);
+
+    a = vmulq_f32(numerator0, rcp0);
+    b = vmulq_f32(numerator1, rcp1);
+}
+
 void SimdUtilities::convertF32ToS24(const float (&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]) {
     for (auto i = 0; i + 8 <= PROCESS_SAMPLES_SIZE; i += 8) {
         // Load
         auto in0 = vld1q_f32(in + i);
         auto in1 = vld1q_f32(in + i + 4);
 
-        // Soft Clip: x * (27 + x^2) / (27 + 9 * x^2)
-        auto xSquared0 = vmulq_f32(in0, in0);
-        auto xSquared1 = vmulq_f32(in1, in1);
-
-        const auto c27 = vdupq_n_f32(27.0f);
-        auto numerator0 = vmulq_f32(vaddq_f32(xSquared0, c27), in0);
-        auto numerator1 = vmulq_f32(vaddq_f32(xSquared1, c27), in1);
-
-        const auto c9 = vdupq_n_f32(9.0f);
-        auto denominator0 = vaddq_f32(vmulq_f32(xSquared0, c9), c27);
-        auto denominator1 = vaddq_f32(vmulq_f32(xSquared1, c9), c27);
-
-        auto rcp0 = vrecpeq_f32(denominator0);
-        auto rcp1 = vrecpeq_f32(denominator1);
-        rcp0 = vmulq_f32(vrecpsq_f32(denominator0, rcp0), rcp0);
-        rcp1 = vmulq_f32(vrecpsq_f32(denominator1, rcp1), rcp1);
-
-        auto sc0 = vmulq_f32(numerator0, rcp0);
-        auto sc1 = vmulq_f32(numerator1, rcp1);
+        // Soft Clip
+        softClip(in0, in1);
 
         // Convert
-        auto converted0 = f32ToS24WordConversion(sc0);
-        auto converted1 = f32ToS24WordConversion(sc1);
+        in0 = f32ToS24WordConversion(in0);
+        in1 = f32ToS24WordConversion(in1);
 
         // Pack
-        auto packedBytes = bitpackU32ToS24LE(converted0, converted1);
+        auto packedBytes = bitpackU32ToS24LE(in0, in1);
 
         // Write
         vst3_u8(out + i * 3, packedBytes);
