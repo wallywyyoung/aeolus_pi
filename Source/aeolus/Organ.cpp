@@ -20,7 +20,7 @@
 
 #include "aeolus/Organ.h"
 #include "aeolus/DivisionFactory.h"
-
+#include "aeolus/utilities/SimdUtilities.h"
 #include <memory>
 
 Organ::Organ(const std::function<std::shared_ptr<RankWave>(const std::string&)> &getStopByName) {
@@ -158,10 +158,13 @@ bool Organ::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
             continue;
         }
         division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
-        for (auto j = 0; j < PROCESS_FRAMES_SIZE; ++j) {
-            out[j * 2] += LEFT_BUFFER[j];
-            out[j * 2 + 1] += RIGHT_BUFFER[j];
-        }
+        const auto modulate = std::chrono::high_resolution_clock::now();
+        SimdUtilities::copyF32NonInterleavedToInterleaved(LEFT_BUFFER, RIGHT_BUFFER, out);
+        const auto bufferCopy = std::chrono::high_resolution_clock::now();
+        const auto durationProcess = std::chrono::duration_cast<std::chrono::nanoseconds>(process - start);
+        const auto durationModulate = std::chrono::duration_cast<std::chrono::nanoseconds>(modulate - process);
+        const auto durationBufferCopy = std::chrono::duration_cast<std::chrono::nanoseconds>(bufferCopy - modulate);
+        std::cout << "Process: " << durationProcess.count() << "\nModulate: " << durationModulate.count() << "\nBuffer Copy" << durationBufferCopy.count() << std::endl;
         wasAudioGenerated = true;
     }
     return wasAudioGenerated;

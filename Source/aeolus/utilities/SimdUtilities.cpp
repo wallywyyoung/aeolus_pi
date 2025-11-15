@@ -124,3 +124,14 @@ void SimdUtilities::convertF32ToS24(const float (&in)[PROCESS_SAMPLES_SIZE], std
         vst3_u8(out + i * 3, packedBytes);
     }
 }
+
+void SimdUtilities::copyF32NonInterleavedToInterleaved(const float* left, const float* right, float (&out)[PROCESS_SAMPLES_SIZE]) {
+    for (auto i = 0; i + 8 <= PROCESS_FRAMES_SIZE; i += 8) {
+        auto left0 = vld1q_f32(left + i);
+        auto left1 = vld1q_f32(left + i + 4);
+        auto right0 = vld1q_f32(right + i);
+        auto right1 = vld1q_f32(right + i + 4);
+        vst2q_f32(out + i * 2, {left0, right0});
+        vst2q_f32(out + i * 2 + 8, {left1, right1});
+    }
+}

@@ -33,6 +33,8 @@ public:
     static void convertF32ToS16(const float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::int16_t* out);
     // Ensure your in and out buffers are aligned to 16 to be NEON compliant.
     static void convertF32ToS24(const float (&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]);
+    // Ensure your in and out buffers are aligned to 16 to be NEON compliant.
+    static void copyF32NonInterleavedToInterleaved(const float* left, const float* right, float (&out)[PROCESS_SAMPLES_SIZE]);
 private:
     // Ensure your in and out buffers are aligned to 16 to be NEON compliant.
     static float maxF32(const float (&in)[PROCESS_SAMPLES_SIZE]);
