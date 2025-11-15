@@ -181,8 +181,11 @@ void Division::modulate(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> 
     // Apply swell filter
     if (hasSwell) {
         // Close the filter along with the gain
-        const float k = powf(limitRange(0.0f, 1.0f, gain.target()), 1.3f);
-        swellFilterSpec.freq = 400.0f + k * (18000.0f - 400.0f);
+        static constexpr auto CURVE_SHAPING_EXPONENT = 1.3f;
+        static constexpr auto MINIMUM_FREQUENCY = 400.0f;
+        static constexpr auto MAXIMUM_FREQUENCY = 18000.0f;
+        const float swellNormalized = powf(limitRange(0.0f, 1.0f, gain.target()), CURVE_SHAPING_EXPONENT);
+        swellFilterSpec.freq = MINIMUM_FREQUENCY + swellNormalized * (MAXIMUM_FREQUENCY - MINIMUM_FREQUENCY);
         dsp::BiquadFilter::updateSpec(swellFilterSpec);
         dsp::BiquadFilter::process(swellFilterSpec, PROCESS_FRAMES_SIZE, outL, outL, swellFilterStateL);
         dsp::BiquadFilter::process(swellFilterSpec, PROCESS_FRAMES_SIZE, outR, outR, swellFilterStateR);
