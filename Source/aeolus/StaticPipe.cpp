@@ -106,7 +106,7 @@ void StaticPipe::generateWavetable() {
     loopStart = attackStart + attackLength;
     loopEnd = loopStart + loopLength;
 
-    std::memset(attackStart, 0, sizeof(float) * wavetable.size());
+    wavetable.assign(wavetableLength, 0.0f);
 
     releaseFrameCount = static_cast<int>(ceilf(model->getNoteDecayTime(note) * SAMPLE_RATE_F / PROCESS_FRAMES_SIZE) + 1);
     releaseDecayRate = 1.0f - powf(0.1f, 1.0f / static_cast<float>(releaseFrameCount));

@@ -41,7 +41,7 @@ namespace dsp {
 
         void reset() {
             writeIndex = 0;
-            std::memset(buffer.data(), 0, sizeof (float) * buffer.size());
+            std::ranges::fill(buffer, 0.0f);
         }
 
         void write(const float x) noexcept {

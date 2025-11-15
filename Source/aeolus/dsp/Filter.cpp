@@ -139,7 +139,10 @@ void BiquadFilter::updateSpec(Spec& spec) {
     spec.b[2] /= spec.a[0];
 }
 
-void BiquadFilter::resetState(State &state) { memset(&state, 0, sizeof(state)); }
+void BiquadFilter::resetState(State &state) {
+    std::fill_n(state.x, 2, 0.0f);
+    std::fill_n(state.y, 2, 0.0f);
+}
 
 float BiquadFilter::tick(const Spec& spec, State& state, const float in) {
     const float x = in;
