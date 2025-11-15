@@ -114,11 +114,11 @@ void SimdUtilities::convertF32ToS24(const float (&in)[PROCESS_SAMPLES_SIZE], std
         softClip(in0, in1);
 
         // Convert
-        in0 = f32ToS24WordConversion(in0);
-        in1 = f32ToS24WordConversion(in1);
+        auto s24W0 = f32ToS24WordConversion(in0);
+        auto s24W1 = f32ToS24WordConversion(in1);
 
         // Pack
-        auto packedBytes = bitpackU32ToS24LE(in0, in1);
+        auto packedBytes = bitpackU32ToS24LE(s24W0, s24W1);
 
         // Write
         vst3_u8(out + i * 3, packedBytes);
