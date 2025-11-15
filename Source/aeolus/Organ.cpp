@@ -158,13 +158,7 @@ bool Organ::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
             continue;
         }
         division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
-        const auto modulate = std::chrono::high_resolution_clock::now();
         SimdUtilities::copyF32NonInterleavedToInterleaved(LEFT_BUFFER, RIGHT_BUFFER, out);
-        const auto bufferCopy = std::chrono::high_resolution_clock::now();
-        const auto durationProcess = std::chrono::duration_cast<std::chrono::nanoseconds>(process - start);
-        const auto durationModulate = std::chrono::duration_cast<std::chrono::nanoseconds>(modulate - process);
-        const auto durationBufferCopy = std::chrono::duration_cast<std::chrono::nanoseconds>(bufferCopy - modulate);
-        std::cout << "Process: " << durationProcess.count() << "\nModulate: " << durationModulate.count() << "\nBuffer Copy" << durationBufferCopy.count() << std::endl;
         wasAudioGenerated = true;
     }
     return wasAudioGenerated;
