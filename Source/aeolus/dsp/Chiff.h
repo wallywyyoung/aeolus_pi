@@ -21,7 +21,8 @@
 #pragma once
 
 #include "MemoryConstants.h"
-#include "aeolus/PipeWave.h"
+#include "aeolus/PipeState.h"
+#include "aeolus/StaticPipe.h"
 #include "aeolus/dsp/DelayLineStatic.h"
 #include "aeolus/dsp/Envelope.h"
 #include "aeolus/dsp/Filter.h"
@@ -46,8 +47,8 @@ public:
         BiquadFilter::resetState(lpState);
     }
 
-    void process(const PipeWave::State &in, std::array<float, PROCESS_FRAMES_SIZE> &out) {
-        if (in.envelopeState == PipeWave::OVER) {
+    void process(const PipeState &in, std::array<float, PROCESS_FRAMES_SIZE> &out) {
+        if (in.envelopeState == PipeState::OVER) {
             framesUntilRelease -= std::min(framesUntilRelease, static_cast<size_t>(PROCESS_FRAMES_SIZE));
         }
         for (float &sample : out) {

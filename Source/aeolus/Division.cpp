@@ -243,8 +243,8 @@ bool Division::triggerVoicesForStop(const int stopIndex, const int note) {
     for (const auto &zone: stop.getZones()) {
         if (!zone.isForKey(note)) { continue; }
         for (const auto &rankWave: zone.rankWaves) {
-            if (auto pipewave = rankWave->getPipeWave(note); pipewave != nullptr) {
-                auto voice = voicePool->getVoice(pipewave, stop.getGain(), stop.getChiffGain(), stopIndex);
+            if (auto staticPipe = rankWave->getStaticPipe(note); staticPipe != nullptr) {
+                auto voice = voicePool->getVoice(staticPipe, stop.getGain(), stop.getChiffGain(), stopIndex);
                 activeVoices.emplace_back(voice);
                 voiceTriggered = true;
             }

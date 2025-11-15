@@ -31,7 +31,7 @@ public:
         }
     }
 
-    Voice* getVoice(const std::shared_ptr<PipeWave> &pipeWave, const float &outputGain, const float &chiffGain, const int stopIndex) {
+    Voice* getVoice(const std::shared_ptr<StaticPipe> &pipeWave, const float &outputGain, const float &chiffGain, const int stopIndex) {
         const auto voice = freeVoices.back();
         freeVoices.pop_back();
         voice->init(pipeWave, outputGain, chiffGain, stopIndex);

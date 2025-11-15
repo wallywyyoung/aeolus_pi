@@ -41,9 +41,7 @@ public:
     explicit EngineGlobal();
     ~EngineGlobal() = default;
 
-    [[nodiscard]] std::shared_ptr<RankWave> getStopByName(const std::string &name) const { return _rankwavesByName.at(name); }
     void pushMidi(const MidiData& midiData) { push(midiData); }
-
     void process(float (&out)[PROCESS_SAMPLES_SIZE]);
 
     std::shared_ptr<Organ> getOrgan() { return organ; }
@@ -54,7 +52,7 @@ private:
 
     Model model;
     std::shared_ptr<Organ> organ;
-    std::unordered_map<std::string, std::shared_ptr<RankWave>> _rankwavesByName{};
+    std::unordered_map<std::string, std::shared_ptr<RankWave>> rankWavesByName{};
     IRs irs;
     std::shared_ptr<Scale> scale { std::make_shared<Scale>(Scale::EqualTemp)};
     int longestIrLength{};                              ///< Longest IR length in samples

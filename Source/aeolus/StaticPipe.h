@@ -22,7 +22,6 @@
 #pragma once
 
 #include <memory>
-#include "MemoryConstants.h"
 #include "aeolus/AddSynth.h"
 
 /**
@@ -31,61 +30,31 @@
  * This class represents a single pipe mapped to a model (additive synth),
  * note, and frequency.
  */
-class PipeWave final {
+class StaticPipe final {
 public:
-    enum EnvelopeState : uint8_t { OVER, ATTACK, RELEASE };
-    struct State {
-        std::shared_ptr<PipeWave> pipeWave{};
-        EnvelopeState envelopeState{};
-        float* position{};
-        float interpolationPhase{};
-        float interpolationSpeed{};
-        float gain{};
-        int remainingReleaseFrames{};
-        float outputGain{};
-        float chiffGain{};
+    StaticPipe() = delete;
+    StaticPipe(const std::shared_ptr<AddSynth> &model, int note, float freq);
+    StaticPipe(const StaticPipe& other) = delete;
+    ~StaticPipe() = default;
 
-        State() = default;
-        void init(const std::shared_ptr<PipeWave>& newPipeWave, const float& newOutputGain, const float& newChiffGain) {
-            pipeWave = newPipeWave;
-            envelopeState = ATTACK;
-            position = pipeWave->attackWaveformStart;
-            interpolationPhase = 0.0f;
-            interpolationSpeed = 0.0f;
-            gain = 1.0f;
-            remainingReleaseFrames = pipeWave->releaseFrameCount;
-            outputGain = newOutputGain;
-            chiffGain = newChiffGain;
-        }
-    };
-    PipeWave(const std::shared_ptr<AddSynth> &model, int note, float freq);
-
-    PipeWave() = delete;
-    PipeWave(const PipeWave& other) = delete;
-    ~PipeWave() = default;
-
-    [[nodiscard]] int getNote() const noexcept { return note + model->getNoteMin(); }
+    [[nodiscard]] std::shared_ptr<AddSynth> getModel() const noexcept { return model; }
+    [[nodiscard]] int getNote() const noexcept { return note + model->getNoteMinimum(); }
     [[nodiscard]] float getFreqency() const noexcept { return freq; }
     [[nodiscard]] float getPipeFrequency() const noexcept;
 
     void generateWavetable();
-
-    void playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out);
 
 private:
     static constexpr auto CENTS_IN_OCTAVE = 1200.0f;
     static constexpr auto AUDIBLE_THRESHOLD = -40.0f;
     static constexpr auto HARMONIC_SKIP_THRESHOLD = -80.0f;
     static constexpr auto DECIBEL_TO_LINEAR_APPROX = 0.1661f;
-    static constexpr auto NOISE_SCALING = 0.05f;
-    static constexpr auto PLAY_INTERPOLATION_SPEED_SCALING = 0.0005f;
-    static void looplen(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength, int &cycleCount);
+    static void calculateLoopLength(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength, int &cycleCount);
     static void attgain(float *att, const int &n, const float &p);
 
     std::shared_ptr<AddSynth> model;
     int note;
     float freq;
-
     int attackLength;       // _l0
     int loopLength;         // _l1
     int sampleStep;         // _k_s
@@ -93,11 +62,11 @@ private:
     float releaseDecayRate; // _m_r
     float releaseDetune;    // _d_r
     float instability;      // _d_p
-
+    float* attackStart;     // _p0
+    float* loopStart;       // _p1
+    float* loopEnd;         // _p2
     std::vector<float> wavetable;
 
-    float* attackWaveformStart; // _p0
-    float* loopWaveformStart;   // _p1
-    float* loopEndPtr;          // _p2
+    friend class PipeState;
 };
 

@@ -19,83 +19,26 @@
 //
 // ---------------------------------------------------------------------------
 
-#include "aeolus/PipeWave.h"
-
+#include "aeolus/StaticPipe.h"
 #include <cmath>
-#include <cstring>
 #include <iostream>
 #include <memory>
 #include <random>
 #include <vector>
-
 #include "MemoryConstants.h"
 
-PipeWave::PipeWave(const std::shared_ptr<Addsynth> &model, const int note, const float freq) : model(model), note(note), freq(freq) { }
+StaticPipe::StaticPipe(const std::shared_ptr<AddSynth> &model, const int note, const float freq) : model(model), note(note), freq(freq) { }
 
-float PipeWave::getPipeFrequency() const noexcept {
+float StaticPipe::getPipeFrequency() const noexcept {
     return freq;
 }
 
-void PipeWave::playMono(State &state, std::array<float, PROCESS_FRAMES_SIZE> &out) {
-    if (state.envelopeState == OVER) {
-        return;
-    }
-
-    assert(attackWaveformStart != nullptr);
-    assert(loopWaveformStart != nullptr);
-    assert(loopEndPtr != nullptr);
-
-    auto gainDecay = 0.0f;
-    if (state.envelopeState == RELEASE) {
-        static constexpr auto PROCESS_FRAMES_SIZE_R = 1.0f / static_cast<float>(PROCESS_FRAMES_SIZE);
-        gainDecay = state.gain * PROCESS_FRAMES_SIZE_R;
-        if (state.remainingReleaseFrames > 0) {
-            gainDecay *= releaseDecayRate;
-            --state.remainingReleaseFrames;
-        } else {
-            state.envelopeState = OVER;
-        }
-    }
-    if (state.position < loopWaveformStart) {
-        for (auto& sample : out) {
-            sample = state.gain * *state.position;
-            ++state.position;
-            state.gain -= gainDecay;
-        }
-    } else {
-        auto phaseStep = 0.0f;
-        if (state.envelopeState == ATTACK) {
-            static std::random_device rnd;
-            static std::mt19937 gen(rnd());
-            static std::uniform_real_distribution dist(-0.5f, 0.5f);
-            state.interpolationSpeed += instability * PLAY_INTERPOLATION_SPEED_SCALING * (NOISE_SCALING * instability * dist(gen) - state.interpolationSpeed);
-            phaseStep = state.interpolationSpeed * static_cast<float>(sampleStep);
-        } else { // RELEASE
-            phaseStep = releaseDetune;
-        }
-        for (auto& sample : out) {
-            state.interpolationPhase += phaseStep;
-
-            const int phaseOverflow = (state.interpolationPhase > 1.0f) - (state.interpolationPhase < 0.0f);
-            state.position += phaseOverflow;
-            state.interpolationPhase -= static_cast<float>(phaseOverflow);
-
-            state.position += sampleStep;
-            if (state.position >= loopEndPtr) {
-                state.position -= loopLength;
-            }
-            sample = state.gain * (state.position [0] + state.interpolationPhase * (state.position[1] - state.position[0]));
-            state.gain -= gainDecay;
-        }
-    }
-}
-
-void PipeWave::generateWavetable() {
+void StaticPipe::generateWavetable() {
     thread_local std::random_device rnd;
     thread_local std::mt19937 gen(rnd());
     thread_local std::uniform_real_distribution dist(-1.0f, 1.0f);
 
-    float noteAttack = model->getNoteAttack(note);
+    float noteAttack = model->getNoteAttackTime(note);
 
     for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
         if (const auto harmonicAttack = model->getHarmonicAttack(harmonic, note); harmonicAttack > noteAttack) {
@@ -109,7 +52,7 @@ void PipeWave::generateWavetable() {
     attackLength = (attackLength + PROCESS_FRAMES_SIZE - 1) & ~(PROCESS_FRAMES_SIZE - 1);
 
     // Target frequency in Hz - keep in Hz throughout most calculations
-    const float targetFrequencyHz = freq + model->getNoteOffset(note) + model->getNoteRandomisation(note) * dist(gen);
+    const float targetFrequencyHz = freq + model->getNoteFrequencyOffset(note) + model->getNoteRandomisation(note) * dist(gen);
 
     // Convert to normalized frequency (cycles per sample) only when needed for phase calculations
     const float targetFrequency = targetFrequencyHz * SAMPLE_RATE_R;
@@ -142,8 +85,8 @@ void PipeWave::generateWavetable() {
     }
     auto numberCyclesOfFundamental = 0;
 
-    // Pass frequency in Hz to looplen function
-    looplen(targetFrequencyHz, SAMPLE_RATE_F / static_cast<float>(sampleStep), static_cast<int>(SAMPLE_RATE_F / 6.0f), loopLength, numberCyclesOfFundamental);
+    // Pass frequency in Hz to calculateLoopLength function
+    calculateLoopLength(targetFrequencyHz, SAMPLE_RATE_F / static_cast<float>(sampleStep), static_cast<int>(SAMPLE_RATE_F / 6.0f), loopLength, numberCyclesOfFundamental);
     assert(loopLength > 0);
     assert(numberCyclesOfFundamental > 0);
 
@@ -159,15 +102,15 @@ void PipeWave::generateWavetable() {
     std::vector<float> phaseSteps(wavetableLength);
     std::vector<float> att{};
 
-    attackWaveformStart = wavetable.data();
-    loopWaveformStart = attackWaveformStart + attackLength;
-    loopEndPtr = loopWaveformStart + loopLength;
+    attackStart = wavetable.data();
+    loopStart = attackStart + attackLength;
+    loopEnd = loopStart + loopLength;
 
-    memset(attackWaveformStart, 0, sizeof(float) * wavetable.size());
+    std::memset(attackStart, 0, sizeof(float) * wavetable.size());
 
-    releaseFrameCount = static_cast<int>(ceilf(model->getNoteRelease(note) * SAMPLE_RATE_F / PROCESS_FRAMES_SIZE) + 1);
+    releaseFrameCount = static_cast<int>(ceilf(model->getNoteDecayTime(note) * SAMPLE_RATE_F / PROCESS_FRAMES_SIZE) + 1);
     releaseDecayRate = 1.0f - powf(0.1f, 1.0f / static_cast<float>(releaseFrameCount));
-    releaseDetune = static_cast<float>(sampleStep) * (math::exp2ap(model->getNoteReleaseDetune(note) / CENTS_IN_OCTAVE) - 1.0f);
+    releaseDetune = static_cast<float>(sampleStep) * (math::exp2ap(model->getNoteDecayDetune(note) / CENTS_IN_OCTAVE) - 1.0f);
     instability = model->getNoteInstability(note);
 
     // Use the maximum attack time for all harmonics
@@ -225,12 +168,12 @@ void PipeWave::generateWavetable() {
                 harmonicSample *= att[i];
             }
 
-            attackWaveformStart[i] += harmonicSample;
+            attackStart[i] += harmonicSample;
         }
     }
 
     for (auto i = 0; i < sampleStep * (PROCESS_FRAMES_SIZE + 4); ++i) {
-        attackWaveformStart[i + attackLength + loopLength] = attackWaveformStart[i + attackLength];
+        attackStart[i + attackLength + loopLength] = attackStart[i + attackLength];
     }
 }
 
@@ -240,7 +183,7 @@ void PipeWave::generateWavetable() {
  * 1) the loop contains exactly nc cycles of the fundamental frequency.
  * 2) effectiveSampleRate * nc / _loopLength ≈ freqHz
  */
-void PipeWave::looplen(const float fundamentalFreqHz, const float effectiveSampleRate, const int maxLoopLength, int &optimalLoopLength, int &cycleCount)
+void StaticPipe::calculateLoopLength(const float fundamentalFreqHz, const float effectiveSampleRate, const int maxLoopLength, int &optimalLoopLength, int &cycleCount)
 {
     constexpr int N = 8;
     int fractionIntegerParts[N];
@@ -290,7 +233,7 @@ void PipeWave::looplen(const float fundamentalFreqHz, const float effectiveSampl
     cycleCount = std::max(1, std::abs(cycleCount));
 }
 
-void PipeWave::attgain(float *att, const int &n, const float &p) {
+void StaticPipe::attgain(float *att, const int &n, const float &p) {
     auto w = 0.05f;
     auto y = 0.6f;
 

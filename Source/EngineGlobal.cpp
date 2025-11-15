@@ -29,10 +29,10 @@ EngineGlobal::EngineGlobal() {
     irs = IOManager::loadIRs();
     for (auto i = 0; i <  model.getStopsCount(); ++i) {
         // TODO: Fix this mapping in JSON.
-        _rankwavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale, tuningFrequency));
+        rankWavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale, tuningFrequency));
     }
     generateWavetables();
-    organ = std::make_shared<Organ>([this](const std::string &name) { return getStopByName(name); });
+    organ = std::make_shared<Organ>([this](const std::string &name) { return rankWavesByName.at(name); });
     organInterface = static_cast<OrganInterface *>(organ.get());
     convolver.setIR(irs.irs[0]);
 }
@@ -48,7 +48,7 @@ void EngineGlobal::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
 
 void EngineGlobal::generateWavetables() const {
     auto threads = std::vector<std::thread>();
-    for (const auto &val: _rankwavesByName | std::views::values) {
+    for (const auto &val: rankWavesByName | std::views::values) {
         auto rwp = val.get();
         threads.emplace_back([rwp] {
             SimdUtilities::enableFlushToZero();

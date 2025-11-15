@@ -21,8 +21,9 @@
 
 #pragma once
 
-#include "aeolus/PipeWave.h"
+#include "aeolus/AddSynth.h"
 #include "aeolus/Scale.h"
+#include "aeolus/StaticPipe.h"
 
 #include <vector>
 
@@ -34,7 +35,7 @@
  */
 class RankWave {
 public:
-    explicit RankWave(Addsynth model, const Scale& scale, float tuningFreq);
+    explicit RankWave(AddSynth model, const Scale& scale, float tuningFrequency);
     RankWave(const RankWave&) = delete;
     RankWave& operator=(const RankWave& other) = delete;
 
@@ -45,15 +46,13 @@ public:
 
     void generateWavetables();
 
-    std::shared_ptr<PipeWave> getPipeWave(const int &note);
+    std::shared_ptr<StaticPipe> getStaticPipe(const int &note);
 
 private:
-    void createPipes(const Scale& scale, float tuningFrequency);
     int noteMin;
     int noteMax;
-    std::shared_ptr<Addsynth> model;
-    std::vector<std::shared_ptr<PipeWave>> pipeWaves{};
     std::shared_ptr<AddSynth> model;
+    std::vector<std::shared_ptr<StaticPipe>> staticPipes{};
 };
 
 

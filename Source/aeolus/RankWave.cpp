@@ -24,37 +24,33 @@
 
 RankWave::RankWave(AddSynth model, const Scale& scale, const float tuningFrequency) : noteMin(model.getNoteMinimum()), noteMax(model.getNoteMaximum()), model(std::make_shared<AddSynth>(model)) {
     assert(noteMax - noteMin + 1 > 0);
-    createPipes(scale, tuningFreq);
-}
-
-auto RankWave::createPipes(const Scale &scale, const float tuningFrequency) -> void {
-    pipeWaves.clear();
-    const auto fn = model.getFrequencyNumerator();
-    const auto fd = model.getFrequencyDenominator();
+    staticPipes.clear();
+    const auto frequencyNumerator = model.getFrequencyNumerator();
+    const auto frequencyDenominator = model.getFrequencyDenominator();
     const auto& s = scale.getTable();
-    const float fbase = tuningFrequency;
+    const float baseFrequency = tuningFrequency;
 
     for (int i = noteMin; i <= noteMax; ++i) {
-        auto freq = scale.getFrequencyForMidiNote(i, fbase);
-        freq = freq * static_cast<float>(fn) / static_cast<float>(fd);
-        pipeWaves.push_back(std::make_shared<PipeWave>(model, i - noteMin, freq));
+        auto frequency = scale.getFrequencyForMidiNote(i, baseFrequency);
+        frequency = frequency * static_cast<float>(frequencyNumerator) / static_cast<float>(frequencyDenominator);
+        staticPipes.push_back(std::make_shared<StaticPipe>(this->model, i - noteMin, frequency));
     }
 }
 
 void RankWave::generateWavetables() {
-    for (const auto & pipeWave : pipeWaves) {
-        pipeWave->generateWavetable();
+    for (const auto& staticPipe : staticPipes) {
+        staticPipe->generateWavetable();
     }
 }
 
-std::shared_ptr<PipeWave> RankWave::getPipeWave(const int &note) {
+std::shared_ptr<StaticPipe> RankWave::getStaticPipe(const int &note) {
     if (note < noteMin || note > noteMax) {
         return nullptr;
     }
     const int index = note - noteMin;
-    assertIsPositiveAndBelow(index, pipeWaves.size());
+    assertIsPositiveAndBelow(index, staticPipes.size());
 
-    return pipeWaves[index];
+    return staticPipes[index];
 }
 
 

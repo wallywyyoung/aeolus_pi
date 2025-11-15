@@ -20,8 +20,8 @@
 
 #pragma once
 
+#include "aeolus/PipeState.h"
 #include "aeolus/dsp/Chiff.h"
-#include "aeolus/dsp/DelayLine.h"
 #include "aeolus/dsp/SpatialSource.h"
 
 /**
@@ -33,22 +33,22 @@ class Voice {
     constexpr static auto BASE_CHIFF_INTENSITY = 0.02f;
     constexpr static auto STARTING_STEREO_WIDTH = 0.15f;
 
-    PipeWave::State state{ }; ///< Pipe state associated with this voice.
+    PipeState state{ }; ///< Pipe state associated with this voice.
     int stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
     std::array<float, PROCESS_FRAMES_SIZE> buffer{ 0.0f };
     dsp::SpatialSource spatialSource{}; /// Stereo spatial modeller.
     dsp::Chiff chiff{}; /// Attack chiff.
 public:
     Voice() = default;
-    void init(const std::shared_ptr<PipeWave>& pipeWave, const float &outputGain, const float &chiffGain, const int &newStopIndex);
+    void init(const std::shared_ptr<StaticPipe>& staticPipe, const float &outputGain, const float &chiffGain, const int &newStopIndex);
 
-    [[nodiscard]] bool isForState(const PipeWave::State& other) const {
-        return state.pipeWave == other.pipeWave;
+    // TODO: Is this necessary?
+    [[nodiscard]] bool isForState(const PipeState& other) const {
+        return state == other;
     }
 
     void release();
     void process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out);
-    void setStopIndex(const int idx) noexcept { stopIndex = idx; }
 
     [[nodiscard]] bool isOver() const noexcept;
     [[nodiscard]] bool isActive() const noexcept;

@@ -19,52 +19,43 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/Voice.h"
-#include <utility>
-#include "aeolus/Organ.h"
+#include "Division.h"
 
-
-void Voice::init(const std::shared_ptr<PipeWave>& pipeWave, const float &outputGain, const float &chiffGain, const int &newStopIndex) {
-    state.init(pipeWave, outputGain, chiffGain);
+void Voice::init(const std::shared_ptr<StaticPipe>& staticPipe, const float &outputGain, const float &chiffGain, const int &newStopIndex) {
+    state.init(staticPipe.get(), outputGain, chiffGain);
     stopIndex = newStopIndex;
-    spatialSource.init(pipeWave->getNote(), static_cast<float>(pipeWave->getModel()->getFd()), static_cast<float>(pipeWave->getModel()->getFd()));
-    const auto freq = pipeWave->getPipeFrequency();
+    spatialSource.init(staticPipe->getNote(), static_cast<float>(staticPipe->getModel()->getFrequencyDenominator()), static_cast<float>(staticPipe->getModel()->getFrequencyNumerator()));
+    const auto freq = staticPipe->getPipeFrequency();
     const float att = 1.0f - expf(-freq * FREQUENCY_ROLLOFF);
     chiff.init(freq, 1.0f / freq, std::min<float>(1.0f, BASE_CHIFF_INTENSITY * chiffGain * att), spatialSource.getPostFxSamplesCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH));
 }
 
 void Voice::release() {
-    if (state.envelopeState == PipeWave::OVER) {
-        std::cerr << "Release was called after the voice was over!" << std::endl;
+    if (state.envelopeState == PipeState::OVER) {
         return;
     }
-    state.envelopeState = PipeWave::RELEASE;
+    state.envelopeState = PipeState::RELEASE;
     chiff.release();
 }
 
 void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
-    state.pipeWave->playMono(state, buffer);
+    state.playMono(buffer);
     chiff.process(state, buffer);
     spatialSource.process(buffer, out);
 }
 
 bool Voice::isOver() const noexcept {
-    return state.envelopeState == PipeWave::EnvelopeState::OVER && chiff.isOver();
+    return state.envelopeState == PipeState::OVER && chiff.isOver();
 }
 
 bool Voice::isActive() const noexcept {
-    return state.envelopeState == PipeWave::ATTACK;
+    return state.envelopeState == PipeState::ATTACK;
 }
 
 bool Voice::isActiveForStopNote(const int &thisStopIndex, const int &note) const noexcept {
-    if (state.pipeWave != nullptr) {
-        return isActive() && thisStopIndex == stopIndex && state.pipeWave->getNote() == note;
-    }
-    return false;
+    return isActive() && thisStopIndex == stopIndex && state.getNote() == note;
 }
 
 int Voice::getNote() const {
-    if (state.pipeWave != nullptr) {
-        return state.pipeWave->getNote();
-    }
-    return -1;
+    return state.getNote();
 }
