@@ -21,7 +21,6 @@
 
 #pragma once
 
-#include "aeolus/Addsynth.h"
 #include "aeolus/PipeWave.h"
 #include "aeolus/Scale.h"
 
@@ -54,6 +53,7 @@ private:
     int noteMax;
     std::shared_ptr<Addsynth> model;
     std::vector<std::shared_ptr<PipeWave>> pipeWaves{};
+    std::shared_ptr<AddSynth> model;
 };
 
 

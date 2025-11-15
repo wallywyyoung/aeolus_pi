@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "aeolus/Addsynth.h"
+#include "aeolus/AddSynth.h"
 
 /**
  * @brief A collection of all available stops.
@@ -41,11 +41,11 @@ public:
     [[nodiscard]] std::vector<std::string> getStopNames() const;
 
     [[nodiscard]] int getStopsCount() const { return synths.size(); }
-    Addsynth operator[](const int idx) { return synths[idx]; }
-    Addsynth operator[](const int idx) const { return synths[idx]; }
+    AddSynth operator[](const int idx) { return synths[idx]; }
+    AddSynth operator[](const int idx) const { return synths[idx]; }
 
 private:
-    std::vector<Addsynth> synths{};
+    std::vector<AddSynth> synths{};
 };
 
 

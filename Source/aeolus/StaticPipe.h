@@ -23,7 +23,7 @@
 
 #include <memory>
 #include "MemoryConstants.h"
-#include "aeolus/Addsynth.h"
+#include "aeolus/AddSynth.h"
 
 /**
  * @brief Single pipe wavetable.
@@ -58,13 +58,12 @@ public:
             chiffGain = newChiffGain;
         }
     };
+    PipeWave(const std::shared_ptr<AddSynth> &model, int note, float freq);
 
     PipeWave() = delete;
-    PipeWave(const std::shared_ptr<Addsynth> &model, int note, float freq);
     PipeWave(const PipeWave& other) = delete;
     ~PipeWave() = default;
 
-    [[nodiscard]] std::shared_ptr<Addsynth> getModel() const noexcept { return model; }
     [[nodiscard]] int getNote() const noexcept { return note + model->getNoteMin(); }
     [[nodiscard]] float getFreqency() const noexcept { return freq; }
     [[nodiscard]] float getPipeFrequency() const noexcept;
@@ -83,7 +82,7 @@ private:
     static void looplen(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength, int &cycleCount);
     static void attgain(float *att, const int &n, const float &p);
 
-    std::shared_ptr<Addsynth> model;
+    std::shared_ptr<AddSynth> model;
     int note;
     float freq;
 

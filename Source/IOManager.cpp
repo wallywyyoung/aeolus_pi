@@ -27,7 +27,7 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include "EngineGlobal.h"
-#include "aeolus/Addsynth.h"
+#include "aeolus/AddSynth.h"
 #include "aeolus/Division.h"
 #include "aeolus/dsp/Convolution/Convolver.h"
 
@@ -64,20 +64,20 @@ std::vector<std::byte> IOManager::readBinaryFile(const std::string &path) {
     return binary;
 }
 
-std::vector<Addsynth> IOManager::loadPipes() {
-    std::vector<Addsynth> synths;
+std::vector<AddSynth> IOManager::loadPipes() {
+    std::vector<AddSynth> synths;
     for (const auto& entry : std::filesystem::directory_iterator("./Resources/stops/")) {
         if (!std::filesystem::is_regular_file(entry)) {
             continue;
         }
         auto extension = entry.path().extension().string();
-        auto synth = Addsynth();
+        auto synth = AddSynth();
         if (extension == ".ae0") {
             addsynthFromBinary(entry, synth);
         } else if (extension == ".json") {
             addsynthFromJson(entry, synth);
         } else {
-            std::cout << "Skipping Addsynth file " << entry.path() << std::endl;
+            std::cout << "Skipping AddSynth file " << entry.path() << std::endl;
             continue;
         }
         synths.push_back(synth);
@@ -121,56 +121,56 @@ void IOManager::N_func_fromStream(N_func &nFunc, std::istream& stream)
     }
 }
 
-void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, Addsynth &addsynth) {
+void IOManager::addsynthFromJson(const std::filesystem::directory_entry& entry, AddSynth &addsynth) {
     std::ifstream stream(entry.path(), std::ios::in);
     auto v = nlohmann::json::parse(stream);
 
     // TODO: Fix this hack.
     const auto tempPath = entry.path().filename().stem().string();
-    addsynth._fileName = tempPath.substr(0, tempPath.length() - 4);
+    addsynth.fileName = tempPath.substr(0, tempPath.length() - 4);
 
     const int version = v["version"];
 
-    addsynth._noteMin = v["note_min"];
-    addsynth._noteMax = v["note_max"];
+    addsynth.noteMinimum = v["note_min"];
+    addsynth.noteMaximum = v["note_max"];
 
-    if (addsynth._noteMax == deprecated::NOTE_MAX) {
-        addsynth._noteMax = Addsynth::NOTE_MAX;
+    if (addsynth.noteMaximum == deprecated::NOTE_MAX) {
+        addsynth.noteMaximum = AddSynth::NOTE_MAXIMUM;
     }
 
-    addsynth._fn = v["fn"];
-    addsynth._fd = v["fd"];
+    addsynth.frequencyNumerator = v["fn"];
+    addsynth.frequencyDenominator = v["fd"];
 
-    addsynth._stopName = v["name"];
-    addsynth._copyright = v["copyright"];
-    addsynth._mnemonic = v["mnemonic"];
-    addsynth._comments = v["comments"];
+    addsynth.stopName = v["name"];
+    addsynth.copyright = v["copyright"];
+    addsynth.mnemonic = v["mnemonic"];
+    addsynth.comments = v["comments"];
 
-    N_func_fromJson(addsynth._n_vol, v["n_vol"]);
-    N_func_fromJson(addsynth._n_off, v["n_off"]);
-    N_func_fromJson(addsynth._n_ran, v["n_ran"]);
+    N_func_fromJson(addsynth.noteVolume, v["n_vol"]);
+    N_func_fromJson(addsynth.noteFrequencyOffset, v["n_off"]);
+    N_func_fromJson(addsynth.noteRandomisation, v["n_ran"]);
 
-    if (version >= Addsynth::defaultVersion) {
-        N_func_fromJson(addsynth._n_ins, v["n_ins"]);
-        N_func_fromJson(addsynth._n_att, v["n_att"]);
-        N_func_fromJson(addsynth._n_atd, v["n_atd"]);
-        N_func_fromJson(addsynth._n_dct, v["n_dct"]);
-        N_func_fromJson(addsynth._n_dcd, v["n_dcd"]);
+    if (version >= AddSynth::DEFAULT_VERSION) {
+        N_func_fromJson(addsynth.noteInstability, v["n_ins"]);
+        N_func_fromJson(addsynth.noteAttackTime, v["n_att"]);
+        N_func_fromJson(addsynth.noteAttackDetune, v["n_atd"]);
+        N_func_fromJson(addsynth.noteDecayTime, v["n_dct"]);
+        N_func_fromJson(addsynth.noteDecayDetune, v["n_dcd"]);
     }
 
-    HN_func_fromJson(addsynth._h_lev, v["h_lev"]);
-    HN_func_fromJson(addsynth._h_ran, v["h_ran"]);
-    HN_func_fromJson(addsynth._h_att, v["h_att"]);
-    HN_func_fromJson(addsynth._h_atp, v["h_atp"]);
+    HN_func_fromJson(addsynth.harmonicLevel, v["h_lev"]);
+    HN_func_fromJson(addsynth.harmonicRandomisation, v["h_ran"]);
+    HN_func_fromJson(addsynth.harmonicAttack, v["h_att"]);
+    HN_func_fromJson(addsynth.harmonicAttackProfile, v["h_atp"]);
 }
 
-void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry, Addsynth &addsynth)
+void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry, AddSynth &addsynth)
 {
     std::ifstream stream(entry.path(), std::ios::in | std::ios::binary);
-    addsynth._fileName = entry.path().filename().stem();
-    char header[Addsynth::header_length]{};
+    addsynth.fileName = entry.path().filename().stem();
+    char header[AddSynth::HEADER_LENGTH]{};
 
-    stream.read(header, Addsynth::header_length);
+    stream.read(header, AddSynth::HEADER_LENGTH);
 
     if (strncmp(header, "AEOLUS", 6) != 0)
         throw std::runtime_error("Invalid header signature");
@@ -182,51 +182,51 @@ void IOManager::addsynthFromBinary(const std::filesystem::directory_entry& entry
         nHarm = deprecated::N_HARM;
     }
 
-    addsynth._noteMin = header[28];
-    addsynth._noteMax = header[29];
+    addsynth.noteMinimum = header[28];
+    addsynth.noteMaximum = header[29];
 
-    if (addsynth._noteMax == deprecated::NOTE_MAX)
-        addsynth._noteMax = Addsynth::NOTE_MAX;
+    if (addsynth.noteMaximum == deprecated::NOTE_MAX)
+        addsynth.noteMaximum = AddSynth::NOTE_MAXIMUM;
 
-    addsynth._fn = header[30];
-    addsynth._fd = header[31];
+    addsynth.frequencyNumerator = header[30];
+    addsynth.frequencyDenominator = header[31];
 
     char ch;
     while (stream.get(ch) && ch != '\0') { // Read character by character until null or EOF
-        addsynth._stopName += ch;
+        addsynth.stopName += ch;
     }
     while (stream.get(ch) && ch == '\0') { }
-    addsynth._copyright += ch;
+    addsynth.copyright += ch;
     while (stream.get(ch) && ch != '\0') { // Read character by character until null or EOF
-        addsynth._copyright += ch;
+        addsynth.copyright += ch;
     }
     while (stream.get(ch) && ch == '\0') { }
-    addsynth._mnemonic += ch;
+    addsynth.mnemonic += ch;
     while (stream.get(ch) && ch != '\0') { // Read character by character until null or EOF
-        addsynth._mnemonic += ch;
+        addsynth.mnemonic += ch;
     }
     while (stream.get(ch) && ch == '\0') { }
-    addsynth._comments += ch;
+    addsynth.comments += ch;
     while (stream.get(ch) && ch != '\0') { // Read character by character until null or EOF
-        addsynth._comments += ch;
+        addsynth.comments += ch;
     }
 
-    stream.seekg(Addsynth::data_offset, std::ios::beg);
+    stream.seekg(AddSynth::DATA_OFFSET, std::ios::beg);
 
-    N_func_fromStream(addsynth._n_vol, stream);
-    N_func_fromStream(addsynth._n_off, stream);
-    N_func_fromStream(addsynth._n_ran, stream);
+    N_func_fromStream(addsynth.noteVolume, stream);
+    N_func_fromStream(addsynth.noteFrequencyOffset, stream);
+    N_func_fromStream(addsynth.noteRandomisation, stream);
 
-    if (version >= Addsynth::defaultVersion) {
-        N_func_fromStream(addsynth._n_ins, stream);
-        N_func_fromStream(addsynth._n_att, stream);
-        N_func_fromStream(addsynth._n_atd, stream);
-        N_func_fromStream(addsynth._n_dct, stream);
-        N_func_fromStream(addsynth._n_dcd, stream);
+    if (version >= AddSynth::DEFAULT_VERSION) {
+        N_func_fromStream(addsynth.noteInstability, stream);
+        N_func_fromStream(addsynth.noteAttackTime, stream);
+        N_func_fromStream(addsynth.noteAttackDetune, stream);
+        N_func_fromStream(addsynth.noteDecayTime, stream);
+        N_func_fromStream(addsynth.noteDecayDetune, stream);
     }
 
-    HN_func_fromStream(addsynth._h_lev, stream, nHarm);
-    HN_func_fromStream(addsynth._h_ran, stream, nHarm);
-    HN_func_fromStream(addsynth._h_att, stream, nHarm);
-    HN_func_fromStream(addsynth._h_atp, stream, nHarm);
+    HN_func_fromStream(addsynth.harmonicLevel, stream, nHarm);
+    HN_func_fromStream(addsynth.harmonicRandomisation, stream, nHarm);
+    HN_func_fromStream(addsynth.harmonicAttack, stream, nHarm);
+    HN_func_fromStream(addsynth.harmonicAttackProfile, stream, nHarm);
 }

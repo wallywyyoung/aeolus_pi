@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "aeolus/Addsynth.h"
+#include "aeolus/AddSynth.h"
 #include "aeolus/IR.h"
 
 #include <filesystem>
@@ -30,7 +30,7 @@
 class IOManager {
 public:
     static IRs loadIRs();
-    static std::vector<Addsynth> loadPipes();
+    static std::vector<AddSynth> loadPipes();
 private:
     /// Values used by a previous version of the synth.
     struct deprecated {
@@ -42,6 +42,6 @@ private:
     static void N_func_fromStream(N_func &nFunc, std::istream& stream);
     static void HN_func_fromJson(HN_func& hnFunc, nlohmann::json& v);
     static void HN_func_fromStream(HN_func& hnFunc, std::istream& stream, const int &nHarm);
-    static void addsynthFromJson(const std::filesystem::directory_entry& entry, Addsynth &addsynth);
-    static void addsynthFromBinary(const std::filesystem::directory_entry& entry, Addsynth &addsynth);
+    static void addsynthFromJson(const std::filesystem::directory_entry& entry, AddSynth &addsynth);
+    static void addsynthFromBinary(const std::filesystem::directory_entry& entry, AddSynth &addsynth);
 };

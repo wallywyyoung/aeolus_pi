@@ -22,17 +22,17 @@
 #include "aeolus/RankWave.h"
 #include "EngineGlobal.h"
 
-RankWave::RankWave(Addsynth model, const Scale& scale, const float tuningFreq) : noteMin(model.getNoteMin()), noteMax(model.getNoteMax()), model(std::make_shared<Addsynth>(model)) {
+RankWave::RankWave(AddSynth model, const Scale& scale, const float tuningFrequency) : noteMin(model.getNoteMinimum()), noteMax(model.getNoteMaximum()), model(std::make_shared<AddSynth>(model)) {
     assert(noteMax - noteMin + 1 > 0);
     createPipes(scale, tuningFreq);
 }
 
 auto RankWave::createPipes(const Scale &scale, const float tuningFrequency) -> void {
     pipeWaves.clear();
-    const auto fn = model->getFn();
-    const auto fd = model->getFd();
+    const auto fn = model.getFrequencyNumerator();
+    const auto fd = model.getFrequencyDenominator();
     const auto& s = scale.getTable();
-    const float fbase = tuningFrequency;// * static_cast<float>(fn) / static_cast<float>(fd);
+    const float fbase = tuningFrequency;
 
     for (int i = noteMin; i <= noteMax; ++i) {
         auto freq = scale.getFrequencyForMidiNote(i, fbase);

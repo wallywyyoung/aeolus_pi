@@ -39,6 +39,7 @@ add_executable(aeolus_pi
         Source/AudioBuffer.h
         Source/IOManager.cpp
         Source/IOManager.h
+        Source/aeolus/AddSynth.h
         Source/aeolus/SmoothFloat.cpp
         Source/aeolus/SmoothFloat.h
         Source/aeolus/Division.cpp
