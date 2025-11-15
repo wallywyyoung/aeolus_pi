@@ -24,10 +24,6 @@
 #include <vector>
 #include <cassert>
 
-template <typename T> T limitRange(T min, T max, T value) {
-    return std::max(min, std::min(max, value));
-}
-
 // TODO: Fix mixed comparison with large unsigned types.
 template <typename T1, typename T2>
 void assertIsPositiveAndBelow(T1 instance, T2 threshold) {

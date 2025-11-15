@@ -20,15 +20,15 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/SmoothFloat.h"
-#include "aeolus/globals.h"
-
+#include <algorithm>
 #include <cmath>
+#include "aeolus/globals.h"
 
 SmoothFloat::SmoothFloat(const float value, const float min, const float max, const float smooth) : currentValue{value}, minValue{min}, maxValue{max}, targetValue{value}, frac{smooth}, smoothing{false} { }
 
 void SmoothFloat::setValue(const float v, const float s, const bool force) {
-    targetValue = limitRange(minValue, maxValue, v);
-    frac = limitRange(0.0f, 1.0f, s);
+    targetValue = std::clamp(v, minValue, maxValue);
+    frac = std::clamp(s, 0.0f, 1.0f);
     if (force) {
         currentValue = targetValue;
         smoothing = false;
@@ -38,7 +38,7 @@ void SmoothFloat::setValue(const float v, const float s, const bool force) {
 }
 
 void SmoothFloat::setValue(const float v, const bool force) {
-    targetValue = limitRange(minValue, maxValue, v);
+    targetValue = std::clamp(v, minValue, maxValue);
     if (force) {
         currentValue = targetValue;
         smoothing = false;
@@ -48,7 +48,7 @@ void SmoothFloat::setValue(const float v, const bool force) {
 }
 
 void SmoothFloat::setSmoothing(const float s) noexcept {
-    frac = limitRange(0.0f, 1.0f, s);
+    frac = std::clamp(s, 0.0f, 1.0f);
 }
 
 void SmoothFloat::setRange(const float min, const float max) {
