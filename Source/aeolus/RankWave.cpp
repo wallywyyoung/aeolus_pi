@@ -24,18 +24,19 @@
 #include "aeolus/AddSynth.h"
 #include "aeolus/StaticPipe.h"
 
-RankWave::RankWave(AddSynth model, const Scale& scale, const float tuningFrequency) : noteMin(model.getNoteMinimum()), noteMax(model.getNoteMaximum()), model(std::make_shared<AddSynth>(model)) {
+RankWave::RankWave(AddSynth addSynth, const Scale& scale, const float tuningFrequency) : noteMin(addSynth.getNoteMinimum()), noteMax(addSynth.getNoteMaximum()) {
     assert(noteMax - noteMin + 1 > 0);
     staticPipes.clear();
-    const auto frequencyNumerator = model.getFrequencyNumerator();
-    const auto frequencyDenominator = model.getFrequencyDenominator();
+    const auto frequencyNumerator = addSynth.getFrequencyNumerator();
+    const auto frequencyDenominator = addSynth.getFrequencyDenominator();
     const auto& s = scale.getTable();
     const float baseFrequency = tuningFrequency;
 
+    auto modelAddSynth = std::make_shared<AddSynth>(addSynth);
     for (int i = noteMin; i <= noteMax; ++i) {
         auto frequency = scale.getFrequencyForMidiNote(i, baseFrequency);
         frequency = frequency * static_cast<float>(frequencyNumerator) / static_cast<float>(frequencyDenominator);
-        staticPipes.push_back(std::make_shared<StaticPipe>(this->model, i - noteMin, frequency));
+        staticPipes.push_back(std::make_shared<StaticPipe>(modelAddSynth, i - noteMin, frequency));
     }
 }
 

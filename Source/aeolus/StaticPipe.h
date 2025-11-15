@@ -39,7 +39,6 @@ public:
 
     [[nodiscard]] std::shared_ptr<AddSynth> getModel() const noexcept { return model; }
     [[nodiscard]] int getNote() const noexcept { return note + model->getNoteMinimum(); }
-    [[nodiscard]] float getFreqency() const noexcept { return freq; }
     [[nodiscard]] float getPipeFrequency() const noexcept;
 
     void generateWavetable();
@@ -65,7 +64,6 @@ private:
     float* attackStart;     // _p0
     float* loopStart;       // _p1
     float* loopEnd;         // _p2
-    std::vector<float> wavetable;
 
     friend class PipeState;
 };

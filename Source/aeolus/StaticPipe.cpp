@@ -26,6 +26,7 @@
 #include <random>
 #include <vector>
 #include "MemoryConstants.h"
+#include "WavetableMemoryManager.h"
 
 StaticPipe::StaticPipe(const std::shared_ptr<AddSynth> &model, const int note, const float freq) : model(model), note(note), freq(freq) { }
 
@@ -97,16 +98,13 @@ void StaticPipe::generateWavetable() {
     }
 
     const int wavetableLength = attackLength + loopLength + sampleStep * (PROCESS_FRAMES_SIZE + 4);
-    wavetable.resize(wavetableLength);
-
-    std::vector<float> phaseSteps(wavetableLength);
-    std::vector<float> att{};
-
-    attackStart = wavetable.data();
+    attackStart = WavetableMemoryManager::getInstance().allocateWavetable(wavetableLength);
+    std::fill_n(attackStart, wavetableLength, 0.0f);
     loopStart = attackStart + attackLength;
     loopEnd = loopStart + loopLength;
 
-    wavetable.assign(wavetableLength, 0.0f);
+    std::vector<float> phaseSteps(wavetableLength);
+    std::vector<float> att{};
 
     releaseFrameCount = static_cast<int>(ceilf(model->getNoteDecayTime(note) * SAMPLE_RATE_F / PROCESS_FRAMES_SIZE) + 1);
     releaseDecayRate = 1.0f - powf(0.1f, 1.0f / static_cast<float>(releaseFrameCount));

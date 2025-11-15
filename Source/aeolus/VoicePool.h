@@ -27,7 +27,7 @@ class VoicePool {
     std::vector<Voice*> freeVoices;
 public:
     VoicePool() {
-        for (auto voice : pool) {
+        for (auto& voice : pool) {
             freeVoices.push_back(&voice);
         }
     }

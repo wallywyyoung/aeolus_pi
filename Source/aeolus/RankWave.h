@@ -48,7 +48,6 @@ public:
 private:
     int noteMin;
     int noteMax;
-    std::shared_ptr<AddSynth> model;
     std::vector<std::shared_ptr<StaticPipe>> staticPipes{};
 };
 

@@ -101,6 +101,7 @@ add_executable(aeolus_pi
         Source/aeolus/PipeState.h
         Source/aeolus/WavetableMemoryManager.h
         Source/aeolus/WavetableMemoryManager.cpp
+        Source/aeolus/PipeState.cpp
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)
