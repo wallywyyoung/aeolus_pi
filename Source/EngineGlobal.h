@@ -47,7 +47,6 @@ public:
     std::shared_ptr<Organ> getOrgan() { return organ; }
 
 private:
-    constexpr static auto TUNING_FREQUENCY_DEFAULT = 440.0f; /// mid-A tuning frequency.
     void generateWavetables() const;
 
     Model model;
@@ -56,7 +55,6 @@ private:
     IRs irs;
     std::shared_ptr<Scale> scale { std::make_shared<Scale>(Scale::EqualTemp)};
     int longestIrLength{};                              ///< Longest IR length in samples
-    float tuningFrequency { TUNING_FREQUENCY_DEFAULT }; ///< Middle A tuning frequency.
 
     Convolver convolver{};
 };

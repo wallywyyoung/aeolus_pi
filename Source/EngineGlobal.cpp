@@ -29,7 +29,7 @@ EngineGlobal::EngineGlobal() {
     irs = IOManager::loadIRs();
     for (auto i = 0; i <  model.getStopsCount(); ++i) {
         // TODO: Fix this mapping in JSON.
-        rankWavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale, tuningFrequency));
+        rankWavesByName.emplace(model[i].getFileName(), std::make_shared<RankWave>(model[i], *scale));
     }
     generateWavetables();
     organ = std::make_shared<Organ>([this](const std::string &name) { return rankWavesByName.at(name); });

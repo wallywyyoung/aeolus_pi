@@ -20,11 +20,12 @@
 
 #include "aeolus/Scale.h"
 #include <cmath>
+#include "MemoryConstants.h"
 
-float Scale::getFrequencyForMidiNote(const int midiNote, const float tuningFrequency) const {
+float Scale::getFrequencyForMidiNote(const int midiNote) const {
     const auto& scaleTable{ getTable() };
     // Base detune from tuning frequency.
-    const float baseFrequency{ tuningFrequency / scaleTable[9] };
+    const float baseFrequency{ TUNING_FREQUENCY / scaleTable[9] };
     // Base note adjusted by detune, then scaled 2^n as octaves.
     return std::ldexp(baseFrequency * scaleTable[midiNote % 12], midiNote / 12 - 5);
 }

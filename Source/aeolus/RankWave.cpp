@@ -24,17 +24,15 @@
 #include "aeolus/AddSynth.h"
 #include "aeolus/StaticPipe.h"
 
-RankWave::RankWave(AddSynth addSynth, const Scale& scale, const float tuningFrequency) : noteMin(addSynth.getNoteMinimum()), noteMax(addSynth.getNoteMaximum()) {
+RankWave::RankWave(AddSynth addSynth, const Scale& scale) : noteMin(addSynth.getNoteMinimum()), noteMax(addSynth.getNoteMaximum()) {
     assert(noteMax - noteMin + 1 > 0);
     staticPipes.clear();
     const auto frequencyNumerator = addSynth.getFrequencyNumerator();
     const auto frequencyDenominator = addSynth.getFrequencyDenominator();
     const auto& s = scale.getTable();
-    const float baseFrequency = tuningFrequency;
-
     auto modelAddSynth = std::make_shared<AddSynth>(addSynth);
     for (int i = noteMin; i <= noteMax; ++i) {
-        auto frequency = scale.getFrequencyForMidiNote(i, baseFrequency);
+        auto frequency = scale.getFrequencyForMidiNote(i);
         frequency = frequency * static_cast<float>(frequencyNumerator) / static_cast<float>(frequencyDenominator);
         staticPipes.push_back(std::make_shared<StaticPipe>(modelAddSynth, i - noteMin, frequency));
     }

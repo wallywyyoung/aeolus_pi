@@ -35,7 +35,7 @@ class StaticPipe;
  */
 class RankWave {
 public:
-    explicit RankWave(AddSynth model, const Scale& scale, float tuningFrequency);
+    explicit RankWave(AddSynth model, const Scale& scale);
     RankWave(const RankWave&) = delete;
     RankWave& operator=(const RankWave& other) = delete;
 

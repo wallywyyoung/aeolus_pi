@@ -45,5 +45,6 @@ constexpr static int ALSA_THRESHOLD = ALSA_PERIOD_SIZE * 2;             ///< Num
 constexpr static int ALSA_BUFFER_FRAMES_SIZE = ALSA_PERIOD_SIZE * 4;              ///< Number of frames in output buffer.
 constexpr static int ALSA_BUFFER_SAMPLES_SIZE = ALSA_BUFFER_FRAMES_SIZE * OUTPUT_CHANNELS;  ///< Number of samples in output buffer.
 static constexpr unsigned short CACHE_LINE_SIZE = 64;                   ///< Cache alignment for Raspberry Pi 4B
+constexpr static auto TUNING_FREQUENCY = 440.0f; /// mid-A tuning frequency.
 static constexpr auto NYQUIST_WITH_MARGIN = 5.0f - 0.05f;
 static_assert(std::has_single_bit(PROCESS_FRAMES_SIZE), "PROCESS_FRAMES_SIZE must be a power of two.");

@@ -33,8 +33,8 @@ public:
 
     [[nodiscard]] const std::array<float,12>& getTable() const { return SCALES[type]; }
 
-    /// Calculate a MIDI note frequency (Hz) given the tuning A frequency.
-    [[nodiscard]] float getFrequencyForMidiNote(int midiNote, float tuningFrequency = 440.0f) const;
+    /// Calculate a MIDI note frequency (Hz) given the tuning frequency.
+    [[nodiscard]] float getFrequencyForMidiNote(int midiNote) const;
 
 private:
     static constexpr std::array<std::array<float,12>, Total> SCALES = {{
