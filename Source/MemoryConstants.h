@@ -19,6 +19,7 @@
 
 #pragma once
 #include <bit>
+#include <cstddef>
 
 /// Processing sample rate.
 /// There are few harmonics generated, so can be set this low.

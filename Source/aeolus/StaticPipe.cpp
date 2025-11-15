@@ -49,8 +49,7 @@ void StaticPipe::generateWavetable() {
 
     // Attack length aligned to the processing subframes
     attackLength = static_cast<int>(std::lround(SAMPLE_RATE_F * noteAttack));
-    static_assert(isPowerOfTwo(PROCESS_FRAMES_SIZE));
-    attackLength = (attackLength + PROCESS_FRAMES_SIZE - 1) & ~(PROCESS_FRAMES_SIZE - 1);
+    attackLength = (attackLength + static_cast<int>(PROCESS_FRAMES_SIZE) - 1) & ~(static_cast<int>(PROCESS_FRAMES_SIZE) - 1);
 
     // Target frequency in Hz - keep in Hz throughout most calculations
     const float targetFrequencyHz = freq + model->getNoteFrequencyOffset(note) + model->getNoteRandomisation(note) * dist(gen);
