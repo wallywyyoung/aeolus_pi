@@ -19,7 +19,7 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/Voice.h"
-#include "Division.h"
+#include "aeolus/Division.h"
 
 void Voice::init(const std::shared_ptr<StaticPipe>& staticPipe, const float &outputGain, const float &chiffGain, const int &newStopIndex) {
     state.init(staticPipe.get(), outputGain, chiffGain);

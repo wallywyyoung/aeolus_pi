@@ -18,6 +18,7 @@
 // ---------------------------------------------------------------------------
 
 #pragma once
+
 #include "aeolus/Voice.h"
 
 template <size_t MAX_VOICES = 128>

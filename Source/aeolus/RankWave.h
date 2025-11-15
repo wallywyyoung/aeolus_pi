@@ -21,12 +21,12 @@
 
 #pragma once
 
-#include "aeolus/AddSynth.h"
-#include "aeolus/Scale.h"
-#include "aeolus/StaticPipe.h"
-
+#include <memory>
 #include <vector>
 
+class AddSynth;
+class Scale;
+class StaticPipe;
 /**
  * @brief Pipes across the key range.
  *
@@ -39,14 +39,11 @@ public:
     RankWave(const RankWave&) = delete;
     RankWave& operator=(const RankWave& other) = delete;
 
-    [[nodiscard]] const std::string& getStopName() const { return model->getStopName(); }
-    [[nodiscard]] bool isForNote(const int note) const noexcept { return note >= noteMin && note <= noteMax; }
     [[nodiscard]] int getNoteMin() const noexcept { return noteMin; }
     [[nodiscard]] int getNoteMax() const noexcept { return noteMax; }
 
     void generateWavetables();
-
-    std::shared_ptr<StaticPipe> getStaticPipe(const int &note);
+    [[nodiscard]] std::shared_ptr<StaticPipe> getStaticPipe(const int &note);
 
 private:
     int noteMin;

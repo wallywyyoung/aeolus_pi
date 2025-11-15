@@ -20,7 +20,9 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/RankWave.h"
-#include "EngineGlobal.h"
+#include "Scale.h"
+#include "aeolus/AddSynth.h"
+#include "aeolus/StaticPipe.h"
 
 RankWave::RankWave(AddSynth model, const Scale& scale, const float tuningFrequency) : noteMin(model.getNoteMinimum()), noteMax(model.getNoteMaximum()), model(std::make_shared<AddSynth>(model)) {
     assert(noteMax - noteMin + 1 > 0);
