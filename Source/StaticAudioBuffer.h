@@ -19,11 +19,10 @@
 
 #pragma once
 
-#include "MemoryConstants.h"
-
 #include <algorithm>
 #include <array>
-#include <functional>
+#include "MemoryConstants.h"
+#include "aeolus/utilities/SimdUtilities.h"
 
 template <std::size_t SIZE, std::size_t CHANNELS>
 class StaticAudioBuffer {
@@ -32,23 +31,8 @@ public:
     StaticAudioBuffer() = default;
     ~StaticAudioBuffer() = default;
 
-    void setBuffer(const std::array<float, SIZE> &newBuffer){ audioBuffer = newBuffer; }
-
-    void applyGain(const float& gain)  {
-        std::ranges::transform(audioBuffer, audioBuffer.begin(), [&](const float& element) { return element * gain; });
-    }
-
     float* getWritePointer(const int channel) { return &audioBuffer[channel * SIZE]; }
-
-    [[nodiscard]] const float *getReadPointer(const int channel, const int offset = 0) const  { return &audioBuffer[channel * SIZE + offset]; }
-
-    [[nodiscard]] std::size_t getNumSamples() const { return SIZE; }
-
-    [[nodiscard]] int getNumChannels() const { return CHANNELS; }
-
-    void addFrom(const StaticAudioBuffer &from)  {
-        std::transform(from.audioBuffer.begin(), from.audioBuffer.end(), audioBuffer.begin(), audioBuffer.begin(), std::plus());
-    }
-
+    [[nodiscard]] const float* getReadPointer(const int channel, const int offset = 0) const  { return &audioBuffer[channel * SIZE + offset]; }
+    void addFrom(const StaticAudioBuffer &from) { SimdUtilities::add(audioBuffer.data(), from.audioBuffer.data(), SIZE * CHANNELS); }
     void clear()  { audioBuffer.fill(0.0f); }
 };
