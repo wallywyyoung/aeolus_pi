@@ -102,20 +102,25 @@ add_executable(aeolus_pi
         Source/aeolus/WavetableMemoryManager.h
         Source/aeolus/WavetableMemoryManager.cpp
         Source/aeolus/PipeState.cpp
+        Source/LowPassFilter.h
+        Source/LowPassFilter.cpp
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(AudioFile CONFIG REQUIRED)
 find_package(RtAudio CONFIG REQUIRED)
+set(CMSIS_DSP_DIR ${CMAKE_SOURCE_DIR}/External/CMSIS-DSP)
+include_directories(${CMSIS_DSP_DIR}/include)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     target_compile_definitions(aeolus_pi PRIVATE MACOS)
+    target_link_libraries(aeolus_pi PRIVATE ${CMSIS_DSP_DIR}/lib/macOS/libCMSISDSP.a)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_sources(aeolus_pi PRIVATE
             Source/AlsaAudioInterface.cpp
             Source/AlsaAudioInterface.h)
     find_package(ALSA REQUIRED)
-    target_link_libraries(aeolus_pi PRIVATE ALSA::ALSA)
+    target_link_libraries(aeolus_pi PRIVATE ALSA::ALSA ${CMSIS_DSP_DIR}/lib/Linux/libCMSISDSP.a)
     target_compile_definitions(aeolus_pi PRIVATE LINUX)
 endif()
 
