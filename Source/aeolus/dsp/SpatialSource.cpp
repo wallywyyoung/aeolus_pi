@@ -19,88 +19,100 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/SpatialSource.h"
-#include "MemoryConstants.h"
-#include "StaticAudioBuffer.h"
-
+#include <arm_math.h>
 #include <array>
+#include <cmath>
+#include "MemoryConstants.h"
+#include "aeolus/utilities/SimdUtilities.h"
 
-namespace dsp {
+void SpatialSource::Position::rotate(const float a) {
+    const float c = arm_cos_f32(a);
+    const float s = arm_sin_f32(a);
+    const float x2 = c * x - s * y;
+    const float y2 = s * x + s * y;
+    x = x2;
+    y = y2;
+}
 
-    void SpatialSource::init(const int note, const float fd, const float fn) {
-        _sourcePosition.x = STARTING_STEREO_WIDTH * fd / fn * (note % 2 != 0 ? 1.0f : -1.0f) * static_cast<float>(abs(note - MIDDLE_C));
-        _sourcePosition.y = PIPE_HEIGHT;
-        recalculate();
-    }
+float SpatialSource::Position::distanceTo(const Position &other) const noexcept {
+    float out{};
+    arm_sqrt_f32((other.x - x) * (other.x - x) + (other.y - y) * (other.y - y), &out);
+    return out;
+}
 
-    void SpatialSource::reset() {
-        _delayLine.reset();
+float SpatialSource::Position::angleTo(const Position &other) const noexcept {
+    float out1{}, out2{};
+    arm_atan2_f32(other.y, other.x, &out1);
+    arm_atan2_f32(y, x, &out2);
+    return out1 - out2;
+}
 
-        BiquadFilter::resetState(_filterState[0]);
-        BiquadFilter::resetState(_filterState[1]);
-    }
+void SpatialSource::init(const int note, const float fd, const float fn) {
+    sourcePosition.x = STARTING_STEREO_WIDTH * fd / fn * (note % 2 != 0 ? 1.0f : -1.0f) * static_cast<float>(abs(note - MIDDLE_C));
+    sourcePosition.y = PIPE_HEIGHT;
+    recalculate();
+}
 
-    void SpatialSource::process(const std::array<float, PROCESS_FRAMES_SIZE> &in, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
-        const auto l = out.getWritePointer(0);
-        const auto r = out.getWritePointer(1);
-        for (auto i = 0; i < in.size(); ++i) {
-            _delayLine.write(in[i]);
-            l[i] = BiquadFilter::tick(_filterSpec[0], _filterState[0],
-                                      _delayLine.readNearest(_leftDelay) * _leftAttenuation);
-            r[i] = BiquadFilter::tick(_filterSpec[1], _filterState[1],
-                                      _delayLine.readNearest(_rightDelay) * _rightAttenuation);
-        }
-    }
+void SpatialSource::reset() {
+    delayLine.reset();
+    lowPassFilterL.reset();
+    lowPassFilterR.reset();
+}
 
-    static float distanceToCutOffFrequency(const float d) {
-        return 22.0e3f * expf(-0.09f * d);
-    }
+void SpatialSource::process(const std::array<float, PROCESS_FRAMES_SIZE> &in, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out) {
+    auto l = out.getWritePointer(0);
+    auto r = out.getWritePointer(1);
+    delayLine.process(in, l, r, leftDelay, rightDelay);
+    lowPassFilterL.process(l, l);
+    lowPassFilterR.process(r, r);
+    SimdUtilities::multiplyFactor(l, PROCESS_FRAMES_SIZE, leftAttenuation);
+    SimdUtilities::multiplyFactor(r, PROCESS_FRAMES_SIZE, rightAttenuation);
+}
 
-    void SpatialSource::recalculate() {
-        static constexpr auto SPEED_OF_SOUND_R = 1.0f / 343.0f; // [m/s] @ 20 deg C
+static float distanceToCutOffFrequency(const float d) {
+    const float in{-0.09f * d};
+    float out{};
+    arm_vexp_f32(&in,&out,1);
+    return 22.0e3f * out;
+}
 
-        Position left{-0.5f * _listenerLeftRightDistance, 0.0f};
-        Position right{0.5f * _listenerLeftRightDistance, 0.0f};
-        left.rotate(_listenerOrientation);
-        right.rotate(_listenerOrientation);
+void SpatialSource::recalculate() {
+    static constexpr auto SPEED_OF_SOUND_R = 1.0f / 343.0f; // [m/s] @ 20 deg C
 
-        const Position sourceRelativeToListener{_sourcePosition.x - _listenerPosition.x, _sourcePosition.y - _listenerPosition.y};
-        const float leftAngle = left.angleTo(sourceRelativeToListener);
-        const float rightAngle = right.angleTo(sourceRelativeToListener);
+    Position left{-0.5f * listenerLeftRightDistance, 0.0f};
+    Position right{0.5f * listenerLeftRightDistance, 0.0f};
+    left.rotate(listenerOrientation);
+    right.rotate(listenerOrientation);
 
-        left.x += _listenerPosition.x;
-        left.y += _listenerPosition.y;
-        right.x += _listenerPosition.x;
-        right.y += _listenerPosition.y;
+    const Position sourceRelativeToListener{sourcePosition.x - listenerPosition.x, sourcePosition.y - listenerPosition.y};
+    const float leftAngle = left.angleTo(sourceRelativeToListener);
+    const float rightAngle = right.angleTo(sourceRelativeToListener);
 
-        const auto leftDistance = _sourcePosition.distanceTo(left);
-        const auto rightDistance = _sourcePosition.distanceTo(right);
-        const auto maxDistance = std::max(leftDistance, rightDistance);
-        const auto maxT = maxDistance * SPEED_OF_SOUND_R;
-        const auto delayLengthInSamples = static_cast<size_t>(std::lround(SAMPLE_RATE_F * maxT));
+    left.x += listenerPosition.x;
+    left.y += listenerPosition.y;
+    right.x += listenerPosition.x;
+    right.y += listenerPosition.y;
 
-        _delayLine.resize(delayLengthInSamples);
+    const auto leftDistance = sourcePosition.distanceTo(left);
+    const auto rightDistance = sourcePosition.distanceTo(right);
+    const auto maxDistance = std::max(leftDistance, rightDistance);
+    const auto maxT = maxDistance * SPEED_OF_SOUND_R;
+    const auto delayLengthInSamples = static_cast<size_t>(std::lround(SAMPLE_RATE_F * maxT));
+    delayLine.resize(delayLengthInSamples + PROCESS_FRAMES_SIZE);
 
-        _leftDelay = static_cast<int>(roundf(leftDistance * SAMPLE_RATE_F * SPEED_OF_SOUND_R));
-        _rightDelay = static_cast<int>(roundf(rightDistance * SAMPLE_RATE_F * SPEED_OF_SOUND_R));
+    leftDelay = static_cast<int>(roundf(leftDistance * SAMPLE_RATE_F * SPEED_OF_SOUND_R));
+    rightDelay = static_cast<int>(roundf(rightDistance * SAMPLE_RATE_F * SPEED_OF_SOUND_R));
 
-        constexpr auto att = 0.7f; // [0..1]
+    constexpr auto att = 0.7f; // [0..1]
 
-        // Angular attenuation
-        _leftAttenuation = 0.5f * att * (std::cosf(leftAngle) + 1.0f) + 1.0f - att;
-        _rightAttenuation = 0.5f * att * (std::cosf(rightAngle) + 1.0f) + 1.0f - att;
+    // Angular attenuation
+    leftAttenuation = 0.5f * att * (arm_cos_f32(leftAngle) + 1.0f) + 1.0f - att;
+    rightAttenuation = 0.5f * att * (arm_cos_f32(rightAngle) + 1.0f) + 1.0f - att;
 
-        _filterSpec[0].type = BiquadFilter::LowPass;
-        _filterSpec[0].dbGain = 0.0f;
-        _filterSpec[0].q = 0.7071f;
+    lowPassFilterL.calculateCoefficients(distanceToCutOffFrequency(leftDistance));
+    lowPassFilterR.calculateCoefficients(distanceToCutOffFrequency(rightDistance));
+}
 
-        _filterSpec[1] = _filterSpec[0];
-
-        _filterSpec[0].freq = distanceToCutOffFrequency(leftDistance);
-        _filterSpec[1].freq = distanceToCutOffFrequency(rightDistance);
-
-        BiquadFilter::updateSpec(_filterSpec[0]);
-        BiquadFilter::updateSpec(_filterSpec[1]);
-    }
-
-} // namespace dsp
-
+[[nodiscard]] size_t SpatialSource::getPostFxSamplesCount() const {
+    return delayLine.size();
+}

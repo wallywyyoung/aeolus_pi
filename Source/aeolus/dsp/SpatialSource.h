@@ -20,77 +20,51 @@
 
 #pragma once
 
-#include "MemoryConstants.h"
+#include "LowPassFilter.h"
 #include "StaticAudioBuffer.h"
 #include "aeolus/dsp/DelayLine.h"
-#include "aeolus/dsp/Filter.h"
-#include "aeolus/globals.h"
 
-namespace dsp {
-
-    /**
-     * @brief Sound source spatial modeller.
-     *
-     * This class take mono audio source and models a stereo output
-     * based on the source and listener relative positions.
-     * All positioning is performed in 2D space. Positions are specified in meters.
-     */
-    class SpatialSource {
-    public:
-        struct Position {
-            float x;
-            float y;
-
-            void rotate(const float a) {
-                const float c = std::cosf(a);
-                const float s = std::sinf(a);
-                const float x2 = c * x - s * y;
-                const float y2 = s * x + s * y;
-                x = x2;
-                y = y2;
-            }
-
-            float distanceTo(const Position &other) const noexcept {
-                return sqrt((other.x - x) * (other.x - x) + (other.y - y) * (other.y - y));
-            }
-
-            float angleTo(const Position &other) const noexcept { return atan2f(other.y, other.x) - atan2f(y, x); }
-        };
-
-        SpatialSource() = default;
-
-        void init(int note, float fd, float fn);
-
-        void reset();
-
-        void process(const std::array<float, PROCESS_FRAMES_SIZE> &in, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out);
-        void setSourcePosition(const float x, const float y) noexcept { _sourcePosition = {x, y}; }
-        void setListenerPosition(const float x, const float y) noexcept { _listenerPosition = {x, y}; }
-
-        void recalculate();
-
-        size_t getPostFxSamplesCount() const { return _delayLine.size(); }
-
-    private:
-        constexpr static auto STARTING_STEREO_WIDTH = 0.15f;
-        constexpr static auto MIDDLE_C = 65;
-        constexpr static auto PIPE_HEIGHT = 5.0f;
-
-        Position _sourcePosition;
-        Position _listenerPosition{0.0f, 0.0f};
-        float _listenerOrientation{0.0f};
-        float _listenerLeftRightDistance{0.3f};
-
-        DelayLine _delayLine;
-        int _leftDelay{};
-        int _rightDelay{};
-        float _leftAttenuation{};
-        float _rightAttenuation{};
-
-        // Attenuation filters
-        BiquadFilter::Spec _filterSpec[2]{};
-        BiquadFilter::State _filterState[2]{};
+/**
+ * @brief Sound source spatial modeller.
+ *
+ * This class take mono audio source and models a stereo output
+ * based on the source and listener relative positions.
+ * All positioning is performed in 2D space. Positions are specified in meters.
+ */
+class SpatialSource {
+public:
+    struct Position {
+        float x;
+        float y;
+        void rotate(float a);
+        [[nodiscard]] float distanceTo(const Position &other) const noexcept;
+        [[nodiscard]] float angleTo(const Position &other) const noexcept;
     };
 
-} // namespace dsp
+    SpatialSource() = default;
 
+    void init(int note, float fd, float fn);
+    void reset();
+    void process(const std::array<float, PROCESS_FRAMES_SIZE> &in, StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out);
+    void recalculate();
+    [[nodiscard]] size_t getPostFxSamplesCount() const;
+
+private:
+    constexpr static auto STARTING_STEREO_WIDTH = 0.15f;
+    constexpr static auto MIDDLE_C = 65;
+    constexpr static auto PIPE_HEIGHT = 5.0f;
+
+    Position sourcePosition;
+    Position listenerPosition{0.0f, 0.0f};
+    float listenerOrientation{0.0f};
+    float listenerLeftRightDistance{0.3f};
+
+    DelayLine delayLine{};
+    int leftDelay{};
+    int rightDelay{};
+    float leftAttenuation{};
+    float rightAttenuation{};
+
+    LowPassFilter lowPassFilterL{};
+    LowPassFilter lowPassFilterR{};
+};

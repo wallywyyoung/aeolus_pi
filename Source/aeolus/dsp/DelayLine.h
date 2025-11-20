@@ -19,55 +19,65 @@
 // ----------------------------------------------------------------------------
 
 #pragma once
+/**
+ * @brief Delay line with samples linear interpolation.
+ */
+class DelayLine {
+public:
+    explicit DelayLine(const size_t size = 1024) : buffer{static_cast<float *>(malloc(size * sizeof(float)))}, bufferSize(size) {
+        std::fill_n(buffer, bufferSize, 0.0f);
+    }
 
-#include <cmath>
-#include <vector>
-#include "aeolus/globals.h"
+    ~DelayLine() { free(buffer); }
 
-namespace dsp {
-    /**
-    * @brief Delay line with samples linear interpolation.
-    */
-    class DelayLine {
-    public:
-        explicit DelayLine(const size_t size = 1024) : buffer(size, 0.0f) { }
+    void resize(const size_t size) {
+        free(buffer);
+        bufferSize = size;
+        buffer = static_cast<float *>(malloc(size * sizeof(float)));
+        reset();
+    }
 
-        void resize(const size_t size) {
-            buffer.resize(size);
-            reset();
+    void reset() {
+        writeIndex = 0;
+        std::fill_n(buffer, bufferSize, 0.0f);
+    }
+
+    static void copyReverseCircular(const float* buffer, float* dst, const size_t nElements, const size_t bufferSize, const size_t index) noexcept {
+        const auto firstHalfNumberElements = bufferSize - index;
+        const auto secondHalfNumberElements = nElements - firstHalfNumberElements;
+        std::reverse_copy(buffer, buffer + secondHalfNumberElements, dst);
+        std::reverse_copy(buffer + index, buffer + index + firstHalfNumberElements, dst + secondHalfNumberElements);
+    }
+
+    void process(const std::array<float, PROCESS_FRAMES_SIZE> &in, float *outL, float *outR, const size_t delayL, const size_t delayR) noexcept {
+        writeIndex = (writeIndex + bufferSize - in.size()) % bufferSize;
+        const auto delayIndexL = (delayL + writeIndex) % bufferSize;
+        const auto delayIndexR = (delayR + writeIndex) % bufferSize;
+        if (bufferSize - writeIndex >= in.size()) {
+            std::reverse_copy(in.begin(), in.end(), &buffer[writeIndex]);
+        } else {
+            const auto firstHalfNumberElements = bufferSize - writeIndex;
+            std::reverse_copy(in.end() - firstHalfNumberElements, in.end(), buffer + writeIndex);
+            std::reverse_copy(in.begin(), in.end() - firstHalfNumberElements, buffer);
         }
-
-        void reset() {
-            writeIndex = 0;
-            std::ranges::fill(buffer, 0.0f);
+        if (delayIndexL + in.size() <= bufferSize) {
+            std::reverse_copy(buffer + delayIndexL, buffer + delayIndexL + in.size(), outL);
+        } else {
+            copyReverseCircular(buffer, outL, in.size(), bufferSize, delayIndexL);
         }
-
-        void write(const float x) noexcept {
-            writeIndex = writeIndex == 0 ? buffer.size() - 1 : --writeIndex;
-            buffer[writeIndex] = x;
+        if (delayIndexR + in.size() <= bufferSize) {
+            std::reverse_copy(buffer + delayIndexR, buffer + delayIndexR + in.size(), outR);
+        } else {
+            copyReverseCircular(buffer, outR, in.size(), bufferSize, delayIndexR);
         }
+    }
 
-        [[nodiscard]] float read(const float &delay) const {
-            assert(delay >= 0.0f);
-            const auto integral = std::floor(delay);
-            const auto fraction = delay - integral;
+    [[nodiscard]] size_t size() const {
+        return bufferSize;
+    }
 
-            const auto index = (static_cast<size_t>(integral) + writeIndex) % buffer.size();
-            assert(index < buffer.size());
-            const auto a = buffer[index];
-            const auto b = index < buffer.size() - 1 ? buffer[index + 1] : buffer[0];
-
-            return std::lerp(a, b, fraction);
-        }
-
-        [[nodiscard]] float readNearest(const int &delay) const {
-            assert(delay >= 0 && (delay + writeIndex) % buffer.size() < buffer.size());
-            return buffer[(delay + writeIndex) % buffer.size()];
-        }
-
-        [[nodiscard]] size_t size() const { return buffer.size(); }
-    private:
-        std::vector<float> buffer;
-        size_t writeIndex{ 0 };
-    };
-} // namespace dsp
+private:
+    float* buffer;
+    size_t bufferSize{ 0 };
+    size_t writeIndex{ 0 };
+};
