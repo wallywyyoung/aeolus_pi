@@ -27,7 +27,7 @@ void Voice::init(const std::shared_ptr<StaticPipe>& staticPipe, const float &out
     spatialSource.init(staticPipe->getNote(), static_cast<float>(staticPipe->getModel()->getFrequencyDenominator()), static_cast<float>(staticPipe->getModel()->getFrequencyNumerator()));
     const auto freq = staticPipe->getPipeFrequency();
     const float att = 1.0f - expf(-freq * FREQUENCY_ROLLOFF);
-    chiff.init(freq, 1.0f / freq, std::min<float>(1.0f, BASE_CHIFF_INTENSITY * chiffGain * att), spatialSource.getPostFxSamplesCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH));
+    chiff.init(freq, std::min<float>(1.0f, BASE_CHIFF_INTENSITY * chiffGain * att), spatialSource.getPostFxSamplesCount() + static_cast<int>(Division::TREMULANT_DELAY_LENGTH));
 }
 
 void Voice::release() {

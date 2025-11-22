@@ -37,12 +37,13 @@ public:
     static void convertF32ToS24(const float (&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]);
     static void copyF32NonInterleavedToInterleaved(const float* left, const float* right, float (&out)[PROCESS_SAMPLES_SIZE]);
     static void lerpF32(const float *a, const float *b, float t, float *out, size_t size);
+    static void reverseLerpF32(const float *a, const float *b, float t, float *out, size_t size);
     static void multiplyRandomFactorAdditive(std::array<float, PROCESS_FRAMES_SIZE> &buffer, float factor);
     static void multiplyRandomEnvelopeAdditive(std::array<float, PROCESS_FRAMES_SIZE> &buffer, dsp::Envelope& envelope);
     static void multiplyFactorAdditive(std::array<float, PROCESS_FRAMES_SIZE> &buffer, std::array<float, PROCESS_FRAMES_SIZE> &swapBuffer, float factor);
     static void multiplyFactor(float* buffer, size_t size, float factor);
     static void multiplyFactorEnvelopeAdditive(std::array<float, PROCESS_FRAMES_SIZE> &buffer, std::array<float, PROCESS_FRAMES_SIZE> &swapBuffer, float factor, dsp::Envelope& envelope);
-
+    static void add(float* to, const float* from, size_t size);
 private:
     // Ensure your in and out buffers are aligned to 16 to be NEON compliant.
     static float maxF32(const float (&in)[PROCESS_SAMPLES_SIZE]);

@@ -63,7 +63,7 @@ static uint8x8x3_t bitpackU32ToS24LE(const uint32x4_t& in0, const uint32x4_t& in
 
 static uint32x4_t f32ToS24WordConversion(const float32x4_t& sample) {
     // F32 to S24 scaling factor multiplied times a Volume constant.
-    constexpr auto volume = 0.1f;
+    constexpr auto volume = 0.5f;
     const static auto VOLUME_SCALE = vdupq_n_f32(8388607.0f * volume);
     // Cast with hard rounding like vrndaq_f32
     int32x4_t casted = vcvtaq_s32_f32(vmulq_f32(sample, VOLUME_SCALE));
@@ -139,12 +139,30 @@ void SimdUtilities::lerpF32(const float *a, const float *b, float t, float *out,
     }
 }
 
-// auto index = static_cast<int>(std::floor(delay));
-// auto frac = delay - static_cast<float>(index);
-// index = (index + writeIndex) % static_cast<int>(circularBuffer.size());
-// const auto a = circularBuffer[index];
-// const auto b = index < circularBuffer.size() - 1 ? circularBuffer[index + 1] : circularBuffer[0];
-// return std::lerp(a, b, frac);
+void SimdUtilities::reverseLerpF32(const float *a, const float *b, float t, float *out, size_t size) {
+    const float32x4_t aT = vdupq_n_f32(1.0f - t);
+    const float32x4_t bT = vdupq_n_f32(t);
+    auto i = 0;
+    for (; i + 8 <= size; i += 8) {
+        auto a0 = vld1q_f32(a + i);
+        auto a1 = vld1q_f32(a + i + 4);
+        auto b0 = vld1q_f32(b + i);
+        auto b1 = vld1q_f32(b + i + 4);
+        a0 = vmulq_f32(a0, aT);
+        a1 = vmulq_f32(a1, aT);
+        b0 = vmulq_f32(b0, bT);
+        b1 = vmulq_f32(b1, bT);
+        auto l1 = vaddq_f32(a0, b0);
+        auto l2 = vaddq_f32(a1, b1);
+        auto reversed1 = vrev64q_f32(vcombine_f32(vrev64_f32(vget_high_f32(l1)), vrev64_f32(vget_low_f32(l1))));
+        auto reversed2 = vrev64q_f32(vcombine_f32(vrev64_f32(vget_high_f32(l2)), vrev64_f32(vget_low_f32(l2))));
+        vst1q_f32(out + size - i - 4, reversed1);
+        vst1q_f32(out + size - i - 8, reversed2);
+    }
+    for (; i < size; ++i) {
+        out[size - 1 - i] = a[i] * (1.0f - t) + b[i] * t;
+    }
+}
 
 static inline float32x4_t modulo(float32x4_t a, float32_t b) {
     const float32x4_t n = vdupq_n_f32(b);
@@ -161,7 +179,7 @@ void SimdUtilities::multiplyRandomFactorAdditive(std::array<float, PROCESS_FRAME
         const auto r0 = vld1q_f32(randoms + i);
         const auto r1 = vld1q_f32(randoms + i + 4);
         const auto m0 = vmulq_f32(in0, vmulq_f32(f, r0));
-        const auto m1 = vmulq_f32(in0, vmulq_f32(f, r1));
+        const auto m1 = vmulq_f32(in1, vmulq_f32(f, r1));
         const auto o0 = vaddq_f32(in0, m0);
         const auto o1 = vaddq_f32(in1, m1);
         vst1q_f32(buffer.data() + i, o0);
@@ -179,7 +197,7 @@ void SimdUtilities::multiplyRandomEnvelopeAdditive(std::array<float, PROCESS_FRA
         const float32x4_t e0 = { envelope.next(), envelope.next(), envelope.next(), envelope.next() };
         const float32x4_t e1 = { envelope.next(), envelope.next(), envelope.next(), envelope.next() };
         const auto m0 = vmulq_f32(in0, vmulq_f32(e0, r0));
-        const auto m1 = vmulq_f32(in0, vmulq_f32(e1, r1));
+        const auto m1 = vmulq_f32(in1, vmulq_f32(e1, r1));
         const auto o0 = vaddq_f32(in0, m0);
         const auto o1 = vaddq_f32(in1, m1);
         vst1q_f32(buffer.data() + i, o0);
@@ -204,7 +222,7 @@ void SimdUtilities::multiplyFactorAdditive(std::array<float, PROCESS_FRAMES_SIZE
 }
 void SimdUtilities::multiplyFactor(float *buffer, const size_t size, const float factor) {
     const auto f = vdupq_n_f32(factor);
-    for (auto i = 0; i + 8 <= PROCESS_SAMPLES_SIZE; i += 8) {
+    for (auto i = 0; i + 8 <= size; i += 8) {
         const auto in0 = vld1q_f32(buffer + i);
         const auto in1 = vld1q_f32(buffer + i + 4);
         const auto m0 = vmulq_f32(in0, f);
@@ -224,10 +242,23 @@ void SimdUtilities::multiplyFactorEnvelopeAdditive(std::array<float, PROCESS_FRA
         const float32x4_t e0 = { envelope.next(), envelope.next(), envelope.next(), envelope.next() };
         const float32x4_t e1 = { envelope.next(), envelope.next(), envelope.next(), envelope.next() };
         const auto m0 = vmulq_f32(in0, vmulq_f32(f, e0));
-        const auto m1 = vmulq_f32(in0, vmulq_f32(f, e1));
+        const auto m1 = vmulq_f32(in1, vmulq_f32(f, e1));
         const auto o0 = vaddq_f32(out0, m0);
         const auto o1 = vaddq_f32(out1, m1);
         vst1q_f32(buffer.data() + i, o0);
         vst1q_f32(buffer.data() + i + 4, o1);
+    }
+}
+
+void SimdUtilities::add(float* to, const float* from, size_t size) {
+    for (auto i = 0; i + 8 <= size; i += 8) {
+        auto to0 = vld1q_f32(to + i);
+        auto to1 = vld1q_f32(to + i + 4);
+        const auto from0 = vld1q_f32(from + i);
+        const auto from1 = vld1q_f32(from + i + 4);
+        to0 = vaddq_f32(to0, from0);
+        to1 = vaddq_f32(to1, from1);
+        vst1q_f32(to + i, to0);
+        vst1q_f32(to + i + 4, to1);
     }
 }

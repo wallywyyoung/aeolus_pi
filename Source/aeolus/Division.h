@@ -116,8 +116,9 @@ private:
     dsp::BiquadFilter::State swellFilterStateR;
 
     /// Delay lines used for tremulant frequency modulation.
-    dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> tremulantDelayL;
-    dsp::DelayLineStatic<TREMULANT_DELAY_LENGTH> tremulantDelayR;
+    //TODO: These numbers are bonkers.
+    DelayLineStatic<TREMULANT_DELAY_LENGTH,1> tremulantDelayL;
+    DelayLineStatic<TREMULANT_DELAY_LENGTH,1> tremulantDelayR;
 
     std::vector<Stop> stops{};            ///< All the stops this division has.
     std::vector<Voice*> activeVoices;     ///< Active voices on this division.
