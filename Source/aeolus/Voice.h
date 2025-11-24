@@ -36,8 +36,8 @@ class Voice {
     PipeState state{}; ///< Pipe state associated with this voice.
     int stopIndex{-1}; /// Index of the stop associated with this voice. This is used to tell which stops are voiced.
     std::array<float, PROCESS_FRAMES_SIZE> buffer{ 0.0f };
-    dsp::SpatialSource spatialSource{}; /// Stereo spatial modeller.
-    dsp::Chiff chiff{}; /// Attack chiff.
+    SpatialSource spatialSource{}; /// Stereo spatial modeller.
+    Chiff chiff{}; /// Attack chiff.
 public:
     Voice() = default;
     void init(const std::shared_ptr<StaticPipe>& staticPipe, const float &outputGain, const float &chiffGain, const int &newStopIndex);

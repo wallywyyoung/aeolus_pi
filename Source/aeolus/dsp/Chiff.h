@@ -20,14 +20,12 @@
 
 #pragma once
 
+#include "LowPassFilter.h"
 #include "MemoryConstants.h"
 #include "aeolus/PipeState.h"
 #include "aeolus/StaticPipe.h"
 #include "aeolus/dsp/DelayLineStatic.h"
 #include "aeolus/dsp/Envelope.h"
-#include "aeolus/dsp/Filter.h"
-
-namespace dsp {
 
 /**
  * @brief Pipe wind attack chiff model.
@@ -35,66 +33,35 @@ namespace dsp {
 class Chiff {
 public:
     Chiff() = default;
-
-    void init(const float& frequency, const float& invertedFrequency, const float& chiffGain, const size_t& surroundingFrames) {
+// TODO: Test chiff audio.
+    void init(const float &frequency, const float &chiffGain, const size_t &surroundingFrames) {
+        const auto invertedFrequency = 1.0f / frequency;
+        resonatorDelay = SAMPLE_RATE_F * invertedFrequency;
+        // TODO: Why times four?
+        lowPassFilter.calculateCoefficients(std::fmin(NYQUIST_WITH_MARGIN * SAMPLE_RATE_F, frequency * 4.0f));
         envelope.init({5.0f * invertedFrequency, 100.0f * invertedFrequency, 0.01f, 100.0f * invertedFrequency});
-        pipeDelay = SAMPLE_RATE_F * invertedFrequency;
-        lpSpec = {BiquadFilter::LowPass, std::fmin(NYQUIST_WITH_MARGIN * SAMPLE_RATE_F, frequency * 4.0f), BUTTERWORTH_Q, 0.0f};
-        chiffDelayFrameCount = static_cast<size_t>(std::min<float>(static_cast<float>(dsp::DelayLineStatic<48000>::size()), 0.5f * invertedFrequency * SAMPLE_RATE_F));
+        chiffDelayFrameCount = static_cast<size_t>(std::min<float>(static_cast<float>(DelayLineStatic<SAMPLE_RATE / 2, PROCESS_FRAMES_SIZE>::size()), 0.5f * invertedFrequency * SAMPLE_RATE_F));
         framesUntilRelease = surroundingFrames + OUTPUT_CHANNELS * chiffDelayFrameCount;
         gain = chiffGain;
-        BiquadFilter::updateSpec(lpSpec);
-        BiquadFilter::resetState(lpState);
     }
 
-    void process(const PipeState &in, std::array<float, PROCESS_FRAMES_SIZE> &out) {
-        if (in.envelopeState == PipeState::OVER) {
-            framesUntilRelease -= std::min(framesUntilRelease, static_cast<size_t>(PROCESS_FRAMES_SIZE));
-        }
-        for (float &sample : out) {
-            delayLine.write(sample);
-            sample = delayLine.readNearest(chiffDelayFrameCount) * in.outputGain;
-        }
-        process(out);
-    }
-
+    void process(const PipeState &state, std::array<float, PROCESS_FRAMES_SIZE> &buffer);
     void release() {
         noiseEnvelope.release();
         envelope.release();
     }
-
-    size_t getDelaySampleCount() const {
-        return chiffDelayFrameCount;
-    }
-
-    [[nodiscard]] bool isActive() const noexcept {
-        // Don't care about the noise envelope here
-        return envelope.state() != Envelope::Off;
-    }
-
+    [[nodiscard]] size_t getDelaySampleCount() const { return chiffDelayFrameCount; }
     [[nodiscard]] bool isOver() const noexcept { return framesUntilRelease == 0; }
 
 private:
-    constexpr static float BUTTERWORTH_Q = 0.7071f;
-    Envelope noiseEnvelope{{0.01f, 0.0f, 1.0f, 0.02f}};
-    Envelope envelope;
-
-    DelayLineStatic<SAMPLE_RATE> pipeResonator;
-    float pipeDelay{};
-
-    // Feedback low-pass filter;
-    BiquadFilter::Spec lpSpec{};
-    BiquadFilter::State lpState {};
-
-    DelayLineStatic<SAMPLE_RATE> delayLine{};
+    DelayLineStatic<SAMPLE_RATE / 2, PROCESS_FRAMES_SIZE> delayLine{};
+    DelayLineStatic<SAMPLE_RATE / 2, PROCESS_FRAMES_SIZE> pipeResonator{};
+    LowPassFilter lowPassFilter{};
+    dsp::Envelope noiseEnvelope{{0.01f, 0.0f, 1.0f, 0.02f}};
+    dsp::Envelope envelope{};
+    float gain{};
+    float resonatorDelay{};
     size_t chiffDelayFrameCount{};
     size_t framesUntilRelease{};  ///< Counter to account for the delayed sound before recycling the voice.
-
-    float gain{};
-
-    void process(std::array<float, PROCESS_FRAMES_SIZE> &out);
+    std::array<float, PROCESS_FRAMES_SIZE> swapBuffer{};
 };
-
-} // namespace dsp
-
-

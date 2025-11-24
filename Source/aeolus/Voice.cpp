@@ -45,7 +45,7 @@ void Voice::process(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> &out
 }
 
 bool Voice::isOver() const noexcept {
-    return state.envelopeState == PipeState::OVER && chiff.isOver();
+    return state.envelopeState == PipeState::OVER;
 }
 
 bool Voice::isActive() const noexcept {

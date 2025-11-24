@@ -23,53 +23,34 @@
 #include <array>
 #include <random>
 
-
-
-namespace dsp {
-
-void Chiff::process(std::array<float, PROCESS_FRAMES_SIZE> &out) {
-    thread_local std::random_device rnd;
-    thread_local std::mt19937 gen(rnd());
-    thread_local std::uniform_real_distribution dist(-1.0f, 1.0f);
-
-    if (!isActive()) {
-        return;
+void Chiff::process(const PipeState &state, std::array<float, PROCESS_FRAMES_SIZE> &buffer) {
+    if (state.envelopeState == PipeState::OVER) {
+        framesUntilRelease -= std::min(framesUntilRelease, static_cast<size_t>(PROCESS_FRAMES_SIZE));
     }
 
-    if (noiseEnvelope.state() == Envelope::Sustain && envelope.state() == Envelope::Sustain) {
-        const float noiseLevel{ noiseEnvelope.level() };
-        const float envelopeLevel{ envelope.level() * gain };
-
-        if (envelopeLevel < 1e-4f) {
-            return; // Noise is too quiet
-        }
-
-        for (float &outSample : out) {
-            const float x0{ dist(gen) };
-            const float x{ x0 * noiseLevel };
-            float y{ pipeResonator.read(pipeDelay) };
-            y = BiquadFilter::tick(lpSpec, lpState, y);
-            y += x;
-            pipeResonator.write(y);
-
-            outSample += y * envelopeLevel;
-        }
-
-        return;
+    delayLine.process(buffer, chiffDelayFrameCount);
+    for (float &sample : buffer) {
+        sample *= state.outputGain;
     }
 
-    for (float &outSample : out) {
-        const float x0 = dist(gen);
-        const float x = x0 * noiseEnvelope.next();
-        float y = pipeResonator.read(pipeDelay);
-        y = BiquadFilter::tick(lpSpec, lpState, y);
-        y += x;
-        pipeResonator.write(y);
+    if (envelope.state() != dsp::Envelope::Off) {
+        return; // Don't care about the noise envelope here
+    }
 
-        outSample += y * gain * envelope.next();
+    const float envelopeLevel{ envelope.next() * gain };
+    if (envelopeLevel < 1e-4f) {
+        return; // Noise is too quiet
+    }
+
+    pipeResonator.processLerpMono(swapBuffer, resonatorDelay);
+    lowPassFilter.process(swapBuffer.data(), swapBuffer.data());
+    if (noiseEnvelope.state() == dsp::Envelope::Sustain && envelope.state() == dsp::Envelope::Sustain) {
+        SimdUtilities::multiplyRandomFactorAdditive(buffer, noiseEnvelope.level());
+        pipeResonator.writeBuffer(swapBuffer);
+        SimdUtilities::multiplyFactorAdditive(buffer, swapBuffer, envelopeLevel);
+    } else {
+        SimdUtilities::multiplyRandomEnvelopeAdditive(buffer, noiseEnvelope);
+        pipeResonator.writeBuffer(swapBuffer);
+        SimdUtilities::multiplyFactorEnvelopeAdditive(buffer, swapBuffer, gain, envelope);
     }
 }
-
-} // namespace dsp
-
-

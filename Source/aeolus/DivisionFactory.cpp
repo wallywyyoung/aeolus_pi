@@ -20,6 +20,7 @@
 
 #include "aeolus/DivisionFactory.h"
 #include <filesystem>
+#include <fstream>
 #include "aeolus/Organ.h"
 #include "aeolus/StopFactory.h"
 
