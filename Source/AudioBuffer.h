@@ -43,7 +43,7 @@ public:
 
     [[nodiscard]] const float *getReadPointer(const int channel, const int offset = 0) const  { return &audioBuffer[channel * bufferSize + offset]; }
 
-    [[nodiscard]] std::size_t getNumSamples() const { return bufferSize; }
+    [[nodiscard]] std::size_t getNumberFrames() const { return bufferSize; }
 
     [[nodiscard]] int getNumChannels() const { return channels; }
 

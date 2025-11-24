@@ -29,13 +29,13 @@
 #include "EngineGlobal.h"
 #include "aeolus/AddSynth.h"
 #include "aeolus/Division.h"
-#include "aeolus/dsp/Convolution/Convolver.h"
 
 IRs IOManager::loadIRs() {
     std::ifstream stream("./Resources/irs/irs.json");
     auto jsonIRs = nlohmann::json::parse(stream);
     IRs irs;
-    irs.longestIRLength = Convolver::BLOCK_SIZE;
+    // TODO: Is this right?
+    irs.longestIRLength = StereoPartitionedConvolver::PARTITION_SIZE;
     AudioFile<float> audioFile;
     std::ostringstream path;
     for (auto jsonIr: jsonIRs["irs"]){

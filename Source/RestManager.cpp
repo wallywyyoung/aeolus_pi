@@ -4,6 +4,7 @@
 
 #include "RestManager.h"
 #include <filesystem>
+#include <fstream>
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 

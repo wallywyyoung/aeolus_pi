@@ -25,8 +25,8 @@
 #include "aeolus/IR.h"
 #include "aeolus/MidiManager.h"
 #include "aeolus/Model.h"
-#include "aeolus/dsp/Convolution/Convolver.h"
 #include "aeolus/Scale.h"
+#include "aeolus/dsp/Convolver.h"
 
 /**
  * @brief A global shared instance of the organ engine.
@@ -54,7 +54,6 @@ private:
     std::unordered_map<std::string, std::shared_ptr<RankWave>> rankWavesByName{};
     IRs irs;
     std::shared_ptr<Scale> scale { std::make_shared<Scale>(Scale::EqualTemp)};
-    int longestIrLength{};                              ///< Longest IR length in samples
-
+    int longestIrLength{}; ///< Longest IR length in samples
     Convolver convolver{};
 };

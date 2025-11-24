@@ -158,7 +158,8 @@ bool Organ::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
             continue;
         }
         division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
-        SimdUtilities::copyF32NonInterleavedToInterleaved(LEFT_BUFFER, RIGHT_BUFFER, out);
+        std::copy_n(LEFT_BUFFER, PROCESS_FRAMES_SIZE, out);
+        std::copy_n(RIGHT_BUFFER, PROCESS_FRAMES_SIZE, out + PROCESS_FRAMES_SIZE);
         wasAudioGenerated = true;
     }
     return wasAudioGenerated;

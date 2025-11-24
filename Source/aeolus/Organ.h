@@ -20,12 +20,12 @@
 
 #pragma once
 
+#include <functional>
 #include <vector>
 #include "StaticAudioBuffer.h"
 #include "VoicePool.h"
 #include "aeolus/Division.h"
 #include "aeolus/MidiManager.h"
-#include "aeolus/dsp/Convolution/Convolver.h"
 #include "aeolus/globals.h"
 
 
@@ -53,7 +53,7 @@ class Organ final : public MidiManager::OrganInterface {
     float tremulantPhase{0.0f};
 
 public:
-    explicit Organ(const std::function<std::shared_ptr<RankWave>(const std::string&)> &getStopByName);
+    explicit Organ(const std::function<std::shared_ptr<RankWave>(const std::string &)> &getStopByName);
     ~Organ() override = default;
 
     // Notes

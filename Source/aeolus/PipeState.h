@@ -21,8 +21,8 @@
 
 #pragma once
 
+#include "MemoryConstants.h"
 #include "aeolus/StaticPipe.h"
-#include "dsp/Convolution/Convolver.h"
 
 class alignas(64) PipeState {
     static constexpr auto PLAY_INTERPOLATION_SPEED_SCALING = 0.0005f;
@@ -49,6 +49,6 @@ public:
     PipeState() = default;
     bool operator==(const PipeState& other) const;
     void init(const StaticPipe* staticPipe, const float& newOutputGain, const float& newChiffGain);
-    int getNote() const;
+    [[nodiscard]] int getNote() const;
     void playMono(std::array<float, PROCESS_FRAMES_SIZE> &out);
 };

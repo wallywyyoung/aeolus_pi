@@ -88,14 +88,6 @@ add_executable(aeolus_pi
         Source/AlsaMidiInterface.cpp
         Source/RtAudioInterface.h
         Source/RtAudioInterface.cpp
-        Source/aeolus/dsp/Convolution/CascadeConvolver.h
-        Source/aeolus/dsp/Convolution/FIR.h
-        Source/aeolus/dsp/Convolution/FFT.h
-        Source/aeolus/dsp/Convolution/UniformPartitionedConvolver.h
-        Source/aeolus/dsp/Convolution/Convolver.cpp
-        Source/aeolus/dsp/Convolution/DanielsonLanczos.h
-        Source/aeolus/dsp/Convolution/GFFT.h
-        Source/aeolus/dsp/Convolution/EquallyPartitionedConvolver.h
         Source/RestManager.h
         Source/RestManager.cpp
         Source/aeolus/PipeState.h
@@ -104,6 +96,11 @@ add_executable(aeolus_pi
         Source/aeolus/PipeState.cpp
         Source/LowPassFilter.h
         Source/LowPassFilter.cpp
+        Source/aeolus/dsp/StereoFIRConvolver.h
+        Source/aeolus/dsp/StereoPartitionedConvolver.h
+        Source/aeolus/dsp/Convolver.h
+        Source/aeolus/dsp/StereoFIRConvolver.cpp
+        Source/aeolus/dsp/StereoPartitionedConvolver.cpp
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)

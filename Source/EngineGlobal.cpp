@@ -34,19 +34,18 @@ EngineGlobal::EngineGlobal() {
     generateWavetables();
     organ = std::make_shared<Organ>([this](const std::string &name) { return rankWavesByName.at(name); });
     organInterface = static_cast<OrganInterface *>(organ.get());
-    convolver.setIR(irs.irs[0]);
+    convolver.init(irs.irs[0]);
 }
 
 void EngineGlobal::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
+    static float buffer[PROCESS_SAMPLES_SIZE]{};
     // Midi / Configuration Block
     ProcessMidiBuffer();
     // Organ Block
-    const bool wasAudioGenerated = organ->process(out);
-    //TODO: convolver is too slow to run in debug.
-#ifndef DEBUG
+    const bool wasAudioGenerated = organ->process(buffer);
     // Reverb Block
-    convolver.process<PROCESS_FRAMES_SIZE>(out, wasAudioGenerated);
-#endif
+    convolver.process(&buffer[0], &buffer[PROCESS_FRAMES_SIZE]);
+    SimdUtilities::copyF32NonInterleavedToInterleaved(buffer, buffer + PROCESS_FRAMES_SIZE, out);
 }
 
 void EngineGlobal::generateWavetables() const {
