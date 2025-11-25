@@ -63,8 +63,6 @@ add_executable(aeolus_pi
         Source/aeolus/Semaphore.cpp
         Source/aeolus/Semaphore.h
         Source/aeolus/Sequencer.cpp
-        Source/aeolus/SIMD.cpp
-        Source/aeolus/SIMD.h
         Source/aeolus/Stop.h
         Source/aeolus/Voice.cpp
         Source/aeolus/Worker.cpp
