@@ -89,8 +89,8 @@ add_executable(aeolus_pi
         Source/aeolus/WavetableMemoryManager.h
         Source/aeolus/WavetableMemoryManager.cpp
         Source/aeolus/PipeState.cpp
-        Source/LowPassFilter.h
-        Source/LowPassFilter.cpp
+        Source/aeolus/dsp/LowPassFilter.h
+        Source/aeolus/dsp/LowPassFilter.cpp
         Source/aeolus/dsp/StereoFIRConvolver.h
         Source/aeolus/dsp/StereoPartitionedConvolver.h
         Source/aeolus/dsp/Convolver.h

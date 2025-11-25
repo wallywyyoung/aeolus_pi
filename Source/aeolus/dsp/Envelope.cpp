@@ -18,11 +18,8 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/Envelope.h"
-
-#include <cmath>
 #include <arm_math.h>
 #include "MemoryConstants.h"
-
 
 namespace dsp {
 
@@ -100,7 +97,12 @@ float Envelope::next() {
 }
 
 float Envelope::calculate(const float rate, const float targetRatio) {
-    return rate <= 0 ? 0.0f : std::exp(-std::log((1.0f + targetRatio) / targetRatio) / rate);
+    if (rate <= 0.0f) { return 0.0f; }
+    auto log = (1.0f + targetRatio) / targetRatio;
+    arm_vlog_f32(&log, &log, 1);
+    log = -log / rate;
+    arm_vexp_f32(&log, &log, 1);
+    return log;
 }
 
 } // namespace dsp

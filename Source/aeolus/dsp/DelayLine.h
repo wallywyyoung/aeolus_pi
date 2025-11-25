@@ -19,6 +19,8 @@
 // ----------------------------------------------------------------------------
 
 #pragma once
+
+#include <arm_math.h>
 /**
  * @brief Delay line with samples linear interpolation.
  */
