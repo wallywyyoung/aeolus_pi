@@ -21,12 +21,12 @@
 #pragma once
 
 #include <functional>
+#include <numbers>
 #include <vector>
 #include "StaticAudioBuffer.h"
 #include "VoicePool.h"
 #include "aeolus/Division.h"
 #include "aeolus/MidiManager.h"
-#include "aeolus/globals.h"
 
 
 /**
@@ -35,24 +35,11 @@
  * and audio generation.
  */
 class Organ final : public MidiManager::OrganInterface {
-    constexpr static float TREMULANT_FREQUENCY = 6.283184f; /// Tremulant modulation frequency.
-    constexpr static float TREMULANT_PHASE_INCREMENT = std::numbers::pi_v<float> * 2.0f * TREMULANT_FREQUENCY * SAMPLE_RATE_R;
-    constexpr static float TREMULANT_LEVEL = 1.0f; /// Tremulant OSC wavetable amplitude.
-
-    void generateTremulant(); // Generate tremulant osc waveform for a subframe.
-
-    std::vector<std::shared_ptr<Division>> divisions{};
-    std::vector<GlobalPiston> pistons{};
-
-    StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> summingFrameBuffer;
-    StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> divisionFrameBuffer;
-    StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> voiceFrameBuffer;
-    StaticAudioBuffer<PROCESS_FRAMES_SIZE, 1> tremulantFrameBuffer;
-    std::shared_ptr<VoicePool<>> voicePool { std::make_shared<VoicePool<>>()};
-
-    float tremulantPhase{0.0f};
-
 public:
+    struct GlobalPiston {
+        std::vector<Division::DivisionPiston> divisions;
+    };
+
     explicit Organ(const std::function<std::shared_ptr<RankWave>(const std::string &)> &getStopByName);
     ~Organ() override = default;
 
@@ -87,4 +74,21 @@ public:
     [[nodiscard]] GlobalPiston captureStateAsPiston() const;
 
     bool process(float (&out)[PROCESS_SAMPLES_SIZE]);
+private:
+    constexpr static float TREMULANT_FREQUENCY = 6.283184f; /// Tremulant modulation frequency.
+    constexpr static float TREMULANT_PHASE_INCREMENT = std::numbers::pi_v<float> * 2.0f * TREMULANT_FREQUENCY * SAMPLE_RATE_R;
+    constexpr static float TREMULANT_LEVEL = 1.0f; /// Tremulant OSC wavetable amplitude.
+
+    void generateTremulant(); // Generate tremulant osc waveform for a subframe.
+
+    std::vector<std::shared_ptr<Division>> divisions{};
+    std::vector<GlobalPiston> pistons{};
+
+    StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> summingFrameBuffer;
+    StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> divisionFrameBuffer;
+    StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> voiceFrameBuffer;
+    StaticAudioBuffer<PROCESS_FRAMES_SIZE, 1> tremulantFrameBuffer;
+    std::shared_ptr<VoicePool<>> voicePool { std::make_shared<VoicePool<>>()};
+
+    float tremulantPhase{0.0f};
 };

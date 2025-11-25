@@ -21,9 +21,7 @@
 
 #include <atomic>
 #include <vector>
-
-#include "aeolus/globals.h"
-class Organ;
+#include "aeolus/Organ.h"
 
 /**
  * A sequence of organ divisions states (including the stops and tremulant state).
@@ -48,7 +46,7 @@ public:
 
 private:
     Organ& engine;
-    std::vector<GlobalPiston> steps;
+    std::vector<Organ::GlobalPiston> steps;
     std::atomic<int> currentStep;
     bool dirty;
 };

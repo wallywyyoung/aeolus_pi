@@ -20,11 +20,8 @@
 
 #pragma once
 
-#include <array>
 #include <complex>
 #include <valarray>
-#include "aeolus/SIMD.h"
-#include "aeolus/globals.h"
 
 namespace dsp {
 

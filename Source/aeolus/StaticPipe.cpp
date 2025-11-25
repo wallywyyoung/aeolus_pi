@@ -20,9 +20,10 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/StaticPipe.h"
-#include <cmath>
+#include <arm_math.h>
 #include <iostream>
 #include <memory>
+#include <numbers>
 #include <random>
 #include <vector>
 #include "MemoryConstants.h"

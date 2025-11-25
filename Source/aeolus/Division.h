@@ -46,6 +46,11 @@ public:
         std::shared_ptr<Division> division;
         bool enabled = false;
     };
+    struct DivisionPiston {
+        std::vector<bool> stops;    ///< Stops enablement mask.
+        std::vector<bool> links;    ///< Manuals links.
+        bool tremulant;             ///< Tremulant enablement.
+    };
 
     explicit Division(const std::string& name = std::string());
 

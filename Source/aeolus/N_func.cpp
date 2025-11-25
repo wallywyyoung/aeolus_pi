@@ -20,14 +20,14 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/N_func.h"
-#include "aeolus/globals.h"
+#include <cassert>
 
 N_func::N_func(const float& v) {
     _v.fill(v);
 }
 
 void N_func::setValue(const int idx, const float v) {
-    assertIsPositiveAndBelow(idx, N_NOTES);
+    assert(idx < N_NOTES && idx >= 0);
 
     _v [idx] = v;
     _b |= 1 << idx;
@@ -64,7 +64,7 @@ void N_func::setValue(const int idx, const float v) {
 }
 
 void N_func::clearValue(const int idx) {
-    assertIsPositiveAndBelow(idx, N_NOTES);
+    assert(idx < N_NOTES && idx >= 0);
 
     const int m = 1 << idx;
 
@@ -102,12 +102,12 @@ void N_func::clearValue(const int idx) {
 }
 
 float N_func::getValue(const int idx) const {
-    assertIsPositiveAndBelow(idx, _v.size());
+    assert(idx < _v.size() && idx >= 0);
     return _v[idx];
 }
 
 bool N_func::isSet(const int idx) const {
-    assertIsPositiveAndBelow(idx, _v.size());
+    assert(idx < _v.size() && idx >= 0);
     return (_b & (1 << idx)) != 0;
 }
 
@@ -118,7 +118,7 @@ float N_func::operator[](const int note) const {
 
     if (k) {
         // Apply linear interpolation if falls into the gap.
-        assertIsPositiveAndBelow(i + 1, _v.size());
+        assert(i + 1 < _v.size() && i + 1 >= 0);
         v += k * (_v [i + 1] - v) / NOTES_GAP;
     }
 

@@ -49,7 +49,7 @@ std::shared_ptr<StaticPipe> RankWave::getStaticPipe(const int &note) {
         return nullptr;
     }
     const int index = note - noteMin;
-    assertIsPositiveAndBelow(index, staticPipes.size());
+    assert(index < staticPipes.size() && index >= 0);
 
     return staticPipes[index];
 }

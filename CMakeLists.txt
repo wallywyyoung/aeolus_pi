@@ -46,7 +46,6 @@ add_executable(aeolus_pi
         Source/aeolus/Division.h
         Source/aeolus/DivisionFactory.cpp
         Source/aeolus/DivisionFactory.h
-        Source/aeolus/globals.cpp
         Source/aeolus/HN_func.cpp
         Source/aeolus/HN_func.h
         Source/aeolus/memory.h

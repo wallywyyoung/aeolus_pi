@@ -19,7 +19,6 @@
 // ---------------------------------------------------------------------------
 
 #include "aeolus/Division.h"
-#include "aeolus/globals.h"
 #include "EngineGlobal.h"
 
 Division::Division(const std::string &name) :
@@ -43,17 +42,17 @@ void Division::handleSwell(const float &value) {
 }
 
 void Division::setStopOn(const int &stop) {
-    assertIsPositiveAndBelow(stop, stops.size());
+    assert(stop < stops.size() && stop >= 0);
     if (!stops[stop].isEnabled()) { stops[stop].setEnabled(true); }
 }
 
 void Division::setStopOff(const int &stop) {
-    assertIsPositiveAndBelow(stop, stops.size());
+    assert(stop < stops.size() && stop >= 0);
     if (stops[stop].isEnabled()) { stops[stop].setEnabled(false); }
 }
 
 void Division::setStopToggle(const int &stop) {
-    assertIsPositiveAndBelow(stop, stops.size());
+    assert(stop < stops.size() && stop >= 0);
     stops[stop].setEnabled(!stops[stop].isEnabled());
 }
 
@@ -72,12 +71,12 @@ void Division::setAllStopsOn() {
 }
 
 void Division::setCouplerOn(const int &coupler) {
-    assertIsPositiveAndBelow(coupler, linkedDivisions.size());
+    assert(coupler < linkedDivisions.size() && coupler >= 0);
     if (!linkedDivisions[coupler]->enabled) { linkedDivisions[coupler]->enabled = true; }
 }
 
 void Division::setCouplerOff(const int &coupler) {
-    assertIsPositiveAndBelow(coupler, linkedDivisions.size());
+    assert(coupler < linkedDivisions.size() && coupler >= 0);
     if (linkedDivisions[coupler]->enabled) { linkedDivisions[coupler]->enabled = false; }
 }
 
@@ -124,7 +123,7 @@ void Division::recallPiston(const DivisionPiston &piston) {
     }
 }
 
-DivisionPiston Division::captureStateAsPiston() const {
+Division::DivisionPiston Division::captureStateAsPiston() const {
     DivisionPiston divisionPiston{};
     divisionPiston.tremulant = tremulantEnabled;
     divisionPiston.stops.resize(stops.size());

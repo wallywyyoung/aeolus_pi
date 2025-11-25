@@ -20,7 +20,7 @@
 // ---------------------------------------------------------------------------
 #pragma once
 
-#include "aeolus/globals.h"
+#include <cassert>
 #include "aeolus/N_func.h"
 
 /**
@@ -41,8 +41,14 @@
         void clearValue(int harm, int idx);         // clrv(h, i);
         [[nodiscard]] float getValue(int harm, int idx) const;    // vs(h, i);
         [[nodiscard]] bool isSet(int harm, int idx) const;        // st(h, i)
-        N_func& operator[](const int harm) { assertIsPositiveAndBelow(harm, _h.size()); return _h[harm]; }
-        const N_func& operator[](const int harm) const { assertIsPositiveAndBelow(harm, _h.size()); return _h[harm]; }
+        N_func& operator[](const int harm) {
+            assert(harm < _h.size() && harm >= 0);
+            return _h[harm];
+        }
+        const N_func& operator[](const int harm) const {
+            assert(harm < _h.size() && harm >= 0);
+            return _h[harm];
+        }
     private:
         std::array<N_func, N_HARM> _h{};
         friend class IOManager;

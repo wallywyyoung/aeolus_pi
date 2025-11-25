@@ -22,7 +22,6 @@
 #include "aeolus/SmoothFloat.h"
 #include <algorithm>
 #include <cmath>
-#include "aeolus/globals.h"
 
 SmoothFloat::SmoothFloat(const float value, const float min, const float max, const float smooth) : currentValue{value}, minValue{min}, maxValue{max}, targetValue{value}, frac{smooth}, smoothing{false} { }
 

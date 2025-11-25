@@ -26,52 +26,40 @@ HN_func::HN_func(const float& v) {
     _h.fill(vn);
 }
 
-void HN_func::setValue(const int idx, const float v)
-{
-    assertIsPositiveAndBelow(idx, N_func::N_NOTES);
-
+void HN_func::setValue(const int idx, const float v){
+    assert(idx < N_func::N_NOTES && idx >= 0);
     for (auto& h: _h) {
         h.setValue(idx, v);
     }
 }
 
-void HN_func::setValue(const int harm, const int idx, const float v)
-{
-    assertIsPositiveAndBelow(harm, _h.size());
-    assertIsPositiveAndBelow(idx, N_func::N_NOTES);
-
+void HN_func::setValue(const int harm, const int idx, const float v) {
+    assert(idx < N_func::N_NOTES && idx >= 0);
+    assert(harm < _h.size() && harm >= 0);
     _h[harm].setValue(idx, v);
 }
 
-void HN_func::clearValue(const int idx)
-{
-    assertIsPositiveAndBelow(idx, N_func::N_NOTES);
-
+void HN_func::clearValue(const int idx) {
+    assert(idx < N_func::N_NOTES && idx >= 0);
     for (auto& h : _h) {
         h.clearValue(idx);
     }
 }
 
-void HN_func::clearValue(const int harm, const int idx)
-{
-    assertIsPositiveAndBelow(harm, _h.size());
-    assertIsPositiveAndBelow(idx, N_func::N_NOTES);
-
+void HN_func::clearValue(const int harm, const int idx) {
+    assert(idx < N_func::N_NOTES && idx >= 0);
+    assert(harm < _h.size() && harm >= 0);
     _h[harm].clearValue(idx);
 }
 
-float HN_func::getValue(const int harm, const int idx) const
-{
-    assertIsPositiveAndBelow(harm, _h.size());
-    assertIsPositiveAndBelow(idx, N_func::N_NOTES);
-
+float HN_func::getValue(const int harm, const int idx) const {
+    assert(idx < N_func::N_NOTES && idx >= 0);
+    assert(harm < _h.size() && harm >= 0);
     return _h[harm].getValue(idx);
 }
 
-bool HN_func::isSet(const int harm, const int idx) const
-{
-    assertIsPositiveAndBelow(harm, _h.size());
-    assertIsPositiveAndBelow(idx, N_func::N_NOTES);
-
+bool HN_func::isSet(const int harm, const int idx) const {
+    assert(idx < N_func::N_NOTES && idx >= 0);
+    assert(harm < _h.size() && harm >= 0);
     return _h[harm].isSet(idx);
 }

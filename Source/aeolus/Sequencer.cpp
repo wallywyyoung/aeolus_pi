@@ -18,8 +18,6 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/Sequencer.h"
-#include "aeolus/Organ.h"
-
 #include <cassert>
 
 Sequencer::Sequencer(Organ& engine, const int numSteps): engine{engine}, steps(numSteps), currentStep{0}, dirty{true} { }
