@@ -21,7 +21,7 @@
 
 #include "aeolus/SmoothFloat.h"
 #include <algorithm>
-#include <cmath>
+#include <arm_math.h>
 
 SmoothFloat::SmoothFloat(const float value, const float min, const float max, const float smooth) : currentValue{value}, minValue{min}, maxValue{max}, targetValue{value}, frac{smooth}, smoothing{false} { }
 
@@ -65,8 +65,9 @@ float SmoothFloat::nextValue() {
     if (smoothing) {
         const float prevValue { currentValue };
         currentValue = targetValue * frac + currentValue * (1.0f - frac);
-
-        if (fabsf(currentValue - prevValue) <= std::numeric_limits<float>::epsilon()) {
+        auto abs = currentValue - prevValue;
+        arm_abs_f32(&abs, &abs, 1);
+        if (abs <= std::numeric_limits<float>::epsilon()) {
             // No advancement - jump to the target
             currentValue = targetValue;
         }
