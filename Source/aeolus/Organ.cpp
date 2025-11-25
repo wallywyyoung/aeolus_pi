@@ -148,7 +148,7 @@ void Organ::generateTremulant() {
 }
 
 bool Organ::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
-    std::ranges::fill(out, 0.0f);
+    arm_fill_f32(0.0f, out, PROCESS_SAMPLES_SIZE);
     auto wasAudioGenerated = false;
     const static auto LEFT_BUFFER = divisionFrameBuffer.getReadPointer(0);
     const static auto RIGHT_BUFFER = divisionFrameBuffer.getReadPointer(1);

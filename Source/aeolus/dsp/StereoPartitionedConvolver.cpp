@@ -23,8 +23,8 @@ void StereoPartitionedConvolver::init(const IR& ir) {
         const auto partitionSamples = std::min(irSize - offset, PARTITION_SIZE);
         std::copy_n(left + offset, partitionSamples,leftTemp.begin());
         std::copy_n(right + offset,partitionSamples, rightTemp.begin());
-        std::fill(leftTemp.begin() + partitionSamples, leftTemp.end(), 0.0f);
-        std::fill(rightTemp.begin() + partitionSamples, rightTemp.end(), 0.0f);
+        arm_fill_f32(0.0f, leftTemp.begin() + partitionSamples, std::distance(leftTemp.begin() + partitionSamples, leftTemp.end()));
+        arm_fill_f32(0.0f, rightTemp.begin() + partitionSamples, std::distance(rightTemp.begin() + partitionSamples, rightTemp.end()));
         arm_rfft_fast_f32(&leftFFT,leftTemp.data(), leftIRSpectrum[p].data(), 0);
         arm_rfft_fast_f32(&rightFFT, rightTemp.data(), rightIRSpectrum[p].data(), 0);
     }
@@ -34,8 +34,8 @@ void StereoPartitionedConvolver::process(float* left, float* right, const float*
     std::array<float, PARTITION_SIZE * 2> leftTemp{}, rightTemp{}, leftAccumulated{}, rightAccumulated{};
     std::copy_n(left, PARTITION_SIZE, leftTemp.begin());
     std::copy_n(right, PARTITION_SIZE, rightTemp.begin());
-    std::fill(leftTemp.begin() + PARTITION_SIZE, leftTemp.end(), 0.0f);
-    std::fill(rightTemp.begin() + PARTITION_SIZE, rightTemp.end(), 0.0f);
+    arm_fill_f32(0.0f, leftTemp.begin() + PARTITION_SIZE, std::distance(leftTemp.begin() + PARTITION_SIZE, leftTemp.end()));
+    arm_fill_f32(0.0f, rightTemp.begin() + PARTITION_SIZE, std::distance(rightTemp.begin() + PARTITION_SIZE, rightTemp.end()));
     arm_rfft_fast_f32(&leftFFT, leftTemp.data(), leftBuffer.data(), 0);
     arm_rfft_fast_f32(&rightFFT, rightTemp.data(), rightBuffer.data(), 0);
     leftInputSpectrumHistory[historyIndex] = leftBuffer;

@@ -35,6 +35,7 @@ public:
     static void disableFlushToZero();
     static void convertF32ToS16(const float (&in)[ALSA_BUFFER_SAMPLES_SIZE], std::int16_t * out);
     static void convertF32ToS24(const float (&in)[PROCESS_SAMPLES_SIZE], std::uint8_t(&out)[PROCESS_SAMPLES_SIZE * 3]);
+    static void convertF32NonInterleavedToS24Interleaved(const float (&input)[PROCESS_SAMPLES_SIZE], std::uint8_t (&output)[PROCESS_SAMPLES_SIZE * 3]);
     static void copyF32NonInterleavedToInterleaved(const float* left, const float* right, float (&out)[PROCESS_SAMPLES_SIZE]);
     static void lerpF32(const float *a, const float *b, float t, float *out, size_t size);
     static void reverseLerpF32(const float *a, const float *b, float t, float *out, size_t size);

@@ -25,7 +25,7 @@
 class DelayLine {
 public:
     explicit DelayLine(const size_t size = 1024) : buffer{static_cast<float *>(malloc(size * sizeof(float)))}, bufferSize(size) {
-        std::fill_n(buffer, bufferSize, 0.0f);
+        arm_fill_f32(0.0f, buffer, bufferSize);
     }
 
     ~DelayLine() { free(buffer); }
@@ -39,7 +39,7 @@ public:
 
     void reset() {
         writeIndex = 0;
-        std::fill_n(buffer, bufferSize, 0.0f);
+        arm_fill_f32(0.0f, buffer, bufferSize);
     }
 
     static void copyReverseCircular(const float* buffer, float* dst, const size_t nElements, const size_t bufferSize, const size_t index) noexcept {

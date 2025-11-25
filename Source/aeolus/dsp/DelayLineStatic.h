@@ -46,7 +46,7 @@ public:
 
     void reset() {
         writeIndex = 0;
-        circularBuffer.fill(0.0f);
+        arm_fill_f32(0.0f, circularBuffer.data(), circularBuffer.size());
     }
 
     // TODO: Fix tremulant so I can remove this.

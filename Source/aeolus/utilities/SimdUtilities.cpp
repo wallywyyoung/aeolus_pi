@@ -104,6 +104,20 @@ void SimdUtilities::convertF32ToS24(const float (&in)[PROCESS_SAMPLES_SIZE], std
         vst3_u8(out + i * 3, packedBytes);
     }
 }
+void SimdUtilities::convertF32NonInterleavedToS24Interleaved(const float (&input)[PROCESS_SAMPLES_SIZE], std::uint8_t (&output)[PROCESS_SAMPLES_SIZE * 3]) {
+    for (auto i = 0; i + 4 <= PROCESS_FRAMES_SIZE; i += 4) {
+        const auto left0 = vld1q_f32(input + i);
+        const auto right0 = vld1q_f32(input + PROCESS_FRAMES_SIZE + i);
+        const auto duple0 = vzipq_f32(left0, right0);
+        auto in0 = duple0.val[0];
+        auto in1 = duple0.val[1];
+        softClip(in0, in1);
+        const auto s24W0 = f32ToS24WordConversion(in0);
+        const auto s24W1 = f32ToS24WordConversion(in1);
+        const auto packedBytes = bitpackU32ToS24LE(s24W0, s24W1);
+        vst3_u8(output + i * 6, packedBytes);
+    }
+}
 
 void SimdUtilities::copyF32NonInterleavedToInterleaved(const float* left, const float* right, float (&out)[PROCESS_SAMPLES_SIZE]) {
     for (auto i = 0; i + 8 <= PROCESS_FRAMES_SIZE; i += 8) {

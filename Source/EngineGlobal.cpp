@@ -38,14 +38,12 @@ EngineGlobal::EngineGlobal() {
 }
 
 void EngineGlobal::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
-    static float buffer[PROCESS_SAMPLES_SIZE]{};
     // Midi / Configuration Block
     ProcessMidiBuffer();
     // Organ Block
-    const bool wasAudioGenerated = organ->process(buffer);
+    const bool wasAudioGenerated = organ->process(out);
     // Reverb Block
-    convolver.process(&buffer[0], &buffer[PROCESS_FRAMES_SIZE]);
-    SimdUtilities::copyF32NonInterleavedToInterleaved(buffer, buffer + PROCESS_FRAMES_SIZE, out);
+    convolver.process(&out[0], &out[PROCESS_FRAMES_SIZE]);
 }
 
 void EngineGlobal::generateWavetables() const {

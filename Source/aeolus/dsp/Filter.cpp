@@ -25,6 +25,7 @@
 #include <cmath>
 #include <numbers>
 #include "MemoryConstants.h"
+#include <arm_math.h>
 
 namespace dsp {
 
@@ -141,8 +142,8 @@ void BiquadFilter::updateSpec(Spec& spec) {
 }
 
 void BiquadFilter::resetState(State &state) {
-    std::fill_n(state.x, 2, 0.0f);
-    std::fill_n(state.y, 2, 0.0f);
+    arm_fill_f32(0.0f, state.x, 2);
+    arm_fill_f32(0.0f, state.y, 2);
 }
 
 float BiquadFilter::tick(const Spec& spec, State& state, const float in) {
