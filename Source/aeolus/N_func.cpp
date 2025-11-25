@@ -41,10 +41,10 @@ void N_func::setValue(const int idx, const float v) {
         while (++j != idx)
             _v [j] = v;
     } else {
-        const float d = (_v [j] - v) / (j - idx);
+        const float d = (_v [j] - v) / static_cast<float>(j - idx);
 
         while (++j != idx)
-            _v [j] = v + (j - idx) * d;
+            _v [j] = v + static_cast<float>(j - idx) * d;
     }
 
     j = idx + 1;
@@ -56,10 +56,10 @@ void N_func::setValue(const int idx, const float v) {
         while (--j != idx)
             _v [j] = v;
     } else {
-        const float d = (_v [j] - v) / (j - idx);
+        const float d = (_v [j] - v) / static_cast<float>(j - idx);
 
         while (--j != idx)
-            _v [j] = v + (j - idx) * d;
+            _v [j] = v + static_cast<float>(j - idx) * d;
     }
 }
 
@@ -83,11 +83,11 @@ void N_func::clearValue(const int idx) {
     while ((k <= N_NOTES - 1) && ! (_b & (1 << k)))
         ++k;
 
-    if ((j >= 0) && (k < N_NOTES)) {
-        const float d = (_v [k] - _v [j]) / (k - j);
+    if (j >= 0 && k < N_NOTES) {
+        const float d = (_v [k] - _v [j]) / static_cast<float>(k - j);
 
         for (int i = j + 1; i < k; i++)
-            _v [i] = _v [j] + (i - j) * d;
+            _v [i] = _v [j] + static_cast<float>(i - j) * d;
     } else if (j >= 0) {
         const float d = _v [j];
 
@@ -119,7 +119,7 @@ float N_func::operator[](const int note) const {
     if (k) {
         // Apply linear interpolation if falls into the gap.
         assert(i + 1 < _v.size() && i + 1 >= 0);
-        v += k * (_v [i + 1] - v) / NOTES_GAP;
+        v += static_cast<float>(k) * (_v [i + 1] - v) / NOTES_GAP;
     }
 
     return v;

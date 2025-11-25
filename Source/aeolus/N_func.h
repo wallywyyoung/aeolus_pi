@@ -41,8 +41,8 @@ public:
 
     void setValue(int idx, float v);    // setv(i, v)
     void clearValue(int idx);           // clrv(i)
-    float getValue(int idx) const;      // vs(i)
-    bool isSet(int idx) const;          // st(i)
+    [[nodiscard]] float getValue(int idx) const;      // vs(i)
+    [[nodiscard]] bool isSet(int idx) const;          // st(i)
 
     /// Returns interpolated value for a note number (starting from 0).
     float operator[](int note) const;   // vi(n)

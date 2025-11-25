@@ -34,7 +34,7 @@ public:
 
     IR(const std::string& name, const AudioFile<float>& audioFile) : AudioBuffer(audioFile.getNumChannels(), audioFile.getNumSamplesPerChannel()), name(name) {
         for (std::size_t i = 0; i < getNumChannels(); ++i) {
-            std::copy(audioFile.samples[i].begin(), audioFile.samples[i].end(), audioBuffer.begin() + static_cast<std::vector<float>::difference_type>(i * bufferSize));
+            std::ranges::copy(audioFile.samples[i], audioBuffer.begin() + static_cast<std::vector<float>::difference_type>(i * bufferSize));
         }
     }
 

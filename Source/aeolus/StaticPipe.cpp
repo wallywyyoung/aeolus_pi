@@ -92,13 +92,13 @@ void StaticPipe::generateWavetable() {
     assert(numberCyclesOfFundamental > 0);
 
     if (loopLength < sampleStep * PROCESS_FRAMES_SIZE) {
-        const int k = (sampleStep * PROCESS_FRAMES_SIZE - 1) / loopLength + 1;
+        const int k = (sampleStep * static_cast<int>(PROCESS_FRAMES_SIZE) - 1) / loopLength + 1;
         loopLength *= k;
         numberCyclesOfFundamental *= k;
     }
 
-    const int wavetableLength = attackLength + loopLength + sampleStep * (PROCESS_FRAMES_SIZE + 4);
-    attackStart = WavetableMemoryManager::getInstance().allocateWavetable(wavetableLength);
+    const int wavetableLength = attackLength + loopLength + sampleStep * (static_cast<int>(PROCESS_FRAMES_SIZE) + 4);
+    attackStart = WavetableMemoryManager::allocateWavetable(wavetableLength);
     std::fill_n(attackStart, wavetableLength, 0.0f);
     loopStart = attackStart + attackLength;
     loopEnd = loopStart + loopLength;

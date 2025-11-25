@@ -55,7 +55,7 @@ public:
     /**
      * Returns the range of keys this stop can be triggered by.
      */
-    Range getKeyRange() const {
+    [[nodiscard]] Range getKeyRange() const {
         if (zones.empty()) {
             return {};
         }

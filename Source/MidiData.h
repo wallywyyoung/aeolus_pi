@@ -41,5 +41,5 @@ struct MidiData {
     MidiData &operator=(const snd_seq_event_t &event);
 #endif
 
-    bool valid() const;
+    [[nodiscard]] bool valid() const;
 };

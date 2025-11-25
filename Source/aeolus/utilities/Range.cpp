@@ -12,6 +12,6 @@ bool Range::contains(const int value) const {
     return value >= start && value <= end;
 }
 
-Range Range::getUnionWith(const Range compare) {
-    return Range(std::min(start, compare.start),std::max(end, compare.end));
+Range Range::getUnionWith(const Range compare) const {
+    return {std::min(start, compare.start),std::max(end, compare.end)};
 }

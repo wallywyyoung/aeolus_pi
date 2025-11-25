@@ -37,13 +37,10 @@ public:
     Model& operator=(const Model&) = delete;
     Model(Model&&) = delete;
     Model& operator=(Model&&) = delete;
-
     [[nodiscard]] std::vector<std::string> getStopNames() const;
-
-    [[nodiscard]] int getStopsCount() const { return synths.size(); }
+    [[nodiscard]] size_t getStopsCount() const { return synths.size(); }
     AddSynth operator[](const int idx) { return synths[idx]; }
     AddSynth operator[](const int idx) const { return synths[idx]; }
-
 private:
     std::vector<AddSynth> synths{};
 };

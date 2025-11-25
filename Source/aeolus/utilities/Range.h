@@ -9,7 +9,7 @@ public:
     Range() = default;
     Range(int start, int end);
     [[nodiscard]] bool contains(int value) const;
-    Range getUnionWith(Range compare);
+    Range getUnionWith(Range compare) const;
     [[nodiscard]] int getStart() const { return start; }
     [[nodiscard]] int getEnd() const { return end; }
 private:
