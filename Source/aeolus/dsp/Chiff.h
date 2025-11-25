@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "LowPassFilter.h"
+#include "aeolus/dsp/LowPassFilter.h"
 #include "MemoryConstants.h"
 #include "aeolus/PipeState.h"
 #include "aeolus/StaticPipe.h"

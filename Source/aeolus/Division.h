@@ -20,13 +20,13 @@
 
 #pragma once
 
+#include <bitset>
+#include <vector>
 #include "StaticAudioBuffer.h"
 #include "aeolus/SmoothFloat.h"
 #include "aeolus/Stop.h"
 #include "aeolus/Voice.h"
-#include "LowPassFilter.h"
-#include <bitset>
-#include <vector>
+#include "aeolus/dsp/LowPassFilter.h"
 
 #include "VoicePool.h"
 

@@ -20,9 +20,9 @@
 
 #pragma once
 
-#include "LowPassFilter.h"
 #include "StaticAudioBuffer.h"
 #include "aeolus/dsp/DelayLine.h"
+#include "aeolus/dsp/LowPassFilter.h"
 
 /**
  * @brief Sound source spatial modeller.
