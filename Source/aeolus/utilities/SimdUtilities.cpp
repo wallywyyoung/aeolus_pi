@@ -178,12 +178,6 @@ void SimdUtilities::reverseLerpF32(const float *a, const float *b, float t, floa
     }
 }
 
-static inline float32x4_t modulo(float32x4_t a, float32_t b) {
-    const float32x4_t n = vdupq_n_f32(b);
-    return vsubq_f32(a, vmulq_f32(n, vdivq_f32(a, n)));
-}
-
-
 void SimdUtilities::multiplyRandomFactorAdditive(std::array<float, PROCESS_FRAMES_SIZE> &buffer, const float factor) {
     const float32x4_t f = vdupq_n_f32(factor);
     const auto randoms = RandomTable::getInstance().getRandoms<PROCESS_SAMPLES_SIZE>();
@@ -227,7 +221,7 @@ void SimdUtilities::multiplyFactorAdditive(std::array<float, PROCESS_FRAMES_SIZE
         const auto in0 = vld1q_f32(swapBuffer.data() + i);
         const auto in1 = vld1q_f32(swapBuffer.data() + i + 4);
         const auto m0 = vmulq_f32(in0, f);
-        const auto m1 = vmulq_f32(in0, f);
+        const auto m1 = vmulq_f32(in1, f);
         const auto o0 = vaddq_f32(out0, m0);
         const auto o1 = vaddq_f32(out1, m1);
         vst1q_f32(buffer.data() + i, o0);

@@ -29,7 +29,6 @@ RankWave::RankWave(AddSynth addSynth, const Scale& scale) : noteMin(addSynth.get
     staticPipes.clear();
     const auto frequencyNumerator = addSynth.getFrequencyNumerator();
     const auto frequencyDenominator = addSynth.getFrequencyDenominator();
-    const auto& s = scale.getTable();
     auto modelAddSynth = std::make_shared<AddSynth>(addSynth);
     for (int i = noteMin; i <= noteMax; ++i) {
         auto frequency = scale.getFrequencyForMidiNote(i);

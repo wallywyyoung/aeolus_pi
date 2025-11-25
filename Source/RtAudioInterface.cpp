@@ -44,7 +44,7 @@ RtAudioInterface::RtAudioInterface(const std::function<void(float (&out)[PROCESS
     device->startStream();
 }
 
-int RtAudioInterface::audioHandler(void *outputBuffer, void *inputBuffer, const unsigned int nFrames, double streamTime, RtAudioStreamStatus status, void *userData) {
+int RtAudioInterface::audioHandler(void *outputBuffer, void *, const unsigned int nFrames, double, RtAudioStreamStatus, void *userData) {
     SimdUtilities::enableFlushToZero();
     if (nFrames < PROCESS_FRAMES_SIZE) {
         return 1;

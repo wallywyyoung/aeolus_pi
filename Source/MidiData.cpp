@@ -1,8 +1,6 @@
 
 #include "MidiData.h"
 
-#include <iostream>
-
 #ifdef LINUX
 
 

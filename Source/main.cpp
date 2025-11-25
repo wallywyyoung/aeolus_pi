@@ -19,7 +19,6 @@
 
 #include <csignal>
 #include <functional>
-#include <thread>
 #include "EngineGlobal.h"
 
 #ifdef LINUX

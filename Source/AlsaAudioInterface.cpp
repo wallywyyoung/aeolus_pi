@@ -38,7 +38,7 @@ AlsaAudioInterface::AlsaAudioInterface(std::function<void(float (&out)[PROCESS_S
 
 AlsaAudioInterface::~AlsaAudioInterface() { endPlayback(); }
 
-inline static void AlsaErrorChecker(const int& error, const std::string& method) {
+static void AlsaErrorChecker(const int& error, const std::string& method) {
     if (error < 0) {
         throw std::runtime_error(method + " failed: " + static_cast<std::string>(snd_strerror(error)));
     }

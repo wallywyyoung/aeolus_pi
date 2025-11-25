@@ -7,7 +7,7 @@
 #include <arm_math.h>
 
 class LowPassFilter {
-    arm_biquad_cascade_df2T_instance_f32 biquadInstance;
+    arm_biquad_cascade_df2T_instance_f32 biquadInstance{};
     float32_t coefficients[5]{ };
     float32_t state[2] { 0.0f, 0.0f};
 

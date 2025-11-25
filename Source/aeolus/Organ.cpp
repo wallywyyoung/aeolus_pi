@@ -45,93 +45,74 @@ void Organ::setGlobalAllNotesOff() {
     }
 }
 
-void Organ::handleDivisionSwell(const int& division, const float& value) {
-    divisions[division]->handleSwell(value);
-};
+void Organ::handleDivisionSwell(const int& division, const float& value) { divisions[division]->handleSwell(value); };
 
-void Organ::setDivisionStopOn(const int& division, const int& stop) {
-    divisions[division]->setStopOn(stop);
-}
+void Organ::setDivisionStopOn(const int &division, const int &stop) { divisions[division]->setStopOn(stop); }
 
-void Organ::setDivisionStopOff(const int& division, const int& stop) {
-    divisions[division]->setStopOff(stop);
-}
+void Organ::setDivisionStopOff(const int &division, const int &stop) { divisions[division]->setStopOff(stop); }
 
-void Organ::setDivisionStopToggle(const int& division, const int& stop) {
-    divisions[division]->setStopToggle(stop);
-}
+void Organ::setDivisionStopToggle(const int &division, const int &stop) { divisions[division]->setStopToggle(stop); }
 
-void Organ::setDivisionAllStopsOff(const int& division) {
-    divisions[division]->setAllStopsOff();
-}
+void Organ::setDivisionAllStopsOff(const int &division) { divisions[division]->setAllStopsOff(); }
 
-void Organ::setDivisionAllStopsOn(const int& division) {
-    divisions[division]->setAllStopsOn();
-}
+void Organ::setDivisionAllStopsOn(const int &division) { divisions[division]->setAllStopsOn(); }
 
 void Organ::setGlobalAllStopsOff() {
-    for (const auto & division : divisions) {
-        division->setAllStopsOff();
-    }
+    for (const auto &division: divisions) { division->setAllStopsOff(); }
 }
 
 void Organ::setGlobalAllStopsOn() {
-    for (const auto & division : divisions) {
-        division->setAllStopsOn();
-    }
+    for (const auto &division: divisions) { division->setAllStopsOn(); }
 }
 
-void Organ::setDivisionCouplerOn(const int& division, const int& coupler) {
+void Organ::setDivisionCouplerOn(const int &division, const int &coupler) {
     divisions[division]->setCouplerOn(coupler);
 }
 
-void Organ::setDivisionCouplerOff(const int& division, const int& coupler) {
+void Organ::setDivisionCouplerOff(const int &division, const int &coupler) {
     divisions[division]->setCouplerOff(coupler);
 }
 
-void Organ::setDivisionTremulantOn(const int& division) {
-    divisions[division]->setTremulantOn();
-}
+void Organ::setDivisionTremulantOn(const int &division) { divisions[division]->setTremulantOn(); }
 
-void Organ::setDivisionTremulantOff(const int& division) {
-    divisions[division]->setTremulantOff();
-}
+void Organ::setDivisionTremulantOff(const int &division) { divisions[division]->setTremulantOff(); }
 
-void Organ::setDivisionPiston(const int& division, const int& piston) {
-    divisions[division]->setPiston(piston);
-}
+void Organ::setDivisionPiston(const int &division, const int &piston) { divisions[division]->setPiston(piston); }
 
-void Organ::recallDivisionPiston(const int& division, const int& piston) {
-    divisions[division]->recallPiston(piston);
-}
+void Organ::recallDivisionPiston(const int &division, const int &piston) { divisions[division]->recallPiston(piston); }
 
-void Organ::setGlobalPiston(const int& piston) {
-    if (pistons.size() <= piston) {
-        pistons.resize(piston + 1);
-    }
+void Organ::setGlobalPiston(const int &piston) {
+    if (pistons.size() <= piston) { pistons.resize(piston + 1); }
     pistons[piston] = captureStateAsPiston();
 }
 
-void Organ::recallGlobalPiston(const int& piston) {
-    if (pistons.size() <= piston) {
-        return;
-    }
+void Organ::recallGlobalPiston(const int &piston) {
+    if (pistons.size() <= piston) { return; }
     recallGlobalPiston(pistons[piston]);
 }
 
-void Organ::recallGlobalPiston(const GlobalPiston& piston) {
-    for (int i = 0; i < piston.divisions.size(); ++i) {
-        divisions[i]->recallPiston(piston.divisions[i]);
-    }
+void Organ::recallGlobalPiston(const GlobalPiston &piston) {
+    for (int i = 0; i < piston.divisions.size(); ++i) { divisions[i]->recallPiston(piston.divisions[i]); }
 }
 
 Organ::GlobalPiston Organ::captureStateAsPiston() const {
     GlobalPiston globalPiston{};
     globalPiston.divisions.resize(divisions.size());
-    for (const auto& division : divisions) {
-        globalPiston.divisions.emplace_back(division->captureStateAsPiston());
-    }
+    for (const auto &division: divisions) { globalPiston.divisions.emplace_back(division->captureStateAsPiston()); }
     return globalPiston;
+}
+
+void Organ::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
+    arm_fill_f32(0.0f, out, PROCESS_SAMPLES_SIZE);
+    const static auto LEFT_BUFFER = divisionFrameBuffer.getReadPointer(0);
+    const static auto RIGHT_BUFFER = divisionFrameBuffer.getReadPointer(1);
+    generateTremulant();
+    for (const auto &division: divisions) {
+        if (!division->process(divisionFrameBuffer, voiceFrameBuffer)) { continue; }
+        division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
+        arm_copy_f32(LEFT_BUFFER, out, PROCESS_FRAMES_SIZE);
+        arm_copy_f32(RIGHT_BUFFER, out + PROCESS_FRAMES_SIZE, PROCESS_FRAMES_SIZE);
+    }
 }
 
 // TODO: Index, batch, vectorize
@@ -141,23 +122,6 @@ void Organ::generateTremulant() {
         const float s = arm_sin_f32(tremulantPhase);
         buffer[i] = s * TREMULANT_LEVEL;
         tremulantPhase += TREMULANT_PHASE_INCREMENT;
-        if (tremulantPhase >= std::numbers::pi_v<float> * 2) {
-            tremulantPhase -= std::numbers::pi_v<float> * 2;
-        }
-    }
-}
-
-void Organ::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
-    arm_fill_f32(0.0f, out, PROCESS_SAMPLES_SIZE);
-    const static auto LEFT_BUFFER = divisionFrameBuffer.getReadPointer(0);
-    const static auto RIGHT_BUFFER = divisionFrameBuffer.getReadPointer(1);
-    generateTremulant();
-    for (const auto &division : divisions) {
-        if (!division->process(divisionFrameBuffer, voiceFrameBuffer)) {
-            continue;
-        }
-        division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
-        arm_copy_f32(LEFT_BUFFER, out, PROCESS_FRAMES_SIZE);
-        arm_copy_f32(RIGHT_BUFFER, out + PROCESS_FRAMES_SIZE, PROCESS_FRAMES_SIZE);
+        if (tremulantPhase >= std::numbers::pi_v<float> * 2) { tremulantPhase -= std::numbers::pi_v<float> * 2; }
     }
 }

@@ -19,10 +19,10 @@ void RestManager::runServer(std::shared_ptr<Organ> organ) {
     });
 
     // Handle OPTIONS preflight requests
-    server.Options(".*", [](const httplib::Request& req, httplib::Response& res) {
+    server.Options(".*", [](const httplib::Request &, httplib::Response& res) {
         res.status = 200;
     });
-    server.Get("/config", [](const httplib::Request& req, httplib::Response& res) {
+    server.Get("/config", [](const httplib::Request &, httplib::Response& res) {
         const std::filesystem::path configFile = "./Resources/configs/default_organ.json";
         std::ifstream stream(configFile);
         auto config = std::string(std::istreambuf_iterator(stream), std::istreambuf_iterator<char>());

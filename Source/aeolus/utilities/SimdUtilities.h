@@ -45,7 +45,4 @@ public:
     static void multiplyFactor(float* buffer, size_t size, float factor);
     static void multiplyFactorEnvelopeAdditive(std::array<float, PROCESS_FRAMES_SIZE> &buffer, std::array<float, PROCESS_FRAMES_SIZE> &swapBuffer, float factor, dsp::Envelope& envelope);
     static void add(float* to, const float* from, size_t size);
-private:
-    // Ensure your in and out buffers are aligned to 16 to be NEON compliant.
-    static float maxF32(const float (&in)[PROCESS_SAMPLES_SIZE]);
 };
