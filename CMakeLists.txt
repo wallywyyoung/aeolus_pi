@@ -96,6 +96,7 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/Convolver.h
         Source/aeolus/dsp/StereoFIRConvolver.cpp
         Source/aeolus/dsp/StereoPartitionedConvolver.cpp
+        Source/aeolus/dsp/DelayLegacy.h
 )
 
 find_package(nlohmann_json CONFIG REQUIRED)

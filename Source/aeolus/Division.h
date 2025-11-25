@@ -23,12 +23,12 @@
 #include <bitset>
 #include <vector>
 #include "StaticAudioBuffer.h"
+#include "VoicePool.h"
 #include "aeolus/SmoothFloat.h"
 #include "aeolus/Stop.h"
 #include "aeolus/Voice.h"
 #include "aeolus/dsp/LowPassFilter.h"
-
-#include "VoicePool.h"
+#include "dsp/DelayLegacy.h"
 
 class Organ;
 /**
@@ -120,8 +120,8 @@ private:
 
     /// Delay lines used for tremulant frequency modulation.
     //TODO: These numbers are bonkers.
-    DelayLineStatic<TREMULANT_DELAY_LENGTH,1> tremulantDelayL;
-    DelayLineStatic<TREMULANT_DELAY_LENGTH,1> tremulantDelayR;
+    DelayLegacy<TREMULANT_DELAY_LENGTH,1> tremulantDelayL;
+    DelayLegacy<TREMULANT_DELAY_LENGTH, 1> tremulantDelayR;
 
     std::vector<Stop> stops{};            ///< All the stops this division has.
     std::vector<Voice*> activeVoices;     ///< Active voices on this division.

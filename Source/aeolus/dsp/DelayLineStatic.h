@@ -49,26 +49,6 @@ public:
         arm_fill_f32(0.0f, circularBuffer.data(), circularBuffer.size());
     }
 
-    // TODO: Fix tremulant so I can remove this.
-    void write (const float x) noexcept {
-        if (writeIndex == 0) {
-            writeIndex = circularBuffer.size() - 1;
-        } else {
-            --writeIndex;
-        }
-        circularBuffer[writeIndex] = x;
-    }
-
-    // TODO: Fix tremulant so I can remove this.
-    [[nodiscard]] float read(const float delay) const {
-        auto index = static_cast<int>(std::floor(delay));
-        auto frac = delay - static_cast<float>(index);
-        index = (index + writeIndex) % static_cast<int>(circularBuffer.size());
-        const auto a = circularBuffer[index];
-        const auto b = index < circularBuffer.size() - 1 ? circularBuffer[index + 1] : circularBuffer[0];
-        return std::lerp(a, b, frac);
-    }
-
     void process(std::array<float, PROCESS_SIZE> &src, const size_t delay) noexcept {
         writeIndex = (writeIndex + circularBuffer.size() - src.size()) % circularBuffer.size();
         const auto delayIndex = (delay + writeIndex) % circularBuffer.size();
