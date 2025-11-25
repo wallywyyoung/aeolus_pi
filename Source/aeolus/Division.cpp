@@ -21,14 +21,9 @@
 #include "aeolus/Division.h"
 #include "EngineGlobal.h"
 
-Division::Division(const std::string &name) :
-    name{name}, mnemonic{name}, hasSwell{false}, hasTremulant{false},
-    tremulantEnabled{false} /* Select all MIDI channels by default */,
-    swellFilterSpec{dsp::BiquadFilter::LowPass, 0.4f * SAMPLE_RATE_F, 0.7071f, 0.0f}, swellFilterStateL{},
-    swellFilterStateR{} {
-    dsp::BiquadFilter::updateSpec(swellFilterSpec);
-    dsp::BiquadFilter::resetState(swellFilterStateL);
-    dsp::BiquadFilter::resetState(swellFilterStateR);
+Division::Division(const std::string &name) : name{name}, mnemonic{name}, hasSwell{false}, hasTremulant{false}, tremulantEnabled{false} {
+    lowPassLeft.calculateCoefficients(0.4f * SAMPLE_RATE_F);
+    lowPassRight.calculateCoefficients(0.4f * SAMPLE_RATE_F);
 }
 
 void Division::setNoteOn(const int &note) { keysState.set(note); }
@@ -184,10 +179,9 @@ void Division::modulate(StaticAudioBuffer<PROCESS_FRAMES_SIZE, OUTPUT_CHANNELS> 
         static constexpr auto MINIMUM_FREQUENCY = 400.0f;
         static constexpr auto MAXIMUM_FREQUENCY = 18000.0f;
         const float swellNormalized = powf(std::clamp(gain.target(), 0.0f, 1.0f), CURVE_SHAPING_EXPONENT);
-        swellFilterSpec.freq = MINIMUM_FREQUENCY + swellNormalized * (MAXIMUM_FREQUENCY - MINIMUM_FREQUENCY);
-        dsp::BiquadFilter::updateSpec(swellFilterSpec);
-        dsp::BiquadFilter::process(swellFilterSpec, PROCESS_FRAMES_SIZE, outL, outL, swellFilterStateL);
-        dsp::BiquadFilter::process(swellFilterSpec, PROCESS_FRAMES_SIZE, outR, outR, swellFilterStateR);
+        lowPassLeft.calculateCoefficients(MINIMUM_FREQUENCY + swellNormalized * (MAXIMUM_FREQUENCY - MINIMUM_FREQUENCY));
+        lowPassLeft.process(outL, outL);
+        lowPassRight.process(outR, outR);
     }
 }
 

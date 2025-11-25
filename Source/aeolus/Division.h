@@ -24,8 +24,7 @@
 #include "aeolus/SmoothFloat.h"
 #include "aeolus/Stop.h"
 #include "aeolus/Voice.h"
-#include "aeolus/dsp/Filter.h"
-
+#include "LowPassFilter.h"
 #include <bitset>
 #include <vector>
 
@@ -116,9 +115,8 @@ private:
     SmoothFloat gain{ 1.0f };
 
     /// Swell low-pass filter.
-    dsp::BiquadFilter::Spec swellFilterSpec;
-    dsp::BiquadFilter::State swellFilterStateL;
-    dsp::BiquadFilter::State swellFilterStateR;
+    LowPassFilter lowPassLeft{};
+    LowPassFilter lowPassRight{};
 
     /// Delay lines used for tremulant frequency modulation.
     //TODO: These numbers are bonkers.

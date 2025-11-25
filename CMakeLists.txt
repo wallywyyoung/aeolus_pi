@@ -74,10 +74,6 @@ add_executable(aeolus_pi
         Source/aeolus/dsp/Envelope.h
         Source/aeolus/dsp/Chiff.cpp
         Source/aeolus/dsp/Chiff.h
-        Source/aeolus/dsp/FFT.cpp
-        Source/aeolus/dsp/FFT.h
-        Source/aeolus/dsp/Filter.cpp
-        Source/aeolus/dsp/Filter.h
         Source/aeolus/dsp/SpatialSource.cpp
         Source/aeolus/StopFactory.cpp
         Source/aeolus/utilities/SimdUtilities.cpp
