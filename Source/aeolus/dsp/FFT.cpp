@@ -19,18 +19,18 @@
 // ----------------------------------------------------------------------------
 
 #include "aeolus/dsp/FFT.h"
-#include <algorithm>
-#include <cmath>
+#include <arm_math.h>
+#include <numbers>
 
 namespace dsp {
 
-static float hann(const int i, const int n) { return 0.5f * (1.0f - std::cos (std::numbers::pi_v<float> * 2.0f * static_cast<float>(i) / static_cast<float>(n - 1))); }
+static float hann(const int i, const int n) { return 0.5f * (1.0f - arm_cos_f32(std::numbers::pi_v<float> * 2.0f * static_cast<float>(i) / static_cast<float>(n - 1))); }
 
-static float hamming(const int i, const int n) { return 0.53836f + 0.46164f * std::cos (std::numbers::pi_v<float> * 2.0f * static_cast<float>(i) / static_cast<float>(n - 1)); }
+static float hamming(const int i, const int n) { return 0.53836f + 0.46164f * arm_cos_f32(std::numbers::pi_v<float> * 2.0f * static_cast<float>(i) / static_cast<float>(n - 1)); }
 
 static float blackman(const int i, const int n) {
     const auto x = std::numbers::pi_v<float> * 2.0f * static_cast<float>(i) / static_cast<float>(n - 1);
-    return 0.42659f - 0.49656f * std::cos (x) + 0.076849f * std::cos (2.0f * x);
+    return 0.42659f - 0.49656f * arm_cos_f32(x) + 0.076849f * arm_cos_f32(2.0f * x);
 }
 
 void Fft::direct(std::valarray<std::complex<float>>& x, const Window win) {
@@ -39,7 +39,7 @@ void Fft::direct(std::valarray<std::complex<float>>& x, const Window win) {
     const auto N = static_cast<unsigned int>(x.size());
     auto k = N;
     const auto thetaT = std::numbers::pi_v<float> / static_cast<float>(N);
-    auto phiT = std::complex(std::cos(thetaT),std::sin (thetaT));
+    auto phiT = std::complex(arm_cos_f32(thetaT), arm_sin_f32(thetaT));
 	// TODO T and n WERE DEFINED HERE
     while (k > 1) {
         const unsigned int n = k; // TODO

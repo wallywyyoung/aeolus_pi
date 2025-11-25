@@ -50,7 +50,7 @@ private:
     static constexpr auto DECIBEL_TO_LINEAR_APPROX = 0.1661f;
     static void calculateLoopLength(float fundamentalFreqHz, float effectiveSampleRate, int maxLoopLength, int &optimalLoopLength, int &cycleCount);
     static void attgain(float *att, const int &n, const float &p);
-
+    static float exp2ap(float x);
     std::shared_ptr<AddSynth> model;
     int note;
     float freq;

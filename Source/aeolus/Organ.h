@@ -73,7 +73,7 @@ public:
 
     [[nodiscard]] GlobalPiston captureStateAsPiston() const;
 
-    bool process(float (&out)[PROCESS_SAMPLES_SIZE]);
+    void process(float (&out)[PROCESS_SAMPLES_SIZE]);
 private:
     constexpr static float TREMULANT_FREQUENCY = 6.283184f; /// Tremulant modulation frequency.
     constexpr static float TREMULANT_PHASE_INCREMENT = std::numbers::pi_v<float> * 2.0f * TREMULANT_FREQUENCY * SAMPLE_RATE_R;

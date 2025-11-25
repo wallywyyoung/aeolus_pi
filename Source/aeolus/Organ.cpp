@@ -125,7 +125,7 @@ void Organ::recallGlobalPiston(const GlobalPiston& piston) {
     }
 }
 
-GlobalPiston Organ::captureStateAsPiston() const {
+Organ::GlobalPiston Organ::captureStateAsPiston() const {
     GlobalPiston globalPiston{};
     globalPiston.divisions.resize(divisions.size());
     for (const auto& division : divisions) {
@@ -136,10 +136,10 @@ GlobalPiston Organ::captureStateAsPiston() const {
 
 // TODO: Index, batch, vectorize
 void Organ::generateTremulant() {
-    float* buf = tremulantFrameBuffer.getWritePointer(0);
-    for (int i = 0; i < PROCESS_FRAMES_SIZE; ++i) {
-        const float s = std::sinf(tremulantPhase);
-        buf[i] = s * TREMULANT_LEVEL;
+    auto buffer = tremulantFrameBuffer.getWritePointer(0);
+    for (auto i = 0; i < PROCESS_FRAMES_SIZE; ++i) {
+        const float s = arm_sin_f32(tremulantPhase);
+        buffer[i] = s * TREMULANT_LEVEL;
         tremulantPhase += TREMULANT_PHASE_INCREMENT;
         if (tremulantPhase >= std::numbers::pi_v<float> * 2) {
             tremulantPhase -= std::numbers::pi_v<float> * 2;
@@ -147,9 +147,8 @@ void Organ::generateTremulant() {
     }
 }
 
-bool Organ::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
+void Organ::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
     arm_fill_f32(0.0f, out, PROCESS_SAMPLES_SIZE);
-    auto wasAudioGenerated = false;
     const static auto LEFT_BUFFER = divisionFrameBuffer.getReadPointer(0);
     const static auto RIGHT_BUFFER = divisionFrameBuffer.getReadPointer(1);
     generateTremulant();
@@ -158,9 +157,7 @@ bool Organ::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
             continue;
         }
         division->modulate(divisionFrameBuffer, tremulantFrameBuffer);
-        std::copy_n(LEFT_BUFFER, PROCESS_FRAMES_SIZE, out);
-        std::copy_n(RIGHT_BUFFER, PROCESS_FRAMES_SIZE, out + PROCESS_FRAMES_SIZE);
-        wasAudioGenerated = true;
+        arm_copy_f32(LEFT_BUFFER, out, PROCESS_FRAMES_SIZE);
+        arm_copy_f32(RIGHT_BUFFER, out + PROCESS_FRAMES_SIZE, PROCESS_FRAMES_SIZE);
     }
-    return wasAudioGenerated;
 }

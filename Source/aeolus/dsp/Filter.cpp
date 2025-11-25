@@ -33,15 +33,15 @@ void BiquadFilter::updateSpec(Spec& spec) {
     auto A = 0.0f;
 
     if (spec.type == PeakingEq || spec.type == LowShelf || spec.type == HighShelf) {
-        A = std::sqrt(std::powf(10.0f, spec.dbGain / 40.0f));
+        arm_sqrt_f32(std::powf(10.0f, spec.dbGain / 40.0f), &A);
     } else {
-        A = std::sqrtf(std::powf(10.0f, spec.dbGain / 20.0f));
+        arm_sqrt_f32(std::powf(10.0f, spec.dbGain / 20.0f), &A);
     }
 
     const float w0 = 2.0f * std::numbers::pi_v<float> * spec.freq * SAMPLE_RATE_R;
 
-    const float cos_w0 = std::cos(w0);
-    const float sin_w0 = std::sin(w0);
+    const float cos_w0 = arm_cos_f32(w0);
+    const float sin_w0 = arm_sin_f32(w0);
     auto alpha = 0.0f;
 
     switch (spec.type) {

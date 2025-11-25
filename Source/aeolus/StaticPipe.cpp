@@ -59,7 +59,7 @@ void StaticPipe::generateWavetable() {
     const float targetFrequency = targetFrequencyHz * SAMPLE_RATE_R;
 
     // Attack frequency (detuned) in Hz
-    const float attackFrequencyHz = targetFrequencyHz * math::exp2ap(model->getNoteAttackDetune(note) / CENTS_IN_OCTAVE);
+    const float attackFrequencyHz = targetFrequencyHz * exp2ap(model->getNoteAttackDetune(note) / CENTS_IN_OCTAVE);
     const float attackFrequency = attackFrequencyHz * SAMPLE_RATE_R;
 
     // Find the highest significant harmonic frequency in Hz to determine anti-aliasing
@@ -108,7 +108,7 @@ void StaticPipe::generateWavetable() {
 
     releaseFrameCount = static_cast<int>(ceilf(model->getNoteDecayTime(note) * SAMPLE_RATE_F / PROCESS_FRAMES_SIZE) + 1);
     releaseDecayRate = 1.0f - powf(0.1f, 1.0f / static_cast<float>(releaseFrameCount));
-    releaseDetune = static_cast<float>(sampleStep) * (math::exp2ap(model->getNoteDecayDetune(note) / CENTS_IN_OCTAVE) - 1.0f);
+    releaseDetune = static_cast<float>(sampleStep) * (exp2ap(model->getNoteDecayDetune(note) / CENTS_IN_OCTAVE) - 1.0f);
     instability = model->getNoteInstability(note);
 
     // Use the maximum attack time for all harmonics
@@ -132,7 +132,7 @@ void StaticPipe::generateWavetable() {
         phaseSteps[i + attackLength] = std::fmod(t, 1.0f);
     }
 
-    const float baseNoteAmplitude = math::exp2ap(DECIBEL_TO_LINEAR_APPROX * model->getNoteVolume(note));
+    const float baseNoteAmplitude = exp2ap(DECIBEL_TO_LINEAR_APPROX * model->getNoteVolume(note));
 
     for (auto harmonic = 0; harmonic < HN_func::N_HARM; ++harmonic) {
         // Strict anti-aliasing: skip harmonics that would alias
@@ -146,7 +146,7 @@ void StaticPipe::generateWavetable() {
         if (harmonicLevel < HARMONIC_SKIP_THRESHOLD) {
             continue;
         }
-        harmonicLevel = baseNoteAmplitude * math::exp2ap(DECIBEL_TO_LINEAR_APPROX * (harmonicLevel + model->getHarmonicRandomisation(harmonic, note) * dist(gen)));
+        harmonicLevel = baseNoteAmplitude * exp2ap(DECIBEL_TO_LINEAR_APPROX * (harmonicLevel + model->getHarmonicRandomisation(harmonic, note) * dist(gen)));
 
         const auto harmonicAttackSampleCount = static_cast<int>(std::round(SAMPLE_RATE_F * model->getHarmonicAttack(harmonic, note)));
         if (harmonicAttackSampleCount > att.size()) {
@@ -255,5 +255,13 @@ void StaticPipe::attgain(float *att, const int &n, const float &p) {
             z += d;
         }
     }
+}
+
+float StaticPipe::exp2ap(const float x) {
+    static const auto LN2 = 0.6931471805599453f;
+    auto y = x * LN2;
+    float out{0};
+    arm_vexp_f32(&y, &out, 1);
+    return out;
 }
 
