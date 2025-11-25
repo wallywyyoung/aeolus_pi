@@ -35,8 +35,6 @@ EngineGlobal::EngineGlobal() {
     organ = std::make_shared<Organ>([this](const std::string &name) { return rankWavesByName.at(name); });
     organInterface = static_cast<OrganInterface *>(organ.get());
     convolver.init(irs.irs[0]);
-    organ->setDivisionStopOn(0,0);
-    organ->setDivisionNoteOn(0,50);
 }
 
 void EngineGlobal::process(float (&out)[PROCESS_SAMPLES_SIZE]) {
