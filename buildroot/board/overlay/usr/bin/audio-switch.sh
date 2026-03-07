@@ -1,0 +1,11 @@
+#!/bin/sh
+case "$1" in
+    start)
+        # Shairport-sync is starting playback
+        killall -STOP organ_software || killall organ_software
+        ;;
+    stop)
+        # Shairport-sync has stopped
+        /usr/bin/organ_software &
+        ;;
+esac

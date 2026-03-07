@@ -1,0 +1,9 @@
+auto lo
+iface lo inet loopback
+
+auto wlan0
+iface wlan0 inet dhcp
+    pre-up mkdir -p /var/run/wpa_supplicant
+    pre-up wpa_supplicant -B -D nl80211 -i wlan0 -c /etc/wpa_supplicant.conf
+    post-down killall -q wpa_supplicant
+    pre-up sleep 2

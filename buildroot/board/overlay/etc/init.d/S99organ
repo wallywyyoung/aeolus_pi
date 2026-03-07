@@ -1,0 +1,17 @@
+#!/bin/sh
+case "$1" in
+    start)
+        printf "Starting Organ Software: "
+        start-stop-daemon -S -b -x /usr/bin/organ_software
+        [ $? = 0 ] && echo "OK" || echo "FAIL"
+        ;;
+    stop)
+        printf "Stopping Organ Software: "
+        start-stop-daemon -K -x /usr/bin/organ_software
+        echo "OK"
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+esac
