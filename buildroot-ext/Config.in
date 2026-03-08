@@ -1,3 +1,5 @@
-menu "Aeolus Custom Packages"
-    source "$BR2_EXTERNAL_AEOLUS_PATH/package/aeolus-app/Config.in"
-endmenu
+config BR2_PACKAGE_AEOLUS_PI
+	bool "aeolus_pi"
+	default y
+	help
+	  Aeolus organ synthesizer for the Raspberry Pi 4b.
