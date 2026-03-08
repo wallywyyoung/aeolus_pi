@@ -1,16 +1,24 @@
-IMAGE_NAME = aeolus-builder
-DOCKER_RUN = docker run --rm -v $(PWD):/workspace -v ~/.cache/vcpkg:/root/.cache/vcpkg $(IMAGE_NAME)
+BR_DIR = buildroot
+BR_EXT = $(PWD)/buildroot-ext
+DEFCONFIG = raspberrypi4_64_defconfig
 
-.PHONY: all image shell clean
+.PHONY: all setup software buildroot clean
 
-all: image
-	$(DOCKER_RUN) /bin/bash -c "cd buildroot && make BR2_EXTERNAL=../buildroot-ext raspberrypi4_64_defconfig && make"
+all: setup software buildroot
 
-image:
-	docker build -t $(IMAGE_NAME) .
+setup:
+	./init.sh
 
-shell: image
-	$(DOCKER_RUN) /bin/bash
+software:
+	@echo "Building aeolus_pi..."
+	cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
+	cmake --build build
+
+buildroot:
+	@echo "Building Buildroot OS..."
+	$(MAKE) -C $(BR_DIR) BR2_EXTERNAL=$(BR_EXT) $(DEFCONFIG)
+	$(MAKE) -C $(BR_DIR)
 
 clean:
-	$(DOCKER_RUN) /bin/bash -c "cd buildroot && make clean"
+	rm -rf build
+	$(MAKE) -C $(BR_DIR) clean

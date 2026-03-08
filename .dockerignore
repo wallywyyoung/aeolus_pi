@@ -1,0 +1,7 @@
+buildroot/output/
+buildroot/dl/
+buildroot/.config
+buildroot/.config.old
+**/*.o
+**/*.a
+**/*.pyc
