@@ -1,7 +1,7 @@
 BR_DIR = buildroot
 BR_EXT = $(PWD)/buildroot-ext
 DEFCONFIG = raspberrypi4_64_defconfig
-DEBUG_FRAGMENT = $(PWD)/buildroot-ext/debug.config
+DEBUG_FRAGMENT = $(PWD)/buildroot-ext/debug/debug.config
 
 .PHONY: all setup software buildroot clean
 
