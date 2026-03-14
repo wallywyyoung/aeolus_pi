@@ -19,7 +19,7 @@ config:
 	$(MAKE) -C $(BR_DIR) BR2_EXTERNAL=$(BR_EXT) BR2_DEFCONFIG=$(DEFCONFIG) defconfig
 	@if [ -n "$(DEBUG)" ]; then \
 		echo "Applying debug config fragment..."; \
-		$(BR_DIR)/support/kconfig/merge_config.sh -m $(BR_DIR)/.config $(DEBUG_FRAGMENT); \
+		$(BR_DIR)/support/kconfig/merge_config.sh $(BR_DIR)/.config $(DEBUG_FRAGMENT); \
 		$(MAKE) -C $(BR_DIR) olddefconfig; \
 	fi
 
