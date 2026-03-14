@@ -1,5 +1,5 @@
 #!/bin/sh
-mount -o remount,rw /boot
+mount /dev/mmcblk0p1 /boot 2>/dev/null || true
 exec > /boot/boot.log 2>&1
 set -x
 echo "=== $(date) ==="
