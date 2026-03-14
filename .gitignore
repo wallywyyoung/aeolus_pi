@@ -2,3 +2,4 @@
 build
 Builds
 .DS_Store
+buildroot-ext/overlay/etc/wpa_supplicant.conf
