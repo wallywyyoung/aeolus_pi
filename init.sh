@@ -12,6 +12,10 @@ read -sp "Enter WiFi Password (NOTE: This will be stored in wpa_supplicant.conf 
 echo ""
 
 if [ -n "$WIFI_SSID" ] && [ -n "$WIFI_PASS" ]; then
+    if [ -f "$WIFI_CONF" ]; then
+        echo "Found existing WiFi config. Deleting for a fresh start..."
+        rm "$WIFI_CONF"
+    fi
     echo "Generating hashed wpa_supplicant config using Python..."
     mkdir -p "$(dirname "$WIFI_CONF")"
     
