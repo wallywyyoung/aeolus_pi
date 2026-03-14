@@ -19,7 +19,7 @@ config:
 	$(MAKE) -C $(BR_DIR) BR2_EXTERNAL=$(BR_EXT) BR2_DEFCONFIG=$(DEFCONFIG) defconfig
 	@if [ -n "$(DEBUG)" ]; then \
 		echo "Applying debug config fragment..."; \
-		$(BR_DIR)/support/kconfig/merge_config.sh $(BR_DIR)/.config $(DEBUG_FRAGMENT); \
+		KCONFIG_CONFIG=$(BR_DIR)/.config $(BR_DIR)/support/kconfig/merge_config.sh -e $(BR_EXT) $(BR_DIR)/.config $(DEBUG_FRAGMENT); \
 		$(MAKE) -C $(BR_DIR) olddefconfig; \
 	fi
 
@@ -35,4 +35,4 @@ buildroot: config
 clean:
 	rm -rf build
 	rm -f $(BR_EXT)/overlay/etc/init.d/S01bootlog
-	$(MAKE) -C $(BR_DIR) cleanm
+	$(MAKE) -C $(BR_DIR) clean
