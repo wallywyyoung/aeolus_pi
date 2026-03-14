@@ -22,6 +22,9 @@ ifdef DEBUG
 	@echo "Applying debug config fragment..."
 	$(BR_DIR)/support/kconfig/merge_config.sh -m $(BR_DIR)/.config $(DEBUG_FRAGMENT)
 	$(MAKE) -C $(BR_DIR) olddefconfig
+	mkdir -p $(BR_DIR)/output/target/etc/init.d
+	cp $(BR_EXT)/debug/S01bootlog $(BR_DIR)/output/target/etc/init.d/S01bootlog
+	chmod +x $(BR_DIR)/output/target/etc/init.d/S01bootlog
 endif
 	$(MAKE) -C $(BR_DIR)
 
