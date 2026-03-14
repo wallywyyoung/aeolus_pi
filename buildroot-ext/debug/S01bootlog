@@ -1,0 +1,7 @@
+#!/bin/sh
+mount -o remount,rw /boot
+exec > /boot/boot.log 2>&1
+set -x
+echo "=== $(date) ==="
+cat /proc/cmdline
+dmesg
