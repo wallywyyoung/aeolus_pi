@@ -1,6 +1,7 @@
 BR_DIR = buildroot
 BR_EXT = $(PWD)/buildroot-ext
 DEFCONFIG = raspberrypi4_64_defconfig
+DEBUG_FRAGMENT = $(PWD)/buildroot-ext/debug.config
 
 .PHONY: all setup software buildroot clean
 
@@ -17,6 +18,11 @@ software:
 buildroot:
 	@echo "Building Buildroot OS..."
 	$(MAKE) -C $(BR_DIR) BR2_EXTERNAL=$(BR_EXT) $(DEFCONFIG)
+ifdef DEBUG
+	@echo "Applying debug config fragment..."
+	$(BR_DIR)/support/kconfig/merge_config.sh -m $(BR_DIR)/.config $(DEBUG_FRAGMENT)
+	$(MAKE) -C $(BR_DIR) olddefconfig
+endif
 	$(MAKE) -C $(BR_DIR)
 
 clean:
