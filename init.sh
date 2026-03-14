@@ -4,25 +4,16 @@ set -e
 
 echo "Setting up environment..."
 
-echo "Generating WiFi settings. NOTE: wpa_supplicant.conf is gitignored and should never be committed!"
 WIFI_CONF="buildroot-ext/overlay/etc/wpa_supplicant.conf"
-
-read -p "Enter WiFi SSID: " WIFI_SSID
-read -sp "Enter WiFi Password (NOTE: This will be stored in wpa_supplicant.conf hashed.): " WIFI_PASS
-echo ""
-
-if [ -n "$WIFI_SSID" ] && [ -n "$WIFI_PASS" ]; then
-    if [ -f "$WIFI_CONF" ]; then
-        echo "Found existing WiFi config. Deleting for a fresh start..."
-        rm "$WIFI_CONF"
-    fi
+if [ -f "$WIFI_CONF" ]; then
+    echo "WiFi config already exists at $WIFI_CONF, skipping..."
+else
+    read -p "Enter WiFi SSID: " WIFI_SSID
+    read -sp "Enter WiFi Password (NOTE: This will be stored in wpa_supplicant.conf hashed.): " WIFI_PASS
+    echo ""
     echo "Generating hashed wpa_supplicant config using Python..."
     mkdir -p "$(dirname "$WIFI_CONF")"
-    
-    # Calculate the hashed PSK using Python (no extra packages needed)
     HASHED_PSK=$(python3 -c "import hashlib, binascii; dk = hashlib.pbkdf2_hmac('sha1', '$WIFI_PASS'.encode(), '$WIFI_SSID'.encode(), 4096, 32); print(binascii.hexlify(dk).decode())")
-
-    # Write the complete config file
     cat <<EOF > "$WIFI_CONF"
 ctrl_interface=/var/run/wpa_supplicant
 ctrl_interface_group=0
@@ -35,11 +26,8 @@ network={
     psk=$HASHED_PSK
 }
 EOF
-    
     chmod 600 "$WIFI_CONF"
     echo "WiFi config generated at $WIFI_CONF"
-else
-    echo "Error: SSID and Password are required. Skipping WiFi config..."
 fi
 
 echo "Installing required packages..."
