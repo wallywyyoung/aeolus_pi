@@ -12,8 +12,13 @@ read -sp "Enter WiFi Password (NOTE: This will be stored in wpa_supplicant.conf 
 echo ""
 
 if [ -n "$WIFI_SSID" ] && [ -n "$WIFI_PASS" ]; then
-    echo "Generating hashed wpa_supplicant config..."
+    echo "Generating hashed wpa_supplicant config using Python..."
     mkdir -p "$(dirname "$WIFI_CONF")"
+    
+    # Calculate the hashed PSK using Python (no extra packages needed)
+    HASHED_PSK=$(python3 -c "import hashlib, binascii; dk = hashlib.pbkdf2_hmac('sha1', '$WIFI_PASS'.encode(), '$WIFI_SSID'.encode(), 4096, 32); print(binascii.hexlify(dk).decode())")
+
+    # Write the complete config file
     cat <<EOF > "$WIFI_CONF"
 ctrl_interface=/var/run/wpa_supplicant
 ctrl_interface_group=0
@@ -21,8 +26,12 @@ update_config=0
 country=US
 ap_scan=1
 
+network={
+    ssid="$WIFI_SSID"
+    psk=$HASHED_PSK
+}
 EOF
-    wpa_passphrase "$WIFI_SSID" "$WIFI_PASS" | grep -v "#psk=" >> "$WIFI_CONF"
+    
     chmod 600 "$WIFI_CONF"
     echo "WiFi config generated at $WIFI_CONF"
 else
