@@ -13,6 +13,8 @@ echo "=== loaded modules ==="
 lsmod
 echo "=== modprobe brcmfmac ==="
 modprobe brcmfmac
+echo "=== dmesg brcm ==="
+dmesg | grep -i brcm
 echo "=== ip link after modprobe ==="
 ip link
 echo "=== ifup output ==="
