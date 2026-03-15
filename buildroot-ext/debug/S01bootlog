@@ -21,3 +21,8 @@ echo "=== ifup output ==="
 /sbin/ifup -a -v
 echo "=== ip addr ==="
 ip addr
+echo "=== wpa_supplicant status ==="
+sleep 5
+wpa_cli status
+echo "=== dmesg wlan ==="
+dmesg | grep -i wlan
