@@ -9,6 +9,12 @@ echo "=== network interfaces ==="
 cat /etc/network/interfaces
 echo "=== wpa_supplicant config ==="
 cat /etc/wpa_supplicant.conf
+echo "=== loaded modules ==="
+lsmod
+echo "=== modprobe brcmfmac ==="
+modprobe brcmfmac
+echo "=== ip link after modprobe ==="
+ip link
 echo "=== ifup output ==="
 /sbin/ifup -a -v
 echo "=== ip addr ==="
