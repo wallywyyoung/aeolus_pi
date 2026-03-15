@@ -5,3 +5,11 @@ set -x
 echo "=== $(date) ==="
 cat /proc/cmdline
 dmesg
+echo "=== network interfaces ==="
+cat /etc/network/interfaces
+echo "=== wpa_supplicant config ==="
+cat /etc/wpa_supplicant.conf
+echo "=== ifup output ==="
+/sbin/ifup -a -v
+echo "=== ip addr ==="
+ip addr
