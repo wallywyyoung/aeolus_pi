@@ -1,2 +1,4 @@
 PermitRootLogin yes
 PermitEmptyPasswords yes
+Port 22
+UsePAM no

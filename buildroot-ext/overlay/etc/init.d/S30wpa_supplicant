@@ -19,7 +19,8 @@ case "$1" in
         ;;
     stop)
         printf "Stopping wpa_supplicant: "
-        kill $(cat $PIDFILE) 2>/dev/null
+        kill $(cat $PIDFILE) 2>/dev/null || true
+        rm -f $PIDFILE
         echo "OK"
         ;;
     restart|reload)

@@ -5,7 +5,6 @@ case "$1" in
         killall -STOP organ_software || killall organ_software
         ;;
     stop)
-        # Shairport-sync has stopped
-        /usr/bin/organ_software &
+        /etc/init.d/S99organ start
         ;;
 esac

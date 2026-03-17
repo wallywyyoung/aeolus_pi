@@ -2,12 +2,12 @@
 case "$1" in
     start)
         printf "Starting Organ Software: "
-        start-stop-daemon -S -b -x /usr/bin/organ_software
+        start-stop-daemon -S -b -x /usr/bin/aeolus_pi
         [ $? = 0 ] && echo "OK" || echo "FAIL"
         ;;
     stop)
         printf "Stopping Organ Software: "
-        start-stop-daemon -K -x /usr/bin/organ_software
+        start-stop-daemon -K -x /usr/bin/aeolus_pi
         echo "OK"
         ;;
     restart)
