@@ -1,11 +1,9 @@
 #! /bin/sh
 
-OPTIONS="-v"
-
 case "$1" in
     start)
         printf "Starting shairport-sync: "
-        start-stop-daemon -S -q --exec /usr/bin/shairport-sync -- $OPTIONS >> /boot/shairport.log 2>&1
+        start-stop-daemon -S -q --background --exec /usr/bin/shairport-sync -- -v >> /boot/shairport.log 2>&1
         [ $? = 0 ] && echo "OK" || echo "FAIL"
         ;;
     stop)
