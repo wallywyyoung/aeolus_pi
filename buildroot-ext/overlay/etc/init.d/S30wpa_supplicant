@@ -8,6 +8,7 @@ case "$1" in
     start)
         exec >> /boot/wpa.log 2>&1
         printf "Starting wpa_supplicant: "
+        modprobe brcmfmac
         for i in $(seq 1 20); do ip link show $IFACE && break || sleep 1; done
         mkdir -p /var/run/wpa_supplicant
         wpa_supplicant -B -D nl80211 -i $IFACE -c $CONF -P $PIDFILE
