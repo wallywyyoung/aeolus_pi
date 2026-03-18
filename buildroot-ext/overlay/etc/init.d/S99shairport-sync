@@ -3,7 +3,7 @@
 case "$1" in
     start)
         printf "Starting shairport-sync: "
-        start-stop-daemon -S -q --background --exec /usr/bin/shairport-sync -- -v >> /boot/shairport.log 2>&1
+        start-stop-daemon -S -q --background --exec /usr/bin/shairport-sync -- -v
         [ $? = 0 ] && echo "OK" || echo "FAIL"
         ;;
     stop)

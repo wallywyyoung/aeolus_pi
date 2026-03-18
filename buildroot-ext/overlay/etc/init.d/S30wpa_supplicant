@@ -5,7 +5,6 @@ PIDFILE="/var/run/wpa_supplicant.pid"
 
 case "$1" in
     start)
-        exec >> /boot/wpa.log 2>&1
         printf "Starting wpa_supplicant: "
         modprobe brcmfmac
         mkdir -p /var/run/wpa_supplicant
