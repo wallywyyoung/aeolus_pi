@@ -9,12 +9,14 @@ case "$1" in
         printf "Starting wpa_supplicant: "
         modprobe brcmfmac
         mkdir -p /var/run/wpa_supplicant
+        rm -f /var/run/wpa_supplicant/wlan0
+        for i in $(seq 1 20); do
+            ip link show $IFACE > /dev/null 2>&1 && break || sleep 1
+        done
+        wpa_supplicant -B -D nl80211 -i $IFACE -c $CONF -P $PIDFILE
         ASSOC=0
         for i in $(seq 1 20); do
-            ip link show $IFACE > /dev/null 2>&1 || { sleep 1; continue; }
-            wpa_supplicant -B -D nl80211 -i $IFACE -c $CONF -P $PIDFILE 2>/dev/null && \
-            wpa_cli status 2>/dev/null | grep -q "wpa_state=COMPLETED" && ASSOC=1 && break
-            sleep 1
+            wpa_cli status 2>/dev/null | grep -q "wpa_state=COMPLETED" && ASSOC=1 && break || sleep 1
         done
         [ $ASSOC -eq 0 ] && echo "FAIL: wpa_supplicant did not associate" && exit 1
         echo "OK"
@@ -23,6 +25,7 @@ case "$1" in
         printf "Stopping wpa_supplicant: "
         kill $(cat $PIDFILE) 2>/dev/null || true
         rm -f $PIDFILE
+        rm -f /var/run/wpa_supplicant/$IFACE
         echo "OK"
         ;;
     restart|reload)
