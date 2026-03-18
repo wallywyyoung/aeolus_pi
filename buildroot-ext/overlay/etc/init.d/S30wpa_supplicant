@@ -4,26 +4,19 @@ IFACE="wlan0"
 CONF="/etc/wpa_supplicant.conf"
 PIDFILE="/var/run/wpa_supplicant.pid"
 
-case "$1" in
     start)
         exec >> /boot/wpa.log 2>&1
         printf "Starting wpa_supplicant: "
         modprobe brcmfmac
-        for i in $(seq 1 20); do ip link show $IFACE && break || sleep 1; done
         mkdir -p /var/run/wpa_supplicant
-        wpa_supplicant -B -D nl80211 -i $IFACE -c $CONF -P $PIDFILE
         ASSOC=0
         for i in $(seq 1 20); do
-            wpa_cli status | grep -q "wpa_state=COMPLETED" && ASSOC=1 && break || sleep 1
+            ip link show $IFACE > /dev/null 2>&1 || { sleep 1; continue; }
+            wpa_supplicant -B -D nl80211 -i $IFACE -c $CONF -P $PIDFILE 2>/dev/null && \
+            wpa_cli status 2>/dev/null | grep -q "wpa_state=COMPLETED" && ASSOC=1 && break
+            sleep 1
         done
         [ $ASSOC -eq 0 ] && echo "FAIL: wpa_supplicant did not associate" && exit 1
-        echo "=== ip addr after association ==="
-        ip addr
-        echo "=== starting dhcp ==="
-        udhcpc -i $IFACE -b -p /var/run/udhcpc.wlan0.pid
-        sleep 5
-        echo "=== ip addr after dhcp ==="
-        ip addr
         echo "OK"
         ;;
     stop)
