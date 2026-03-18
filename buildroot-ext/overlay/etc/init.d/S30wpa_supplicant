@@ -6,6 +6,7 @@ PIDFILE="/var/run/wpa_supplicant.pid"
 
 case "$1" in
     start)
+        exec >> /boot/wpa.log 2>&1
         printf "Starting wpa_supplicant: "
         for i in $(seq 1 20); do ip link show $IFACE && break || sleep 1; done
         mkdir -p /var/run/wpa_supplicant
