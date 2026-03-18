@@ -3,4 +3,5 @@ iface lo inet loopback
 
 auto wlan0
 iface wlan0 inet dhcp
+    udhcpc_opts -t 5 -T 3 -A 1
     post-down kill $(cat /var/run/wpa_supplicant.pid) 2>/dev/null || true
