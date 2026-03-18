@@ -1,9 +1,9 @@
 #!/bin/sh
-
 IFACE="wlan0"
 CONF="/etc/wpa_supplicant.conf"
 PIDFILE="/var/run/wpa_supplicant.pid"
 
+case "$1" in
     start)
         exec >> /boot/wpa.log 2>&1
         printf "Starting wpa_supplicant: "
