@@ -1,0 +1,17 @@
+#!/bin/sh
+
+case "$1" in
+    start)
+        echo "Setting Apple Dongle hardware volume..."
+        sleep 1
+        amixer -c 0 sset 'Headphone' 100% unmute || \
+        amixer -c 0 sset 'PCM' 100% unmute
+        ;;
+    stop)
+        ;;
+    *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+        ;;
+esac
+exit 0
