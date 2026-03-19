@@ -1,0 +1,14 @@
+#!/bin/sh
+
+case "$1" in
+    start)
+        printf "Forcing time sync: "
+        hwclock -s
+        ntpdate -u pool.ntp.org
+        ntpd -g
+        echo "OK"
+        ;;
+    stop)
+        killall ntpd
+        ;;
+esac
